@@ -66,6 +66,8 @@ describe('PlayerCounter', () => {
   it('should handle negative life values', () => {
     render(<PlayerCounter {...defaultProps} currentLife={-5} />)
 
-    expect(screen.getByText('-5')).toBeInTheDocument()
+    const lifeDisplay = screen.getByText('-5')
+    expect(lifeDisplay).toBeInTheDocument()
+    expect(lifeDisplay).toHaveClass('text-red-600')
   })
 })
