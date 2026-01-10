@@ -1,8 +1,26 @@
+import Link from 'next/link'
+
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24">
-      <h1 className="text-4xl font-bold">ManaDork</h1>
-      <p className="mt-4 text-xl">MTG Life Tracker</p>
-    </main>
-  );
+    <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gradient-to-br from-gray-900 to-gray-800 text-white">
+      <h1 className="text-6xl font-bold mb-4">ManaDork</h1>
+      <p className="text-xl text-gray-300 mb-12 text-center max-w-md">
+        Your mobile-friendly Magic: The Gathering toolkit
+      </p>
+
+      <div className="flex flex-col gap-4 w-full max-w-md">
+        <Link
+          href="/tracker"
+          className="bg-blue-600 hover:bg-blue-700 text-white text-2xl font-bold py-8 px-6 rounded-lg text-center transition min-h-tap"
+        >
+          Life Tracker
+        </Link>
+
+        <div className="mt-8 text-center text-gray-400 text-sm">
+          <p>More features coming soon:</p>
+          <p className="mt-2">Card Lookup • Rules Reference • Deck Tracking</p>
+        </div>
+      </div>
+    </div>
+  )
 }
