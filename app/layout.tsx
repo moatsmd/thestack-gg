@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ManaDork - MTG Life Tracker",
+  title: "TheStack.gg - MTG Life Tracker",
   description: "Mobile-friendly Magic: The Gathering life tracker and toolkit",
   viewport: {
     width: 'device-width',
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'ManaDork',
+    title: 'TheStack.gg',
   },
 };
 

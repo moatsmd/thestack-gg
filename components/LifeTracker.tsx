@@ -50,7 +50,7 @@ export function LifeTracker({ initialGameState, onReset }: LifeTrackerProps) {
     <div className="min-h-screen flex flex-col">
       <div className="bg-gray-800 text-white px-4 py-3 flex justify-between items-center">
         <div className="text-sm">
-          {gameState.gameType === 'standard' ? 'Standard' : 'Commander'} ({gameState.startingLife} life)
+          {gameState.gameType === 'standard' ? 'Standard' : gameState.gameType === 'commander' ? 'Commander' : 'Custom'} ({gameState.startingLife} life)
         </div>
         <button
           type="button"

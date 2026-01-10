@@ -1,4 +1,4 @@
-# ManaDork
+# TheStack.gg
 
 A mobile-first Magic: The Gathering toolkit, starting with a comprehensive life tracker.
 
