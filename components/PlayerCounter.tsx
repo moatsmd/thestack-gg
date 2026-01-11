@@ -86,6 +86,7 @@ export function PlayerCounter({
             aria-label="Player name"
             value={nameDraft}
             onChange={(event) => setNameDraft(event.target.value)}
+            onClick={(event) => event.stopPropagation()}
             onBlur={handleNameSubmit}
             onKeyDown={(event) => {
               if (event.key === 'Enter') {

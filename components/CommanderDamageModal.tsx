@@ -116,6 +116,7 @@ export function CommanderDamageModal({
                           type="text"
                           value={editCommanderName}
                           onChange={(e) => setEditCommanderName(e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
                           onBlur={() => handleSaveCommanderName(opponent.id)}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
