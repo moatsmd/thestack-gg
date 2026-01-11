@@ -131,4 +131,65 @@ describe('LifeTracker', () => {
     expect(parsed.players[0].lifeHistory).toHaveLength(2)
     expect(parsed.players[0].lifeHistory[0].amount).toBe(1)
   })
+
+  it('opens commander damage modal and persists updates', async () => {
+    const user = userEvent.setup()
+    render(<LifeTracker initialGameState={multiplayerGameState} onReset={mockOnReset} />)
+
+    await user.click(screen.getAllByRole('button', { name: /open commander damage/i })[0])
+
+    expect(screen.getByText("Player 1's Commander Damage")).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /increase damage from player 2/i }))
+
+    const stored = localStorage.getItem('manadork-game-state')
+    const parsed = JSON.parse(stored!)
+
+    expect(parsed.players[0].commanderDamage).toEqual([
+      { fromPlayerId: 'player-2', amount: 1 },
+    ])
+  })
+
+  it('shows commander tip banner on first visit in commander mode', () => {
+    render(<LifeTracker initialGameState={multiplayerGameState} onReset={mockOnReset} />)
+
+    expect(screen.getByTestId('commander-tip-banner')).toBeInTheDocument()
+    expect(screen.getByText(/Tip: Tap any player to track commander damage/i)).toBeInTheDocument()
+  })
+
+  it('does not show banner in non-commander modes', () => {
+    render(<LifeTracker initialGameState={soloGameState} onReset={mockOnReset} />)
+
+    expect(screen.queryByTestId('commander-tip-banner')).not.toBeInTheDocument()
+  })
+
+  it('dismisses banner when Got it button is clicked', async () => {
+    const user = userEvent.setup()
+    render(<LifeTracker initialGameState={multiplayerGameState} onReset={mockOnReset} />)
+
+    const banner = screen.getByTestId('commander-tip-banner')
+    expect(banner).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /dismiss tip/i }))
+
+    expect(screen.queryByTestId('commander-tip-banner')).not.toBeInTheDocument()
+  })
+
+  it('persists banner dismissal to localStorage', async () => {
+    const user = userEvent.setup()
+    render(<LifeTracker initialGameState={multiplayerGameState} onReset={mockOnReset} />)
+
+    await user.click(screen.getByRole('button', { name: /dismiss tip/i }))
+
+    const stored = localStorage.getItem('manadork-has-seen-commander-tip')
+    expect(stored).toBe('true')
+  })
+
+  it('does not show banner again after it has been dismissed', () => {
+    localStorage.setItem('manadork-has-seen-commander-tip', 'true')
+
+    render(<LifeTracker initialGameState={multiplayerGameState} onReset={mockOnReset} />)
+
+    expect(screen.queryByTestId('commander-tip-banner')).not.toBeInTheDocument()
+  })
 })

@@ -33,6 +33,7 @@ describe('useLocalStorage', () => {
 
   it('should handle localStorage not available gracefully', () => {
     const mockGetItem = jest.spyOn(Storage.prototype, 'getItem')
+    const mockConsoleError = jest.spyOn(console, 'error').mockImplementation(() => {})
     mockGetItem.mockImplementation(() => {
       throw new Error('localStorage not available')
     })
@@ -40,7 +41,9 @@ describe('useLocalStorage', () => {
     const { result } = renderHook(() => useLocalStorage('test-key', 'fallback'))
 
     expect(result.current[0]).toBe('fallback')
+    expect(mockConsoleError).toHaveBeenCalled()
 
+    mockConsoleError.mockRestore()
     mockGetItem.mockRestore()
   })
 })
