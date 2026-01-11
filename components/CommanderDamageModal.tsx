@@ -120,8 +120,12 @@ export function CommanderDamageModal({
                           onBlur={() => handleSaveCommanderName(opponent.id)}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
+                              e.preventDefault()
+                              e.stopPropagation()
                               handleSaveCommanderName(opponent.id)
                             } else if (e.key === 'Escape') {
+                              e.preventDefault()
+                              e.stopPropagation()
                               handleCancelEditCommander()
                             }
                           }}

@@ -91,6 +91,7 @@ export function PlayerCounter({
             onKeyDown={(event) => {
               if (event.key === 'Enter') {
                 event.preventDefault()
+                event.stopPropagation()
                 handleNameSubmit()
               }
             }}
