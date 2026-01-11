@@ -37,8 +37,10 @@ export function PlayerCounter({
   const [isEditingName, setIsEditingName] = useState(false)
   const [nameDraft, setNameDraft] = useState(playerName)
 
-  const totalCommanderDamage = commanderDamage.reduce((sum, entry) => sum + entry.amount, 0)
-  const commanderWarningLevel = totalCommanderDamage >= 21 ? 'danger' : totalCommanderDamage >= 18 ? 'warning' : 'none'
+  const maxCommanderDamage = commanderDamage.length > 0
+    ? Math.max(...commanderDamage.map((entry) => entry.amount))
+    : 0
+  const commanderWarningLevel = maxCommanderDamage >= 21 ? 'danger' : maxCommanderDamage >= 18 ? 'warning' : 'none'
 
   const poisonWarningLevel = poisonCounters >= 10 ? 'danger' : poisonCounters >= 8 ? 'warning' : 'none'
 
@@ -168,7 +170,7 @@ export function PlayerCounter({
       </div>
 
       {/* Commander damage badge */}
-      {isCommander && totalCommanderDamage > 0 && (
+      {isCommander && maxCommanderDamage > 0 && (
         <div
           className={`rounded-full px-4 py-2 text-sm font-semibold mb-4 ${
             commanderWarningLevel === 'danger'
@@ -179,7 +181,7 @@ export function PlayerCounter({
           }`}
           data-testid="commander-damage-badge"
         >
-          ⚔️ {totalCommanderDamage} CMD Damage
+          ⚔️ {maxCommanderDamage} CMD Damage (max)
         </div>
       )}
 

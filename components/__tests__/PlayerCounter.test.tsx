@@ -135,7 +135,7 @@ describe('PlayerCounter', () => {
     expect(screen.queryByTestId('commander-damage-badge')).not.toBeInTheDocument()
   })
 
-  it('shows commander damage badge with total damage', () => {
+  it('shows commander damage badge with max damage from any commander', () => {
     render(
       <PlayerCounter
         {...defaultProps}
@@ -149,7 +149,7 @@ describe('PlayerCounter', () => {
 
     const badge = screen.getByTestId('commander-damage-badge')
     expect(badge).toBeInTheDocument()
-    expect(badge).toHaveTextContent('8 CMD Damage')
+    expect(badge).toHaveTextContent('5 CMD Damage (max)')
   })
 
   it('shows gray badge for damage below 18', () => {
