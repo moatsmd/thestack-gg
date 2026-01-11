@@ -71,7 +71,7 @@ export function CommanderDamageModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="w-full max-w-lg rounded-lg bg-white shadow-lg">
         <div className="flex items-start justify-between border-b border-gray-200 px-4 py-3">
-          <div className="text-lg font-semibold text-gray-900">{playerName}'s Commander Damage</div>
+          <div className="text-lg font-semibold text-gray-900">{playerName}&apos;s Commander Damage</div>
           <button
             type="button"
             onClick={onClose}
@@ -110,7 +110,7 @@ export function CommanderDamageModal({
                 >
                   <div className="flex-1">
                     <div className="text-sm font-medium text-gray-900 mb-1">
-                      From {opponent.name}'s{' '}
+                      From {opponent.name}&apos;s{' '}
                       {isEditingThisCommander ? (
                         <input
                           type="text"

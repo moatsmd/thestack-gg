@@ -127,11 +127,12 @@ export function LifeTracker({ initialGameState, onReset }: LifeTrackerProps) {
     if (isCommander && !hasSeenCommanderTip) {
       setShowBanner(true)
       const timer = setTimeout(() => {
-        handleDismissBanner()
+        setShowBanner(false)
+        setHasSeenCommanderTip(true)
       }, 5000)
       return () => clearTimeout(timer)
     }
-  }, [isCommander, hasSeenCommanderTip])
+  }, [isCommander, hasSeenCommanderTip, setHasSeenCommanderTip])
 
   return (
     <div className="min-h-screen flex flex-col">

@@ -67,7 +67,13 @@
       "Bash(npm run dev:*)",
       "Bash(npm.cmd test:*)",
       "Bash(command:*)",
-      "Bash(\"./node_modules/.bin/jest\" app/__tests__/tracker-page.test.tsx)"
+      "Bash(\"./node_modules/.bin/jest\" app/__tests__/tracker-page.test.tsx)",
+      "Bash(git push:*)",
+      "Skill(superpowers:using-git-worktrees)",
+      "Bash(git check-ignore:*)",
+      "Skill(using-git-worktrees)",
+      "Bash(npm.cmd install:*)",
+      "Skill(executing-plans)"
     ]
   }
 }
