@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { CommanderDamage } from '@/types/game'
+import { CommanderDamage, ManaPool } from '@/types/game'
 
 interface PlayerCounterProps {
   playerId: string
@@ -10,8 +10,12 @@ interface PlayerCounterProps {
   isSolo: boolean
   isCommander: boolean
   commanderDamage?: CommanderDamage[]
+  poisonCounters?: number
+  manaPool?: ManaPool
   onLifeChange: (playerId: string, amount: number) => void
   onOpenCommanderDamage: (playerId: string) => void
+  onOpenPoisonCounter: (playerId: string) => void
+  onOpenManaPool: (playerId: string) => void
   onNameChange: (playerId: string, name: string) => void
 }
 
@@ -22,15 +26,25 @@ export function PlayerCounter({
   isSolo,
   isCommander,
   commanderDamage = [],
+  poisonCounters = 0,
+  manaPool,
   onLifeChange,
   onOpenCommanderDamage,
+  onOpenPoisonCounter,
+  onOpenManaPool,
   onNameChange,
 }: PlayerCounterProps) {
   const [isEditingName, setIsEditingName] = useState(false)
   const [nameDraft, setNameDraft] = useState(playerName)
 
   const totalCommanderDamage = commanderDamage.reduce((sum, entry) => sum + entry.amount, 0)
-  const warningLevel = totalCommanderDamage >= 21 ? 'danger' : totalCommanderDamage >= 18 ? 'warning' : 'none'
+  const commanderWarningLevel = totalCommanderDamage >= 21 ? 'danger' : totalCommanderDamage >= 18 ? 'warning' : 'none'
+
+  const poisonWarningLevel = poisonCounters >= 10 ? 'danger' : poisonCounters >= 8 ? 'warning' : 'none'
+
+  const totalMana = manaPool
+    ? Object.values(manaPool).reduce((sum, amount) => sum + amount, 0)
+    : 0
 
   useEffect(() => {
     if (!isEditingName) {
@@ -124,6 +138,28 @@ export function PlayerCounter({
             CMD
           </button>
         )}
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation()
+            onOpenPoisonCounter(playerId)
+          }}
+          className="rounded-full border border-gray-300 px-2 py-1 text-xs font-semibold text-gray-500"
+          aria-label="Open poison counters"
+        >
+          ☠️
+        </button>
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation()
+            onOpenManaPool(playerId)
+          }}
+          className="rounded-full border border-gray-300 px-2 py-1 text-xs font-semibold text-gray-500"
+          aria-label="Open mana pool"
+        >
+          💎
+        </button>
       </div>
 
       {/* Life total */}
@@ -135,15 +171,41 @@ export function PlayerCounter({
       {isCommander && totalCommanderDamage > 0 && (
         <div
           className={`rounded-full px-4 py-2 text-sm font-semibold mb-4 ${
-            warningLevel === 'danger'
+            commanderWarningLevel === 'danger'
               ? 'bg-red-100 text-red-700'
-              : warningLevel === 'warning'
+              : commanderWarningLevel === 'warning'
                 ? 'bg-yellow-100 text-yellow-700'
                 : 'bg-gray-100 text-gray-700'
           }`}
           data-testid="commander-damage-badge"
         >
           ⚔️ {totalCommanderDamage} CMD Damage
+        </div>
+      )}
+
+      {/* Poison counters badge */}
+      {poisonCounters > 0 && (
+        <div
+          className={`rounded-full px-4 py-2 text-sm font-semibold mb-4 ${
+            poisonWarningLevel === 'danger'
+              ? 'bg-red-100 text-red-700'
+              : poisonWarningLevel === 'warning'
+                ? 'bg-yellow-100 text-yellow-700'
+                : 'bg-gray-100 text-gray-700'
+          }`}
+          data-testid="poison-badge"
+        >
+          ☠️ {poisonCounters} Poison
+        </div>
+      )}
+
+      {/* Mana pool badge */}
+      {totalMana > 0 && (
+        <div
+          className="rounded-full px-4 py-2 text-sm font-semibold mb-4 bg-purple-100 text-purple-700"
+          data-testid="mana-badge"
+        >
+          💎 {totalMana} Mana
         </div>
       )}
 

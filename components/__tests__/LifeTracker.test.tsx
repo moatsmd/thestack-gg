@@ -192,4 +192,103 @@ describe('LifeTracker', () => {
 
     expect(screen.queryByTestId('commander-tip-banner')).not.toBeInTheDocument()
   })
+
+  it('opens poison counter modal and persists updates', async () => {
+    const user = userEvent.setup()
+    render(<LifeTracker initialGameState={soloGameState} onReset={mockOnReset} />)
+
+    await user.click(screen.getByRole('button', { name: /open poison counters/i }))
+
+    expect(screen.getByText(/You's Poison Counters/)).toBeInTheDocument()
+
+    const increaseButton = screen.getByRole('button', { name: /increase poison/i })
+    await user.click(increaseButton)
+    await user.click(increaseButton)
+    await user.click(increaseButton)
+
+    const stored = localStorage.getItem('manadork-game-state')
+    const parsed = JSON.parse(stored!)
+
+    expect(parsed.players[0].poisonCounters).toBe(3)
+  })
+
+  it('opens mana pool modal and persists updates', async () => {
+    const user = userEvent.setup()
+    render(<LifeTracker initialGameState={soloGameState} onReset={mockOnReset} />)
+
+    await user.click(screen.getByRole('button', { name: /open mana pool/i }))
+
+    expect(screen.getByText(/You's Mana Pool/)).toBeInTheDocument()
+
+    const increaseButtons = screen.getAllByRole('button', { name: /increase/i })
+    await user.click(increaseButtons[0]) // White
+    await user.click(increaseButtons[0])
+    await user.click(increaseButtons[1]) // Blue
+    await user.click(increaseButtons[3]) // Red
+    await user.click(increaseButtons[3])
+    await user.click(increaseButtons[3])
+
+    const stored = localStorage.getItem('manadork-game-state')
+    const parsed = JSON.parse(stored!)
+
+    expect(parsed.players[0].manaPool).toEqual({
+      white: 2,
+      blue: 1,
+      black: 0,
+      red: 3,
+      green: 0,
+      colorless: 0,
+    })
+  })
+
+  it('clears all mana when Clear All is clicked', async () => {
+    const user = userEvent.setup()
+    render(<LifeTracker initialGameState={soloGameState} onReset={mockOnReset} />)
+
+    await user.click(screen.getByRole('button', { name: /open mana pool/i }))
+
+    const increaseButtons = screen.getAllByRole('button', { name: /increase/i })
+    await user.click(increaseButtons[0])
+    await user.click(increaseButtons[1])
+
+    await user.click(screen.getByRole('button', { name: /clear all/i }))
+
+    const stored = localStorage.getItem('manadork-game-state')
+    const parsed = JSON.parse(stored!)
+
+    expect(parsed.players[0].manaPool).toEqual({
+      white: 0,
+      blue: 0,
+      black: 0,
+      red: 0,
+      green: 0,
+      colorless: 0,
+    })
+  })
+
+  it('tracks poison and mana independently for multiple players', async () => {
+    const user = userEvent.setup()
+    render(<LifeTracker initialGameState={multiplayerGameState} onReset={mockOnReset} />)
+
+    const poisonButtons = screen.getAllByRole('button', { name: /open poison counters/i })
+    await user.click(poisonButtons[0])
+
+    const increasePoison = screen.getByRole('button', { name: /increase poison/i })
+    await user.click(increasePoison)
+    await user.click(increasePoison)
+
+    await user.click(screen.getByRole('button', { name: /close/i }))
+
+    const manaButtons = screen.getAllByRole('button', { name: /open mana pool/i })
+    await user.click(manaButtons[1])
+
+    const increaseButtons = screen.getAllByRole('button', { name: /increase/i })
+    await user.click(increaseButtons[0])
+
+    const stored = localStorage.getItem('manadork-game-state')
+    const parsed = JSON.parse(stored!)
+
+    expect(parsed.players[0].poisonCounters).toBe(2)
+    expect(parsed.players[1].manaPool.white).toBe(1)
+  })
 })

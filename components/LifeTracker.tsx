@@ -4,6 +4,8 @@ import { GameState } from '@/types/game'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 import { PlayerCounter } from './PlayerCounter'
 import { CommanderDamageModal } from './CommanderDamageModal'
+import { PoisonCounterModal } from './PoisonCounterModal'
+import { ManaPoolModal } from './ManaPoolModal'
 import { useMemo, useState, useEffect } from 'react'
 
 interface LifeTrackerProps {
@@ -17,6 +19,8 @@ export function LifeTracker({ initialGameState, onReset }: LifeTrackerProps) {
     initialGameState
   )
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null)
+  const [selectedPlayerIdForPoison, setSelectedPlayerIdForPoison] = useState<string | null>(null)
+  const [selectedPlayerIdForMana, setSelectedPlayerIdForMana] = useState<string | null>(null)
   const [hasSeenCommanderTip, setHasSeenCommanderTip] = useLocalStorage(
     'manadork-has-seen-commander-tip',
     false
@@ -73,6 +77,16 @@ export function LifeTracker({ initialGameState, onReset }: LifeTrackerProps) {
       }))
   }, [gameState.players, selectedPlayer])
 
+  const selectedPlayerForPoison = useMemo(
+    () => gameState.players.find((player) => player.id === selectedPlayerIdForPoison),
+    [gameState.players, selectedPlayerIdForPoison]
+  )
+
+  const selectedPlayerForMana = useMemo(
+    () => gameState.players.find((player) => player.id === selectedPlayerIdForMana),
+    [gameState.players, selectedPlayerIdForMana]
+  )
+
   const handleCommanderDamageChange = (fromPlayerId: string, delta: number) => {
     if (!selectedPlayer) {
       return
@@ -114,6 +128,69 @@ export function LifeTracker({ initialGameState, onReset }: LifeTrackerProps) {
       ...prev,
       players: prev.players.map((player) =>
         player.id === playerId ? { ...player, commanderName } : player
+      ),
+    }))
+  }
+
+  const handlePoisonCounterChange = (delta: number) => {
+    if (!selectedPlayerIdForPoison) {
+      return
+    }
+
+    setGameState((prev) => ({
+      ...prev,
+      players: prev.players.map((player) =>
+        player.id === selectedPlayerIdForPoison
+          ? { ...player, poisonCounters: Math.max(0, (player.poisonCounters ?? 0) + delta) }
+          : player
+      ),
+    }))
+  }
+
+  const handleManaChange = (color: string, delta: number) => {
+    if (!selectedPlayerIdForMana) {
+      return
+    }
+
+    setGameState((prev) => ({
+      ...prev,
+      players: prev.players.map((player) => {
+        if (player.id !== selectedPlayerIdForMana) {
+          return player
+        }
+        const currentPool = player.manaPool ?? {
+          white: 0,
+          blue: 0,
+          black: 0,
+          red: 0,
+          green: 0,
+          colorless: 0,
+        }
+        return {
+          ...player,
+          manaPool: {
+            ...currentPool,
+            [color]: Math.max(0, currentPool[color as keyof typeof currentPool] + delta),
+          },
+        }
+      }),
+    }))
+  }
+
+  const handleClearManaPool = () => {
+    if (!selectedPlayerIdForMana) {
+      return
+    }
+
+    setGameState((prev) => ({
+      ...prev,
+      players: prev.players.map((player) =>
+        player.id === selectedPlayerIdForMana
+          ? {
+              ...player,
+              manaPool: { white: 0, blue: 0, black: 0, red: 0, green: 0, colorless: 0 },
+            }
+          : player
       ),
     }))
   }
@@ -175,8 +252,12 @@ export function LifeTracker({ initialGameState, onReset }: LifeTrackerProps) {
             isSolo={isSolo}
             isCommander={isCommander}
             commanderDamage={player.commanderDamage}
+            poisonCounters={player.poisonCounters}
+            manaPool={player.manaPool}
             onLifeChange={handleLifeChange}
             onOpenCommanderDamage={setSelectedPlayerId}
+            onOpenPoisonCounter={setSelectedPlayerIdForPoison}
+            onOpenManaPool={setSelectedPlayerIdForMana}
             onNameChange={handlePlayerNameChange}
           />
         ))}
@@ -190,6 +271,32 @@ export function LifeTracker({ initialGameState, onReset }: LifeTrackerProps) {
         onChange={handleCommanderDamageChange}
         onCommanderNameChange={handleCommanderNameChange}
         onClose={() => setSelectedPlayerId(null)}
+      />
+
+      <PoisonCounterModal
+        isOpen={Boolean(selectedPlayerForPoison)}
+        playerName={selectedPlayerForPoison?.name ?? ''}
+        poisonCounters={selectedPlayerForPoison?.poisonCounters ?? 0}
+        onChange={handlePoisonCounterChange}
+        onClose={() => setSelectedPlayerIdForPoison(null)}
+      />
+
+      <ManaPoolModal
+        isOpen={Boolean(selectedPlayerForMana)}
+        playerName={selectedPlayerForMana?.name ?? ''}
+        manaPool={
+          selectedPlayerForMana?.manaPool ?? {
+            white: 0,
+            blue: 0,
+            black: 0,
+            red: 0,
+            green: 0,
+            colorless: 0,
+          }
+        }
+        onChange={handleManaChange}
+        onClearAll={handleClearManaPool}
+        onClose={() => setSelectedPlayerIdForMana(null)}
       />
     </div>
   )

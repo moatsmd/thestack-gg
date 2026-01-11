@@ -11,6 +11,15 @@ export interface CommanderDamage {
   amount: number
 }
 
+export interface ManaPool {
+  white: number
+  blue: number
+  black: number
+  red: number
+  green: number
+  colorless: number
+}
+
 export interface Player {
   id: string
   name: string
@@ -18,6 +27,8 @@ export interface Player {
   lifeHistory: LifeChange[]
   commanderDamage?: CommanderDamage[]
   commanderName?: string
+  poisonCounters?: number
+  manaPool?: ManaPool
 }
 
 export interface GameState {

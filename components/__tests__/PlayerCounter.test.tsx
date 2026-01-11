@@ -13,6 +13,8 @@ describe('PlayerCounter', () => {
     isCommander: false,
     onLifeChange: mockOnLifeChange,
     onOpenCommanderDamage: jest.fn(),
+    onOpenPoisonCounter: jest.fn(),
+    onOpenManaPool: jest.fn(),
     onNameChange: jest.fn(),
   }
 
@@ -199,5 +201,114 @@ describe('PlayerCounter', () => {
     )
 
     expect(screen.queryByTestId('commander-damage-badge')).not.toBeInTheDocument()
+  })
+
+  it('shows poison icon button', () => {
+    render(<PlayerCounter {...defaultProps} />)
+
+    expect(screen.getByRole('button', { name: /open poison counters/i })).toBeInTheDocument()
+  })
+
+  it('shows mana pool icon button', () => {
+    render(<PlayerCounter {...defaultProps} />)
+
+    expect(screen.getByRole('button', { name: /open mana pool/i })).toBeInTheDocument()
+  })
+
+  it('opens poison counter modal when icon is clicked', async () => {
+    const user = userEvent.setup()
+    const onOpenPoisonCounter = jest.fn()
+
+    render(<PlayerCounter {...defaultProps} onOpenPoisonCounter={onOpenPoisonCounter} />)
+
+    await user.click(screen.getByRole('button', { name: /open poison counters/i }))
+
+    expect(onOpenPoisonCounter).toHaveBeenCalledWith('player-1')
+  })
+
+  it('opens mana pool modal when icon is clicked', async () => {
+    const user = userEvent.setup()
+    const onOpenManaPool = jest.fn()
+
+    render(<PlayerCounter {...defaultProps} onOpenManaPool={onOpenManaPool} />)
+
+    await user.click(screen.getByRole('button', { name: /open mana pool/i }))
+
+    expect(onOpenManaPool).toHaveBeenCalledWith('player-1')
+  })
+
+  it('does not show poison badge when count is 0', () => {
+    render(<PlayerCounter {...defaultProps} poisonCounters={0} />)
+
+    expect(screen.queryByTestId('poison-badge')).not.toBeInTheDocument()
+  })
+
+  it('shows poison badge when count > 0', () => {
+    render(<PlayerCounter {...defaultProps} poisonCounters={5} />)
+
+    const badge = screen.getByTestId('poison-badge')
+    expect(badge).toBeInTheDocument()
+    expect(badge).toHaveTextContent('5 Poison')
+  })
+
+  it('shows gray poison badge for 0-7 counters', () => {
+    render(<PlayerCounter {...defaultProps} poisonCounters={7} />)
+
+    const badge = screen.getByTestId('poison-badge')
+    expect(badge).toHaveClass('bg-gray-100', 'text-gray-700')
+  })
+
+  it('shows yellow poison badge for 8-9 counters', () => {
+    render(<PlayerCounter {...defaultProps} poisonCounters={8} />)
+
+    const badge = screen.getByTestId('poison-badge')
+    expect(badge).toHaveClass('bg-yellow-100', 'text-yellow-700')
+  })
+
+  it('shows red poison badge for 10+ counters', () => {
+    render(<PlayerCounter {...defaultProps} poisonCounters={10} />)
+
+    const badge = screen.getByTestId('poison-badge')
+    expect(badge).toHaveClass('bg-red-100', 'text-red-700')
+  })
+
+  it('does not show mana badge when total is 0', () => {
+    render(
+      <PlayerCounter
+        {...defaultProps}
+        manaPool={{ white: 0, blue: 0, black: 0, red: 0, green: 0, colorless: 0 }}
+      />
+    )
+
+    expect(screen.queryByTestId('mana-badge')).not.toBeInTheDocument()
+  })
+
+  it('shows mana badge with total count', () => {
+    render(
+      <PlayerCounter
+        {...defaultProps}
+        manaPool={{ white: 2, blue: 1, black: 0, red: 3, green: 1, colorless: 0 }}
+      />
+    )
+
+    const badge = screen.getByTestId('mana-badge')
+    expect(badge).toBeInTheDocument()
+    expect(badge).toHaveTextContent('7 Mana')
+  })
+
+  it('stacks multiple badges correctly', () => {
+    render(
+      <PlayerCounter
+        {...defaultProps}
+        isCommander={true}
+        commanderDamage={[{ fromPlayerId: 'player-2', amount: 5 }]}
+        poisonCounters={3}
+        manaPool={{ white: 2, blue: 1, black: 0, red: 0, green: 0, colorless: 0 }}
+      />
+    )
+
+    expect(screen.getByTestId('commander-damage-badge')).toBeInTheDocument()
+    expect(screen.getByTestId('poison-badge')).toBeInTheDocument()
+    expect(screen.getByTestId('mana-badge')).toBeInTheDocument()
   })
 })
