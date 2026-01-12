@@ -16,9 +16,16 @@ export default function Home() {
           Life Tracker
         </Link>
 
+        <Link
+          href="/toolkit"
+          className="bg-purple-600 hover:bg-purple-700 text-white text-2xl font-bold py-8 px-6 rounded-lg text-center transition min-h-tap"
+        >
+          Card Lookup
+        </Link>
+
         <div className="mt-8 text-center text-gray-400 text-sm">
           <p>More features coming soon:</p>
-          <p className="mt-2">Card Lookup • Rules Reference • Deck Tracking</p>
+          <p className="mt-2">Rules Reference • Deck Tracking</p>
         </div>
       </div>
     </div>
