@@ -311,4 +311,56 @@ describe('PlayerCounter', () => {
     expect(screen.getByTestId('poison-badge')).toBeInTheDocument()
     expect(screen.getByTestId('mana-badge')).toBeInTheDocument()
   })
+
+  it('opens commander damage modal when clicking the badge', async () => {
+    const user = userEvent.setup()
+    const onOpenCommanderDamage = jest.fn()
+
+    render(
+      <PlayerCounter
+        {...defaultProps}
+        isCommander={true}
+        commanderDamage={[{ fromPlayerId: 'player-2', amount: 5 }]}
+        onOpenCommanderDamage={onOpenCommanderDamage}
+      />
+    )
+
+    await user.click(screen.getByTestId('commander-damage-badge'))
+
+    expect(onOpenCommanderDamage).toHaveBeenCalledWith('player-1')
+  })
+
+  it('opens poison counter modal when clicking the badge', async () => {
+    const user = userEvent.setup()
+    const onOpenPoisonCounter = jest.fn()
+
+    render(
+      <PlayerCounter
+        {...defaultProps}
+        poisonCounters={5}
+        onOpenPoisonCounter={onOpenPoisonCounter}
+      />
+    )
+
+    await user.click(screen.getByTestId('poison-badge'))
+
+    expect(onOpenPoisonCounter).toHaveBeenCalledWith('player-1')
+  })
+
+  it('opens mana pool modal when clicking the badge', async () => {
+    const user = userEvent.setup()
+    const onOpenManaPool = jest.fn()
+
+    render(
+      <PlayerCounter
+        {...defaultProps}
+        manaPool={{ white: 2, blue: 1, black: 0, red: 0, green: 0, colorless: 0 }}
+        onOpenManaPool={onOpenManaPool}
+      />
+    )
+
+    await user.click(screen.getByTestId('mana-badge'))
+
+    expect(onOpenManaPool).toHaveBeenCalledWith('player-1')
+  })
 })

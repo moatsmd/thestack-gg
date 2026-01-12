@@ -171,8 +171,13 @@ export function PlayerCounter({
 
       {/* Commander damage badge */}
       {isCommander && maxCommanderDamage > 0 && (
-        <div
-          className={`rounded-full px-4 py-2 text-sm font-semibold mb-4 ${
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation()
+            onOpenCommanderDamage(playerId)
+          }}
+          className={`rounded-full px-4 py-2 text-sm font-semibold mb-4 cursor-pointer hover:opacity-80 transition ${
             commanderWarningLevel === 'danger'
               ? 'bg-red-100 text-red-700'
               : commanderWarningLevel === 'warning'
@@ -180,15 +185,21 @@ export function PlayerCounter({
                 : 'bg-gray-100 text-gray-700'
           }`}
           data-testid="commander-damage-badge"
+          aria-label="Open commander damage"
         >
           ⚔️ {maxCommanderDamage} CMD Damage (max)
-        </div>
+        </button>
       )}
 
       {/* Poison counters badge */}
       {poisonCounters > 0 && (
-        <div
-          className={`rounded-full px-4 py-2 text-sm font-semibold mb-4 ${
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation()
+            onOpenPoisonCounter(playerId)
+          }}
+          className={`rounded-full px-4 py-2 text-sm font-semibold mb-4 cursor-pointer hover:opacity-80 transition ${
             poisonWarningLevel === 'danger'
               ? 'bg-red-100 text-red-700'
               : poisonWarningLevel === 'warning'
@@ -196,19 +207,26 @@ export function PlayerCounter({
                 : 'bg-gray-100 text-gray-700'
           }`}
           data-testid="poison-badge"
+          aria-label="Open poison counters"
         >
           ☠️ {poisonCounters} Poison
-        </div>
+        </button>
       )}
 
       {/* Mana pool badge */}
       {totalMana > 0 && (
-        <div
-          className="rounded-full px-4 py-2 text-sm font-semibold mb-4 bg-purple-100 text-purple-700"
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation()
+            onOpenManaPool(playerId)
+          }}
+          className="rounded-full px-4 py-2 text-sm font-semibold mb-4 bg-purple-100 text-purple-700 cursor-pointer hover:opacity-80 transition"
           data-testid="mana-badge"
+          aria-label="Open mana pool"
         >
           💎 {totalMana} Mana
-        </div>
+        </button>
       )}
 
       {/* Controls */}
