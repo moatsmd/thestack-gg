@@ -24,44 +24,44 @@
 
 ## What We've Completed
 
-### 1. Design Phase �o.
+### 1. Design Phase [x]
 - Created comprehensive design document: `docs/plans/2026-01-10-commander-damage-design.md`
 - Design covers:
   - Data model changes (CommanderDamage interface, Player interface updates)
-  - UI/UX flow (tap player �+' modal �+' track damage from each opponent)
-  - Discoverability (�s"�,? icon + first-time hint banner)
+  - UI/UX flow (tap player -> modal -> track damage from each opponent)
+  - Discoverability ([SHIELD] icon + first-time hint banner)
   - Player/commander renaming
   - Visual warnings (18+ yellow, 21+ red)
   - Testing strategy and edge cases
 
-### 2. Preparation �o.
+### 2. Preparation [x]
 - Added `.worktrees` to `.gitignore` (committed: 2d2263e)
 - User chose project-local `.worktrees/` directory for isolated workspace
 
-### 3. Worktree Setup �o.
+### 3. Worktree Setup [x]
 - Created worktree at `.worktrees/commander-damage`
 - New branch created: `feature/commander-damage`
 - Verified `.worktrees` is in gitignore
 - Worktree files ready (package.json, all source files present)
 
-### 4. Implementation Plan �o.
+### 4. Implementation Plan [x]
 - Created implementation plan: `docs/plans/2026-01-10-commander-damage-implementation.md`
 
-### 5. Baseline Setup �o.
+### 5. Baseline Setup [x]
 - Installed dependencies in worktree
 - Baseline tests pass (`npm test`)
 - LocalStorage test console noise addressed
 
-### 6. Types & Modal �o.
+### 6. Types & Modal [x]
 - Updated `types/game.ts` with `CommanderDamage`, `commanderDamage?`, and `commanderName?`
 - Added `CommanderDamageModal` component + tests
 
-### 7. Player & LifeTracker Integration �o.
+### 7. Player & LifeTracker Integration [x]
 - `PlayerCounter` now supports commander mode UI, card click handler, and inline name editing
 - `LifeTracker` manages commander modal state and persists commander damage
 - Added/updated tests for `PlayerCounter` and `LifeTracker`
 
-### 8. Commander Name Handler �o.
+### 8. Commander Name Handler [x]
 - Added `handleCommanderNameChange` function in `LifeTracker.tsx` (LifeTracker.tsx:107)
 - Function updates player's `commanderName` field in game state
 - Ready to be wired to UI components
@@ -74,7 +74,7 @@
 - Worktree exists at: `C:\Users\moats\ManaDork\.worktrees\commander-damage`
 - Branch: `feature/commander-damage`
 - Dependencies: Installed
-- Tests: Passing (39 tests pass) �o.
+- Tests: Passing (39 tests pass) [x]
 - Latest change: Added `handleCommanderNameChange` handler to LifeTracker
 
 **Remaining tasks:**
@@ -87,7 +87,7 @@
 
 ## What Happens Next
 
-### Step 1: Install Dependencies & Verify Baseline �o. DONE
+### Step 1: Install Dependencies & Verify Baseline [x] DONE
 
 **Note for agents:** You may need to handle npm commands differently on Windows. If working in Git Bash, npm might not be available. User can run these from PowerShell/CMD if needed.
 
@@ -104,7 +104,7 @@ npm test
 
 **Expected:** All existing tests should pass (clean baseline). If they don't, report failures before proceeding.
 
-### Step 2: Create Implementation Plan �o. DONE
+### Step 2: Create Implementation Plan [x] DONE
 
 **Goal:** Write a detailed, step-by-step implementation plan covering all tasks.
 
@@ -125,9 +125,9 @@ npm test
    - Write tests FIRST (TDD approach)
 
 3. **PlayerCounter Updates**: Modify `components/PlayerCounter.tsx`
-   - Add �s"�,? icon (only in commander mode)
+   - Add [SHIELD] icon (only in commander mode)
    - Add tap/click handler to open modal
-   - Add player name editing (tap name �+' inline edit �+' save)
+   - Add player name editing (tap name -> inline edit -> save)
    - Ensure 48px tap targets for mobile
 
 4. **LifeTracker Integration**: Modify `components/LifeTracker.tsx`
@@ -179,12 +179,12 @@ npm test
 
 **Manual testing checklist:**
 - Start commander game (2-4 players)
-- Verify �s"�,? icon appears on player cards
-- Tap player �+' modal opens
+- Verify [SHIELD] icon appears on player cards
+- Tap player -> modal opens
 - Add commander damage from each opponent
 - Verify damage persists after page refresh
 - Test visual warnings (18+ yellow, 21+ red)
-- Test player renaming (tap name �+' edit �+' save)
+- Test player renaming (tap name -> edit -> save)
 - Test commander naming
 - Verify first-time banner shows once, then never again
 - Test on mobile device and desktop
@@ -195,7 +195,7 @@ npm test
 1. Run full test suite in worktree
 2. Use `superpowers:finishing-a-development-branch` skill
 3. Options: merge to main, create PR, or cleanup
-4. Push to GitHub �+' Vercel auto-deploys
+4. Push to GitHub -> Vercel auto-deploys
 
 ## Key Design Decisions (Reference)
 
@@ -223,7 +223,7 @@ interface Player {
 - **No commander damage in solo mode** - Doesn't make sense (no opponents)
 
 ### Component Architecture
-- `PlayerCounter.tsx` - Add tap handler, �s"�,? icon, name editing
+- `PlayerCounter.tsx` - Add tap handler, [SHIELD] icon, name editing
 - `CommanderDamageModal.tsx` - NEW component for damage tracking
 - `LifeTracker.tsx` - Manage commander damage state
 - First-time banner (inline or separate component)
@@ -378,15 +378,15 @@ Good luck with the new session!
 - `types/game.ts` (modified - added CommanderDamage interface and Player fields)
 
 **Tests status:**
-- `npm test` - All 39 tests passing ✓
+- `npm test` - All 39 tests passing [x]
 - Last verified: 2026-01-10
 
 **Implementation status:**
-- ✓ Types updated (CommanderDamage, commanderDamage?, commanderName?)
-- ✓ CommanderDamageModal created with damage tracking
-- ✓ PlayerCounter updated with commander mode support
-- ✓ LifeTracker integrated with modal state and persistence
-- ✓ handleCommanderNameChange function added
-- ⏳ Commander name editing UI (needs to be wired up)
-- ⏳ First-time banner (not started)
-- ⏳ Visual warning badges on player cards (not started)
+- [x] Types updated (CommanderDamage, commanderDamage?, commanderName?)
+- [x] CommanderDamageModal created with damage tracking
+- [x] PlayerCounter updated with commander mode support
+- [x] LifeTracker integrated with modal state and persistence
+- [x] handleCommanderNameChange function added
+- [ ] Commander name editing UI (needs to be wired up)
+- [ ] First-time banner (not started)
+- [ ] Visual warning badges on player cards (not started)

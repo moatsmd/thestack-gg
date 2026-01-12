@@ -12,21 +12,21 @@ Add commander damage tracking to commander mode games, allowing players to track
 ### Discoverability
 
 **Visual Indicator:**
-- Small ⚔️ icon appears in top-right corner of each player card (commander mode only)
+- Small [SWORD] icon appears in top-right corner of each player card (commander mode only)
 - Player names are tappable (underline on hover for desktop)
 
 **First-Time Help:**
-- On first commander game, show dismissible banner: "Tip: Tap any player to track commander damage ⚔️"
+- On first commander game, show dismissible banner: "Tip: Tap any player to track commander damage [SWORD]"
 - Banner auto-dismisses after 5 seconds or manual dismiss
 - Tracked in localStorage (`hasSeenCommanderTip`), only shows once per device
 
 ### Interaction Flow
 
-1. **Start commander game** → Player cards show ⚔️ icon
-2. **Tap any player card** → Commander damage modal opens
-3. **View damage list** → See all opponents and their commander damage dealt
-4. **Adjust damage** → Use +/- buttons to track damage from each commander
-5. **Close modal** → Tap outside or click X button to return to main tracker
+1. **Start commander game** -> Player cards show [SWORD] icon
+2. **Tap any player card** -> Commander damage modal opens
+3. **View damage list** -> See all opponents and their commander damage dealt
+4. **Adjust damage** -> Use +/- buttons to track damage from each commander
+5. **Close modal** -> Tap outside or click X button to return to main tracker
 
 ### Commander Damage Modal
 
@@ -40,8 +40,8 @@ Add commander damage tracking to commander mode games, allowing players to track
 - Close button (X) in top-right corner
 
 **Visual Warnings:**
-- 18-20 damage: Yellow ⚠️ badge on player card
-- 21+ damage: Red ☠️ badge on player card + red text in modal
+- 18-20 damage: Yellow [WARNING] badge on player card
+- 21+ damage: Red [SKULL] badge on player card + red text in modal
 - Warning only - game continues (supports house rules)
 
 ### Player Renaming
@@ -81,7 +81,7 @@ interface Player {
 ### Component Changes
 
 **Modified Components:**
-- `PlayerCounter.tsx` - Add ⚔️ icon in commander mode, make tappable to open modal, add name editing
+- `PlayerCounter.tsx` - Add [SWORD] icon in commander mode, make tappable to open modal, add name editing
 - `LifeTracker.tsx` - Manage commander damage state, pass to PlayerCounter
 
 **New Components:**
@@ -141,7 +141,7 @@ interface Player {
 - +/- button interactions
 
 ### Integration Tests
-- Full flow: start commander game → tap player → add damage → persist to localStorage → reload → verify state
+- Full flow: start commander game -> tap player -> add damage -> persist to localStorage -> reload -> verify state
 - First-time banner shows once, then never again
 - Warning badges appear correctly
 
