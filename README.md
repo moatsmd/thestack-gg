@@ -4,12 +4,32 @@ A mobile-first Magic: The Gathering toolkit, starting with a comprehensive life 
 
 ## Features
 
-### Life Tracker (MVP)
+### Life Tracker
 - **Solo Mode**: Track your own life on your phone
 - **Multiplayer Mode**: Track 2-4 players on one device
-- **Game Modes**: Standard (20 life), Commander (40 life)
+- **Game Modes**: Standard (20 life), Commander (40 life), Custom
+- **Commander Damage**: Track commander damage between players in multiplayer games
+- **Poison Counters**: Track poison counters for each player
+- **Mana Pool**: Quick mana pool tracking during complex turns
 - **Persistence**: Auto-saves game state to resume after refresh
 - **Mobile-Optimized**: Large touch targets, readable from across the table
+
+### Card Lookup Toolkit
+- **Card Search**: Autocomplete search powered by Scryfall API
+- **Advanced Filtering**: Search by format legality, color, type, oracle text, and more
+- **Card Display**: High-resolution card images with oracle text and metadata
+- **Format Legality**: See which formats each card is legal in
+- **Performance**: Smart caching (24hr) and rate limiting
+- **Mobile-Friendly**: Touch-optimized interface with fullscreen image view
+
+### Dark Mode
+- **Theme Toggle**: Switch between light and dark themes
+- **Persistent**: Your theme preference is saved
+- **System-Wide**: Consistent theming across all pages
+
+### Navigation
+- **Hamburger Menu**: Easy navigation between all pages
+- **Quick Access**: Access home, life tracker, and card lookup from anywhere
 
 ## Getting Started
 
@@ -59,14 +79,23 @@ npm start
 
 ## Roadmap
 
+### Completed
+- [x] Life tracker with solo and multiplayer modes
+- [x] Commander damage tracking
+- [x] Poison counter tracking
+- [x] Mana pool tracking
+- [x] Card lookup (Scryfall integration)
+- [x] Dark mode
+- [x] Global navigation (hamburger menu)
+
+### Planned
 - [ ] PWA support (installable app)
-- [ ] Commander damage tracking
-- [ ] Poison counter tracking
 - [ ] User accounts
 - [ ] Deck win/loss tracking
-- [ ] Card lookup (Scryfall integration)
 - [ ] Rules reference
 - [ ] Terminology lookup
+- [ ] Life history timeline view
+- [ ] Export game statistics
 
 ## Contributing
 
