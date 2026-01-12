@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { GameState, GameType } from '@/types/game'
+import { HamburgerMenu } from './HamburgerMenu'
 
 interface GameSetupProps {
   onStartGame: (gameState: GameState) => void
@@ -43,6 +44,11 @@ export function GameSetup({ onStartGame }: GameSetupProps) {
   if (setupStep === 'mode') {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 gap-4">
+        {/* Hamburger Menu */}
+        <div className="fixed top-4 right-4 z-10">
+          <HamburgerMenu />
+        </div>
+
         <h1 className="text-4xl font-bold mb-8">TheStack.gg</h1>
 
         <button
@@ -65,6 +71,11 @@ export function GameSetup({ onStartGame }: GameSetupProps) {
   if (setupStep === 'solo-type') {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 gap-4">
+        {/* Hamburger Menu */}
+        <div className="fixed top-4 right-4 z-10">
+          <HamburgerMenu />
+        </div>
+
         <h2 className="text-2xl font-bold mb-4">Select Game Mode</h2>
 
         <button
@@ -101,6 +112,11 @@ export function GameSetup({ onStartGame }: GameSetupProps) {
   if (setupStep === 'multi-players') {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 gap-4">
+        {/* Hamburger Menu */}
+        <div className="fixed top-4 right-4 z-10">
+          <HamburgerMenu />
+        </div>
+
         <h2 className="text-2xl font-bold mb-4">How Many Players?</h2>
 
         {[2, 3, 4].map((count) => (
@@ -129,6 +145,11 @@ export function GameSetup({ onStartGame }: GameSetupProps) {
   if (setupStep === 'multi-type') {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 gap-4">
+        {/* Hamburger Menu */}
+        <div className="fixed top-4 right-4 z-10">
+          <HamburgerMenu />
+        </div>
+
         <h2 className="text-2xl font-bold mb-4">Select Game Mode</h2>
 
         <button
