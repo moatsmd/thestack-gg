@@ -6,6 +6,7 @@ import { PlayerCounter } from './PlayerCounter'
 import { CommanderDamageModal } from './CommanderDamageModal'
 import { PoisonCounterModal } from './PoisonCounterModal'
 import { ManaPoolModal } from './ManaPoolModal'
+import { HelpLegendBanner } from './HelpLegendBanner'
 import { useMemo, useState, useEffect } from 'react'
 
 interface LifeTrackerProps {
@@ -26,6 +27,11 @@ export function LifeTracker({ initialGameState, onReset }: LifeTrackerProps) {
     false
   )
   const [showBanner, setShowBanner] = useState(false)
+  const [hasSeenHelpLegend, setHasSeenHelpLegend] = useLocalStorage(
+    'manadork-has-seen-help-legend',
+    false
+  )
+  const [showHelpLegend, setShowHelpLegend] = useState(false)
 
   const handleLifeChange = (playerId: string, amount: number) => {
     setGameState((prev) => ({
@@ -200,6 +206,11 @@ export function LifeTracker({ initialGameState, onReset }: LifeTrackerProps) {
     setHasSeenCommanderTip(true)
   }
 
+  const handleDismissHelpLegend = () => {
+    setShowHelpLegend(false)
+    setHasSeenHelpLegend(true)
+  }
+
   useEffect(() => {
     if (isCommander && !hasSeenCommanderTip) {
       setShowBanner(true)
@@ -210,6 +221,12 @@ export function LifeTracker({ initialGameState, onReset }: LifeTrackerProps) {
       return () => clearTimeout(timer)
     }
   }, [isCommander, hasSeenCommanderTip, setHasSeenCommanderTip])
+
+  useEffect(() => {
+    if (!hasSeenHelpLegend) {
+      setShowHelpLegend(true)
+    }
+  }, [hasSeenHelpLegend])
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -240,6 +257,13 @@ export function LifeTracker({ initialGameState, onReset }: LifeTrackerProps) {
             Got it
           </button>
         </div>
+      )}
+
+      {showHelpLegend && (
+        <HelpLegendBanner
+          isCommander={isCommander}
+          onDismiss={handleDismissHelpLegend}
+        />
       )}
 
       <div className={`flex-1 ${isSolo ? '' : 'grid grid-cols-1 md:grid-cols-2'}`}>

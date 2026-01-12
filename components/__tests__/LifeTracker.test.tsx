@@ -193,6 +193,50 @@ describe('LifeTracker', () => {
     expect(screen.queryByTestId('commander-tip-banner')).not.toBeInTheDocument()
   })
 
+  it('shows help legend on first visit', () => {
+    render(<LifeTracker initialGameState={soloGameState} onReset={mockOnReset} />)
+
+    expect(screen.getByTestId('help-legend-banner')).toBeInTheDocument()
+    expect(screen.getByText(/Quick Guide/i)).toBeInTheDocument()
+  })
+
+  it('dismisses help legend when Got it is clicked', async () => {
+    const user = userEvent.setup()
+    render(<LifeTracker initialGameState={soloGameState} onReset={mockOnReset} />)
+
+    const legend = screen.getByTestId('help-legend-banner')
+    expect(legend).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /Dismiss help legend/i }))
+
+    expect(screen.queryByTestId('help-legend-banner')).not.toBeInTheDocument()
+  })
+
+  it('persists help legend dismissal to localStorage', async () => {
+    const user = userEvent.setup()
+    render(<LifeTracker initialGameState={soloGameState} onReset={mockOnReset} />)
+
+    await user.click(screen.getByRole('button', { name: /Dismiss help legend/i }))
+
+    const stored = localStorage.getItem('manadork-has-seen-help-legend')
+    expect(stored).toBe('true')
+  })
+
+  it('does not show help legend after dismissal', () => {
+    localStorage.setItem('manadork-has-seen-help-legend', 'true')
+
+    render(<LifeTracker initialGameState={soloGameState} onReset={mockOnReset} />)
+
+    expect(screen.queryByTestId('help-legend-banner')).not.toBeInTheDocument()
+  })
+
+  it('shows both commander tip and help legend simultaneously', () => {
+    render(<LifeTracker initialGameState={multiplayerGameState} onReset={mockOnReset} />)
+
+    expect(screen.getByTestId('commander-tip-banner')).toBeInTheDocument()
+    expect(screen.getByTestId('help-legend-banner')).toBeInTheDocument()
+  })
+
   it('opens poison counter modal and persists updates', async () => {
     const user = userEvent.setup()
     render(<LifeTracker initialGameState={soloGameState} onReset={mockOnReset} />)
