@@ -22,7 +22,7 @@ export function HamburgerMenu() {
       <button
         type="button"
         onClick={toggleMenu}
-        className="p-2 text-white hover:text-gray-300 transition"
+        className="p-2 text-gray-900 dark:text-white hover:text-gray-600 dark:hover:text-gray-300 transition"
         aria-label="Menu"
         aria-expanded={isOpen}
         data-testid="hamburger-button"
