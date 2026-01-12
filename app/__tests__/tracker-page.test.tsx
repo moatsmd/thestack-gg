@@ -1,6 +1,11 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import TrackerPage from '../tracker/page'
+import { DarkModeProvider } from '@/contexts/DarkModeContext'
+
+const renderWithProviders = (component: React.ReactElement) => {
+  return render(<DarkModeProvider>{component}</DarkModeProvider>)
+}
 
 describe('Tracker Page', () => {
   beforeEach(() => {
@@ -8,14 +13,14 @@ describe('Tracker Page', () => {
   })
 
   it('should show game setup when no active game exists', () => {
-    render(<TrackerPage />)
+    renderWithProviders(<TrackerPage />)
 
     expect(screen.getByText(/Track My Life/i)).toBeInTheDocument()
   })
 
   it('should start a solo game when setup is completed', async () => {
     const user = userEvent.setup()
-    render(<TrackerPage />)
+    renderWithProviders(<TrackerPage />)
 
     await user.click(screen.getByText(/Track My Life/i))
     await user.click(screen.getByText(/Standard/i))
@@ -42,7 +47,7 @@ describe('Tracker Page', () => {
 
     localStorage.setItem('manadork-game-state', JSON.stringify(existingGame))
 
-    render(<TrackerPage />)
+    renderWithProviders(<TrackerPage />)
 
     expect(screen.getByText('35')).toBeInTheDocument()
   })
@@ -53,7 +58,7 @@ describe('Tracker Page', () => {
     // Mock window.confirm
     jest.spyOn(window, 'confirm').mockReturnValue(true)
 
-    render(<TrackerPage />)
+    renderWithProviders(<TrackerPage />)
 
     // Start game
     await user.click(screen.getByText(/Track My Life/i))

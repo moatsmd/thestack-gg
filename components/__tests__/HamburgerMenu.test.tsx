@@ -1,17 +1,22 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { HamburgerMenu } from '../HamburgerMenu'
+import { DarkModeProvider } from '@/contexts/DarkModeContext'
+
+const renderWithProviders = (component: React.ReactElement) => {
+  return render(<DarkModeProvider>{component}</DarkModeProvider>)
+}
 
 describe('HamburgerMenu', () => {
   it('renders hamburger button', () => {
-    render(<HamburgerMenu />)
+    renderWithProviders(<HamburgerMenu />)
 
     expect(screen.getByRole('button', { name: 'Menu' })).toBeInTheDocument()
   })
 
   it('opens menu when hamburger button is clicked', async () => {
     const user = userEvent.setup()
-    render(<HamburgerMenu />)
+    renderWithProviders(<HamburgerMenu />)
 
     const button = screen.getByRole('button', { name: 'Menu' })
     await user.click(button)
@@ -24,7 +29,7 @@ describe('HamburgerMenu', () => {
 
   it('closes menu when close button is clicked', async () => {
     const user = userEvent.setup()
-    render(<HamburgerMenu />)
+    renderWithProviders(<HamburgerMenu />)
 
     // Open menu
     await user.click(screen.getByRole('button', { name: 'Menu' }))
@@ -37,7 +42,7 @@ describe('HamburgerMenu', () => {
 
   it('closes menu when backdrop is clicked', async () => {
     const user = userEvent.setup()
-    render(<HamburgerMenu />)
+    renderWithProviders(<HamburgerMenu />)
 
     // Open menu
     await user.click(screen.getByRole('button', { name: 'Menu' }))
@@ -50,7 +55,7 @@ describe('HamburgerMenu', () => {
 
   it('closes menu when a link is clicked', async () => {
     const user = userEvent.setup()
-    render(<HamburgerMenu />)
+    renderWithProviders(<HamburgerMenu />)
 
     // Open menu
     await user.click(screen.getByRole('button', { name: 'Menu' }))
@@ -63,7 +68,7 @@ describe('HamburgerMenu', () => {
 
   it('changes button icon when menu is open', async () => {
     const user = userEvent.setup()
-    render(<HamburgerMenu />)
+    renderWithProviders(<HamburgerMenu />)
 
     const button = screen.getByRole('button', { name: 'Menu' })
 
@@ -77,7 +82,7 @@ describe('HamburgerMenu', () => {
 
   it('has correct navigation links', async () => {
     const user = userEvent.setup()
-    render(<HamburgerMenu />)
+    renderWithProviders(<HamburgerMenu />)
 
     await user.click(screen.getByRole('button', { name: 'Menu' }))
 

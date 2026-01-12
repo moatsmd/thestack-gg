@@ -2,6 +2,11 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { LifeTracker } from '../LifeTracker'
 import { GameState } from '@/types/game'
+import { DarkModeProvider } from '@/contexts/DarkModeContext'
+
+const renderWithProviders = (component: React.ReactElement) => {
+  return render(<DarkModeProvider>{component}</DarkModeProvider>)
+}
 
 describe('LifeTracker', () => {
   const mockOnReset = jest.fn()
@@ -48,7 +53,7 @@ describe('LifeTracker', () => {
   })
 
   it('should render solo player counter', () => {
-    render(<LifeTracker initialGameState={soloGameState} onReset={mockOnReset} />)
+    renderWithProviders(<LifeTracker initialGameState={soloGameState} onReset={mockOnReset} />)
 
     expect(screen.getByText('20')).toBeInTheDocument()
     expect(screen.getByText('You')).toBeInTheDocument()
@@ -56,7 +61,7 @@ describe('LifeTracker', () => {
 
   it('should update life when buttons are clicked', async () => {
     const user = userEvent.setup()
-    render(<LifeTracker initialGameState={soloGameState} onReset={mockOnReset} />)
+    renderWithProviders(<LifeTracker initialGameState={soloGameState} onReset={mockOnReset} />)
 
     const plusButton = screen.getByRole('button', { name: /\+/i })
     await user.click(plusButton)
@@ -66,7 +71,7 @@ describe('LifeTracker', () => {
 
   it('should persist life changes to localStorage', async () => {
     const user = userEvent.setup()
-    render(<LifeTracker initialGameState={soloGameState} onReset={mockOnReset} />)
+    renderWithProviders(<LifeTracker initialGameState={soloGameState} onReset={mockOnReset} />)
 
     const plusButton = screen.getByRole('button', { name: /\+/i })
     await user.click(plusButton)
@@ -79,14 +84,14 @@ describe('LifeTracker', () => {
   })
 
   it('should render multiple players in multiplayer mode', () => {
-    render(<LifeTracker initialGameState={multiplayerGameState} onReset={mockOnReset} />)
+    renderWithProviders(<LifeTracker initialGameState={multiplayerGameState} onReset={mockOnReset} />)
 
     expect(screen.getByText('Player 1')).toBeInTheDocument()
     expect(screen.getByText('Player 2')).toBeInTheDocument()
   })
 
   it('should show reset button', () => {
-    render(<LifeTracker initialGameState={soloGameState} onReset={mockOnReset} />)
+    renderWithProviders(<LifeTracker initialGameState={soloGameState} onReset={mockOnReset} />)
 
     expect(screen.getByText(/Reset/i)).toBeInTheDocument()
   })
@@ -96,7 +101,7 @@ describe('LifeTracker', () => {
 
     jest.spyOn(window, 'confirm').mockReturnValue(true)
 
-    render(<LifeTracker initialGameState={soloGameState} onReset={mockOnReset} />)
+    renderWithProviders(<LifeTracker initialGameState={soloGameState} onReset={mockOnReset} />)
 
     const resetButton = screen.getByText(/Reset/i)
     await user.click(resetButton)
@@ -109,7 +114,7 @@ describe('LifeTracker', () => {
 
     jest.spyOn(window, 'confirm').mockReturnValue(false)
 
-    render(<LifeTracker initialGameState={soloGameState} onReset={mockOnReset} />)
+    renderWithProviders(<LifeTracker initialGameState={soloGameState} onReset={mockOnReset} />)
 
     const resetButton = screen.getByText(/Reset/i)
     await user.click(resetButton)
@@ -119,7 +124,7 @@ describe('LifeTracker', () => {
 
   it('should track life history', async () => {
     const user = userEvent.setup()
-    render(<LifeTracker initialGameState={soloGameState} onReset={mockOnReset} />)
+    renderWithProviders(<LifeTracker initialGameState={soloGameState} onReset={mockOnReset} />)
 
     const plusButton = screen.getByRole('button', { name: /\+/i })
     await user.click(plusButton)
@@ -134,7 +139,7 @@ describe('LifeTracker', () => {
 
   it('opens commander damage modal and persists updates', async () => {
     const user = userEvent.setup()
-    render(<LifeTracker initialGameState={multiplayerGameState} onReset={mockOnReset} />)
+    renderWithProviders(<LifeTracker initialGameState={multiplayerGameState} onReset={mockOnReset} />)
 
     await user.click(screen.getAllByRole('button', { name: /open commander damage/i })[0])
 
@@ -151,21 +156,21 @@ describe('LifeTracker', () => {
   })
 
   it('shows commander tip banner on first visit in commander mode', () => {
-    render(<LifeTracker initialGameState={multiplayerGameState} onReset={mockOnReset} />)
+    renderWithProviders(<LifeTracker initialGameState={multiplayerGameState} onReset={mockOnReset} />)
 
     expect(screen.getByTestId('commander-tip-banner')).toBeInTheDocument()
     expect(screen.getByText(/Tip: Tap any player to track commander damage/i)).toBeInTheDocument()
   })
 
   it('does not show banner in non-commander modes', () => {
-    render(<LifeTracker initialGameState={soloGameState} onReset={mockOnReset} />)
+    renderWithProviders(<LifeTracker initialGameState={soloGameState} onReset={mockOnReset} />)
 
     expect(screen.queryByTestId('commander-tip-banner')).not.toBeInTheDocument()
   })
 
   it('dismisses banner when Got it button is clicked', async () => {
     const user = userEvent.setup()
-    render(<LifeTracker initialGameState={multiplayerGameState} onReset={mockOnReset} />)
+    renderWithProviders(<LifeTracker initialGameState={multiplayerGameState} onReset={mockOnReset} />)
 
     const banner = screen.getByTestId('commander-tip-banner')
     expect(banner).toBeInTheDocument()
@@ -177,7 +182,7 @@ describe('LifeTracker', () => {
 
   it('persists banner dismissal to localStorage', async () => {
     const user = userEvent.setup()
-    render(<LifeTracker initialGameState={multiplayerGameState} onReset={mockOnReset} />)
+    renderWithProviders(<LifeTracker initialGameState={multiplayerGameState} onReset={mockOnReset} />)
 
     await user.click(screen.getByRole('button', { name: /dismiss tip/i }))
 
@@ -188,13 +193,13 @@ describe('LifeTracker', () => {
   it('does not show banner again after it has been dismissed', () => {
     localStorage.setItem('manadork-has-seen-commander-tip', 'true')
 
-    render(<LifeTracker initialGameState={multiplayerGameState} onReset={mockOnReset} />)
+    renderWithProviders(<LifeTracker initialGameState={multiplayerGameState} onReset={mockOnReset} />)
 
     expect(screen.queryByTestId('commander-tip-banner')).not.toBeInTheDocument()
   })
 
   it('shows help legend on first visit', () => {
-    render(<LifeTracker initialGameState={soloGameState} onReset={mockOnReset} />)
+    renderWithProviders(<LifeTracker initialGameState={soloGameState} onReset={mockOnReset} />)
 
     expect(screen.getByTestId('help-legend-banner')).toBeInTheDocument()
     expect(screen.getByText(/Quick Guide/i)).toBeInTheDocument()
@@ -202,7 +207,7 @@ describe('LifeTracker', () => {
 
   it('dismisses help legend when Got it is clicked', async () => {
     const user = userEvent.setup()
-    render(<LifeTracker initialGameState={soloGameState} onReset={mockOnReset} />)
+    renderWithProviders(<LifeTracker initialGameState={soloGameState} onReset={mockOnReset} />)
 
     const legend = screen.getByTestId('help-legend-banner')
     expect(legend).toBeInTheDocument()
@@ -214,7 +219,7 @@ describe('LifeTracker', () => {
 
   it('persists help legend dismissal to localStorage', async () => {
     const user = userEvent.setup()
-    render(<LifeTracker initialGameState={soloGameState} onReset={mockOnReset} />)
+    renderWithProviders(<LifeTracker initialGameState={soloGameState} onReset={mockOnReset} />)
 
     await user.click(screen.getByRole('button', { name: /Dismiss help legend/i }))
 
@@ -225,13 +230,13 @@ describe('LifeTracker', () => {
   it('does not show help legend after dismissal', () => {
     localStorage.setItem('manadork-has-seen-help-legend', 'true')
 
-    render(<LifeTracker initialGameState={soloGameState} onReset={mockOnReset} />)
+    renderWithProviders(<LifeTracker initialGameState={soloGameState} onReset={mockOnReset} />)
 
     expect(screen.queryByTestId('help-legend-banner')).not.toBeInTheDocument()
   })
 
   it('shows both commander tip and help legend simultaneously', () => {
-    render(<LifeTracker initialGameState={multiplayerGameState} onReset={mockOnReset} />)
+    renderWithProviders(<LifeTracker initialGameState={multiplayerGameState} onReset={mockOnReset} />)
 
     expect(screen.getByTestId('commander-tip-banner')).toBeInTheDocument()
     expect(screen.getByTestId('help-legend-banner')).toBeInTheDocument()
@@ -239,7 +244,7 @@ describe('LifeTracker', () => {
 
   it('opens poison counter modal and persists updates', async () => {
     const user = userEvent.setup()
-    render(<LifeTracker initialGameState={soloGameState} onReset={mockOnReset} />)
+    renderWithProviders(<LifeTracker initialGameState={soloGameState} onReset={mockOnReset} />)
 
     await user.click(screen.getByRole('button', { name: /open poison counters/i }))
 
@@ -258,7 +263,7 @@ describe('LifeTracker', () => {
 
   it('opens mana pool modal and persists updates', async () => {
     const user = userEvent.setup()
-    render(<LifeTracker initialGameState={soloGameState} onReset={mockOnReset} />)
+    renderWithProviders(<LifeTracker initialGameState={soloGameState} onReset={mockOnReset} />)
 
     await user.click(screen.getByRole('button', { name: /open mana pool/i }))
 
@@ -287,7 +292,7 @@ describe('LifeTracker', () => {
 
   it('clears all mana when Clear All is clicked', async () => {
     const user = userEvent.setup()
-    render(<LifeTracker initialGameState={soloGameState} onReset={mockOnReset} />)
+    renderWithProviders(<LifeTracker initialGameState={soloGameState} onReset={mockOnReset} />)
 
     await user.click(screen.getByRole('button', { name: /open mana pool/i }))
 
@@ -312,7 +317,7 @@ describe('LifeTracker', () => {
 
   it('tracks poison and mana independently for multiple players', async () => {
     const user = userEvent.setup()
-    render(<LifeTracker initialGameState={multiplayerGameState} onReset={mockOnReset} />)
+    renderWithProviders(<LifeTracker initialGameState={multiplayerGameState} onReset={mockOnReset} />)
 
     const poisonButtons = screen.getAllByRole('button', { name: /open poison counters/i })
     await user.click(poisonButtons[0])

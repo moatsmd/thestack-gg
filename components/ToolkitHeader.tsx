@@ -5,7 +5,7 @@ import { HamburgerMenu } from './HamburgerMenu'
 export function ToolkitHeader() {
   return (
     <header
-      className="bg-gray-900 text-white border-b border-gray-700"
+      className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 transition-colors"
       data-testid="toolkit-header"
     >
       <div className="container mx-auto px-4 py-4">

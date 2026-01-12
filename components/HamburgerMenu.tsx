@@ -2,9 +2,11 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useDarkMode } from '@/contexts/DarkModeContext'
 
 export function HamburgerMenu() {
   const [isOpen, setIsOpen] = useState(false)
+  const { isDarkMode, toggleDarkMode } = useDarkMode()
 
   const toggleMenu = () => {
     setIsOpen(!isOpen)
@@ -101,6 +103,31 @@ export function HamburgerMenu() {
               >
                 🔍 Card Lookup
               </Link>
+
+              {/* Dark Mode Toggle */}
+              <div className="border-t border-gray-700 mt-4 pt-4">
+                <button
+                  type="button"
+                  onClick={toggleDarkMode}
+                  className="flex items-center justify-between w-full px-6 py-3 text-white hover:bg-gray-800 transition"
+                  data-testid="dark-mode-toggle"
+                >
+                  <span className="flex items-center gap-2">
+                    {isDarkMode ? '🌙' : '☀️'} Dark Mode
+                  </span>
+                  <div
+                    className={`relative w-12 h-6 rounded-full transition ${
+                      isDarkMode ? 'bg-blue-600' : 'bg-gray-600'
+                    }`}
+                  >
+                    <div
+                      className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                        isDarkMode ? 'translate-x-6' : 'translate-x-0'
+                      }`}
+                    />
+                  </div>
+                </button>
+              </div>
             </div>
           </nav>
         </>

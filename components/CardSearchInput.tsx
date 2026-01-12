@@ -113,7 +113,7 @@ export function CardSearchInput({
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             placeholder="Search for a card..."
-            className="w-full min-h-[48px] px-4 py-3 text-base rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full min-h-[48px] px-4 py-3 text-base rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
             aria-label="Card search input"
             aria-autocomplete="list"
             aria-controls="search-suggestions"
@@ -125,7 +125,7 @@ export function CardSearchInput({
               ref={dropdownRef}
               id="search-suggestions"
               role="listbox"
-              className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-y-auto"
+              className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-64 overflow-y-auto"
             >
               {suggestions.map((suggestion, index) => (
                 <button
@@ -134,10 +134,10 @@ export function CardSearchInput({
                   role="option"
                   aria-selected={index === highlightedIndex}
                   onClick={() => handleSelectSuggestion(suggestion)}
-                  className={`w-full text-left px-4 py-3 min-h-[48px] border-b border-gray-100 last:border-b-0 transition ${
+                  className={`w-full text-left px-4 py-3 min-h-[48px] border-b border-gray-100 dark:border-gray-700 last:border-b-0 transition ${
                     index === highlightedIndex
-                      ? 'bg-blue-50 text-blue-900'
-                      : 'hover:bg-gray-50 text-gray-900'
+                      ? 'bg-blue-50 dark:bg-blue-900 text-blue-900 dark:text-blue-100'
+                      : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white'
                   }`}
                 >
                   {suggestion}

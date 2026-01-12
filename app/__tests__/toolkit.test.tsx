@@ -18,11 +18,11 @@ describe('ToolkitPage', () => {
     expect(screen.getByTestId('toolkit-header')).toBeInTheDocument()
   })
 
-  it('has dark gradient background', () => {
+  it('has responsive background with dark mode support', () => {
     const { container } = render(<ToolkitPage />)
 
     const mainDiv = container.firstChild as HTMLElement
-    expect(mainDiv).toHaveClass('bg-gradient-to-br', 'from-gray-900', 'to-gray-800')
+    expect(mainDiv).toHaveClass('min-h-screen', 'bg-gray-50')
   })
 
   it('displays card search component', () => {
