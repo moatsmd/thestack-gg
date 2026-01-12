@@ -76,10 +76,20 @@ export function useCardSearch(): UseCardSearchResult {
     try {
       const response = await searchCards(query)
       setResults(response.data)
+
+      // Automatically select the first result
+      if (response.data.length > 0) {
+        setSelectedCard(response.data[0])
+        setSuggestions([])
+      } else {
+        setSelectedCard(null)
+        setError('No cards found matching your search')
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Search failed'
       setError(message)
       setResults([])
+      setSelectedCard(null)
     } finally {
       setIsLoading(false)
     }
