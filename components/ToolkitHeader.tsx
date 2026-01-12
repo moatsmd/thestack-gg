@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import { HamburgerMenu } from './HamburgerMenu'
 
 export function ToolkitHeader() {
   return (
@@ -9,18 +9,9 @@ export function ToolkitHeader() {
       data-testid="toolkit-header"
     >
       <div className="container mx-auto px-4 py-4">
-        <div className="flex items-center">
-          <Link
-            href="/"
-            className="text-blue-400 hover:text-blue-300 transition"
-            aria-label="Back to home"
-          >
-            ← Back
-          </Link>
-          <div className="flex-1 text-center text-xl font-bold">
-            Card Lookup
-          </div>
-          <div className="w-16" />
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-bold">Card Lookup</h1>
+          <HamburgerMenu />
         </div>
       </div>
     </header>

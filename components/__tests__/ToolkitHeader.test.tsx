@@ -2,18 +2,11 @@ import { render, screen } from '@testing-library/react'
 import { ToolkitHeader } from '../ToolkitHeader'
 
 describe('ToolkitHeader', () => {
-  it('renders with all required elements', () => {
+  it('renders with title and menu', () => {
     render(<ToolkitHeader />)
 
-    expect(screen.getByText('← Back')).toBeInTheDocument()
     expect(screen.getByText('Card Lookup')).toBeInTheDocument()
-  })
-
-  it('has a link to home page', () => {
-    render(<ToolkitHeader />)
-
-    const backLink = screen.getByRole('link', { name: /Back to home/i })
-    expect(backLink).toHaveAttribute('href', '/')
+    expect(screen.getByRole('button', { name: 'Menu' })).toBeInTheDocument()
   })
 
   it('has proper styling classes', () => {
@@ -23,18 +16,12 @@ describe('ToolkitHeader', () => {
     expect(header).toHaveClass('bg-gray-900', 'text-white', 'border-b', 'border-gray-700')
   })
 
-  it('centers the title with flex layout', () => {
+  it('displays title with proper styling', () => {
     render(<ToolkitHeader />)
 
     const title = screen.getByText('Card Lookup')
-    expect(title).toHaveClass('flex-1', 'text-center')
-  })
-
-  it('has proper accessibility attributes', () => {
-    render(<ToolkitHeader />)
-
-    const backLink = screen.getByRole('link', { name: /Back to home/i })
-    expect(backLink).toHaveAttribute('aria-label', 'Back to home')
+    expect(title.tagName).toBe('H1')
+    expect(title).toHaveClass('text-xl', 'font-bold')
   })
 
   it('has correct data-testid for testing', () => {
@@ -43,10 +30,9 @@ describe('ToolkitHeader', () => {
     expect(screen.getByTestId('toolkit-header')).toBeInTheDocument()
   })
 
-  it('displays back link with hover styles', () => {
+  it('renders hamburger menu component', () => {
     render(<ToolkitHeader />)
 
-    const backLink = screen.getByRole('link', { name: /Back to home/i })
-    expect(backLink).toHaveClass('text-blue-400', 'hover:text-blue-300')
+    expect(screen.getByTestId('hamburger-button')).toBeInTheDocument()
   })
 })

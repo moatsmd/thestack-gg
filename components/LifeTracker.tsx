@@ -7,6 +7,7 @@ import { CommanderDamageModal } from './CommanderDamageModal'
 import { PoisonCounterModal } from './PoisonCounterModal'
 import { ManaPoolModal } from './ManaPoolModal'
 import { HelpLegendBanner } from './HelpLegendBanner'
+import { HamburgerMenu } from './HamburgerMenu'
 import { useMemo, useState, useEffect } from 'react'
 
 interface LifeTrackerProps {
@@ -234,13 +235,16 @@ export function LifeTracker({ initialGameState, onReset }: LifeTrackerProps) {
         <div className="text-sm">
           {gameState.gameType === 'standard' ? 'Standard' : gameState.gameType === 'commander' ? 'Commander' : 'Custom'} ({gameState.startingLife} life)
         </div>
-        <button
-          type="button"
-          onClick={handleReset}
-          className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-sm font-semibold"
-        >
-          Reset Game
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleReset}
+            className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-sm font-semibold"
+          >
+            Reset Game
+          </button>
+          <HamburgerMenu />
+        </div>
       </div>
 
       {showBanner && isCommander && (
