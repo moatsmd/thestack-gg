@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react'
-import { getComprehensiveRulesText } from '@/lib/comprehensive-rules'
-import { ComprehensiveRuleSection, parseComprehensiveRules, searchComprehensiveRules } from '@/lib/rules-parser'
+import { useState } from 'react'
+import { ComprehensiveRuleSection, searchComprehensiveRules } from '@/lib/rules-parser'
 
 interface UseComprehensiveRulesState {
   sections: ComprehensiveRuleSection[]
@@ -28,8 +27,19 @@ export function useComprehensiveRules(): UseComprehensiveRulesState {
       setIsLoading(true)
       setError(null)
       setHasAttemptedLoad(true)
-      const text = await getComprehensiveRulesText()
-      const parsed = parseComprehensiveRules(text)
+
+      // Fetch from our API route (avoids CORS issues)
+      const response = await fetch('/api/rules')
+      if (!response.ok) {
+        throw new Error(`Failed to fetch rules: ${response.status}`)
+      }
+
+      const data = await response.json()
+      if (data.error) {
+        throw new Error(data.message || 'Failed to load rules')
+      }
+
+      const parsed = data.rules as ComprehensiveRuleSection[]
       setSections(parsed)
       return parsed
     } catch (err) {
