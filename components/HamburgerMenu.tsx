@@ -103,13 +103,6 @@ export function HamburgerMenu() {
               >
                 🔍 Card Lookup
               </Link>
-              <Link
-                href="/rules"
-                onClick={closeMenu}
-                className="block px-6 py-3 text-white hover:bg-gray-800 transition"
-              >
-                Card Rulings
-              </Link>
 
               {/* Dark Mode Toggle */}
               <div className="border-t border-gray-700 mt-4 pt-4">
