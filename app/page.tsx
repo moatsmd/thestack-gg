@@ -35,7 +35,7 @@ export default function Home() {
           href="/rules"
           className="bg-emerald-600 hover:bg-emerald-700 text-white text-2xl font-bold py-8 px-6 rounded-lg text-center transition min-h-tap"
         >
-          Rules Lookup
+          Card Rulings
         </Link>
 
         <div className="mt-8 text-center text-gray-500 dark:text-gray-400 text-sm">

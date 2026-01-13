@@ -23,7 +23,7 @@ export function useComprehensiveRules(): UseComprehensiveRulesState {
   const [error, setError] = useState<string | null>(null)
   const [hasAttemptedLoad, setHasAttemptedLoad] = useState(false)
 
-  const loadRules = async () => {
+  const loadRules = async (): Promise<ComprehensiveRuleSection[]> => {
     try {
       setIsLoading(true)
       setError(null)
@@ -31,29 +31,27 @@ export function useComprehensiveRules(): UseComprehensiveRulesState {
       const text = await getComprehensiveRulesText()
       const parsed = parseComprehensiveRules(text)
       setSections(parsed)
+      return parsed
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load rules'
-      // Provide more helpful error message for CORS issues
-      if (errorMessage.includes('fetch')) {
-        setError('Unable to load Comprehensive Rules. This may be due to browser security restrictions. Try using the Card Rulings feature instead.')
-      } else {
-        setError(errorMessage)
-      }
+      setError(errorMessage)
+      return []
     } finally {
       setIsLoading(false)
     }
   }
 
-  // Auto-load rules on first mount
-  useEffect(() => {
-    if (!hasAttemptedLoad) {
-      loadRules()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  // Don't auto-load - let user initiate via search
+  // This avoids CORS errors on page load
 
-  const handleSearch = () => {
-    const nextResults = searchComprehensiveRules(sections, query)
+  const handleSearch = async () => {
+    // Load rules if not already loaded
+    let sectionsToSearch = sections
+    if (sections.length === 0 && !hasAttemptedLoad) {
+      sectionsToSearch = await loadRules()
+    }
+
+    const nextResults = searchComprehensiveRules(sectionsToSearch, query)
     setResults(nextResults)
     setSelected(nextResults[0] ?? null)
   }

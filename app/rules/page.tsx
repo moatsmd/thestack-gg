@@ -87,23 +87,33 @@ export default function RulesPage() {
                 Comprehensive Rules
               </h2>
 
+              <div className="rounded-md bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-3 text-sm text-blue-900 dark:text-blue-100">
+                <p className="font-semibold mb-1">Note: Comprehensive Rules search currently unavailable</p>
+                <p>Due to browser security restrictions, we cannot load the full Comprehensive Rules text. However, you can:</p>
+                <ul className="list-disc ml-5 mt-2 space-y-1">
+                  <li>Use the <strong>Card Search</strong> feature to look up specific cards and view their official rulings</li>
+                  <li>Visit <a href="https://magic.wizards.com/en/rules" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-700 dark:hover:text-blue-300">magic.wizards.com/en/rules</a> for the complete Comprehensive Rules</li>
+                </ul>
+              </div>
+
               <form
-                className="flex gap-2"
+                className="flex gap-2 opacity-50 cursor-not-allowed"
                 onSubmit={(event) => {
                   event.preventDefault()
-                  rules.search()
                 }}
               >
                 <input
                   type="text"
+                  disabled
                   value={rules.query}
                   onChange={(event) => rules.setQuery(event.target.value)}
-                  placeholder="Search rules (e.g., 603.1 or replacement effect)"
-                  className="flex-1 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-900"
+                  placeholder="Search unavailable - use Card Rulings instead"
+                  className="flex-1 rounded-md border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-900 px-3 py-2 text-sm text-gray-500 dark:text-gray-400"
                 />
                 <button
                   type="submit"
-                  className="rounded-md bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800"
+                  disabled
+                  className="rounded-md bg-gray-400 px-4 py-2 text-sm font-semibold text-white cursor-not-allowed"
                 >
                   Search
                 </button>
