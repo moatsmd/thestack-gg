@@ -13,7 +13,7 @@ export function NewsSection({ items, isLoading, error }: NewsSectionProps) {
   if (isLoading) {
     return (
       <section className="w-full max-w-4xl" data-testid="news-section">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Latest MTG News</h2>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Latest from Card Kingdom Blog</h2>
 
         {/* Loading Skeletons */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="news-loading">
@@ -35,7 +35,7 @@ export function NewsSection({ items, isLoading, error }: NewsSectionProps) {
   if (error || items.length === 0) {
     return (
       <section className="w-full max-w-4xl" data-testid="news-section">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Latest MTG News</h2>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Latest from Card Kingdom Blog</h2>
 
         {/* Error or Fallback Message */}
         <div
@@ -46,12 +46,12 @@ export function NewsSection({ items, isLoading, error }: NewsSectionProps) {
             Unable to load latest news at this time.
           </p>
           <a
-            href="https://magic.wizards.com/en/news"
+            href="https://blog.cardkingdom.com/"
             target="_blank"
             rel="noopener noreferrer"
             className="text-teal-600 dark:text-teal-400 hover:underline font-medium"
           >
-            Visit Daily MTG →
+            Visit Card Kingdom Blog →
           </a>
         </div>
       </section>
@@ -60,7 +60,7 @@ export function NewsSection({ items, isLoading, error }: NewsSectionProps) {
 
   return (
     <section className="w-full max-w-4xl" data-testid="news-section">
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Latest MTG News</h2>
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Latest from Card Kingdom Blog</h2>
 
       {/* News Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="news-grid">
@@ -72,12 +72,12 @@ export function NewsSection({ items, isLoading, error }: NewsSectionProps) {
       {/* Link to More News */}
       <div className="mt-6 text-center">
         <a
-          href="https://magic.wizards.com/en/news"
+          href="https://blog.cardkingdom.com/"
           target="_blank"
           rel="noopener noreferrer"
           className="text-teal-600 dark:text-teal-400 hover:underline font-medium text-lg"
         >
-          View more on Daily MTG →
+          View more on Card Kingdom Blog →
         </a>
       </div>
     </section>

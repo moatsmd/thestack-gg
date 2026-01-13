@@ -28,7 +28,7 @@ describe('NewsSection', () => {
 
   it('renders section heading', () => {
     renderWithProviders(<NewsSection items={mockNewsItems} isLoading={false} error={null} />)
-    expect(screen.getByText('Latest MTG News')).toBeInTheDocument()
+    expect(screen.getByText('Latest from Card Kingdom Blog')).toBeInTheDocument()
   })
 
   it('displays loading skeletons when loading', () => {
@@ -60,17 +60,17 @@ describe('NewsSection', () => {
     expect(screen.getByText('Unable to load latest news at this time.')).toBeInTheDocument()
   })
 
-  it('shows link to Daily MTG on error', () => {
+  it('shows link to Card Kingdom Blog on error', () => {
     renderWithProviders(<NewsSection items={[]} isLoading={false} error="Error" />)
-    const link = screen.getByText('Visit Daily MTG →')
-    expect(link).toHaveAttribute('href', 'https://magic.wizards.com/en/news')
+    const link = screen.getByText('Visit Card Kingdom Blog →')
+    expect(link).toHaveAttribute('href', 'https://blog.cardkingdom.com/')
     expect(link).toHaveAttribute('target', '_blank')
   })
 
   it('shows link to more news when items loaded', () => {
     renderWithProviders(<NewsSection items={mockNewsItems} isLoading={false} error={null} />)
-    const link = screen.getByText('View more on Daily MTG →')
-    expect(link).toHaveAttribute('href', 'https://magic.wizards.com/en/news')
+    const link = screen.getByText('View more on Card Kingdom Blog →')
+    expect(link).toHaveAttribute('href', 'https://blog.cardkingdom.com/')
     expect(link).toHaveAttribute('target', '_blank')
   })
 

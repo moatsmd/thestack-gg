@@ -11,12 +11,12 @@ export interface NewsFeed {
   fetchedAt: number
 }
 
-const WOTC_RSS_URL = 'https://magic.wizards.com/en/rss/rss.xml'
+const CARD_KINGDOM_RSS_URL = 'https://blog.cardkingdom.com/feed/'
 const CACHE_KEY = 'mtg_news_cache'
 const CACHE_DURATION = 60 * 60 * 1000 // 1 hour in milliseconds
 
 /**
- * Fetch and parse WotC RSS feed
+ * Fetch and parse Card Kingdom blog RSS feed
  * Returns up to 5 most recent news items
  */
 export async function fetchWotCNews(): Promise<NewsItem[]> {
@@ -28,7 +28,7 @@ export async function fetchWotCNews(): Promise<NewsItem[]> {
     }
 
     // Fetch fresh data
-    const response = await fetch(WOTC_RSS_URL, {
+    const response = await fetch(CARD_KINGDOM_RSS_URL, {
       headers: {
         'Accept': 'application/rss+xml, application/xml, text/xml',
       },
@@ -46,7 +46,7 @@ export async function fetchWotCNews(): Promise<NewsItem[]> {
 
     return items
   } catch (error) {
-    console.error('Error fetching WotC news:', error)
+    console.error('Error fetching Card Kingdom news:', error)
     // Return cached data if available, even if expired
     const cached = getFromCache(true)
     return cached ? cached.items : []
