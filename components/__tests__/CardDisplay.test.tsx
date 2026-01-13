@@ -323,4 +323,17 @@ describe('CardDisplay', () => {
 
     expect(screen.queryByTestId('flip-card-button')).not.toBeInTheDocument()
   })
+
+  it('wraps keywords in tooltips when present in oracle text', () => {
+    const cardWithKeywords: ScryfallCard = {
+      ...mockCard,
+      oracle_text: 'This creature has flying and trample.',
+    }
+
+    render(<CardDisplay card={cardWithKeywords} />)
+
+    // Should find keyword triggers for the keywords
+    const triggers = screen.queryAllByTestId('keyword-trigger')
+    expect(triggers.length).toBeGreaterThan(0)
+  })
 })

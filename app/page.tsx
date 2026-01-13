@@ -2,8 +2,12 @@
 
 import Link from 'next/link'
 import { HamburgerMenu } from '@/components/HamburgerMenu'
+import { NewsSection } from '@/components/NewsSection'
+import { useNews } from '@/hooks/useNews'
 
 export default function Home() {
+  const { items, isLoading, error } = useNews()
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-900 dark:to-gray-800 text-gray-900 dark:text-white transition-colors">
       {/* Hamburger Menu */}
@@ -31,10 +35,23 @@ export default function Home() {
           Card Lookup
         </Link>
 
-        <div className="mt-8 text-center text-gray-500 dark:text-gray-400 text-sm">
-          <p>More features coming soon:</p>
-          <p className="mt-2">Deck Tracking</p>
-        </div>
+        <Link
+          href="/glossary"
+          className="bg-teal-600 hover:bg-teal-700 text-white text-2xl font-bold py-8 px-6 rounded-lg text-center transition min-h-tap"
+        >
+          Keywords Glossary
+        </Link>
+      </div>
+
+      {/* News Section */}
+      <div className="mt-12 mb-8 w-full flex justify-center">
+        <NewsSection items={items} isLoading={isLoading} error={error} />
+      </div>
+
+      {/* Coming Soon Teaser */}
+      <div className="text-center text-gray-500 dark:text-gray-400 text-sm">
+        <p>More features coming soon:</p>
+        <p className="mt-2">Deck Tracking</p>
       </div>
     </div>
   )

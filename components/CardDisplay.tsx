@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { ScryfallCard } from '@/types/scryfall'
 import { CardLegalityDisplay } from './CardLegalityDisplay'
+import { OracleTextWithKeywords } from './OracleTextWithKeywords'
 
 interface CardDisplayProps {
   card: ScryfallCard
@@ -97,9 +98,11 @@ export function CardDisplay({ card }: CardDisplayProps) {
           {/* Oracle Text */}
           {oracleText && (
             <div className="border-t border-gray-200 pt-3">
-              <div className="text-sm text-gray-800 whitespace-pre-line" data-testid="card-oracle-text">
-                {oracleText}
-              </div>
+              <OracleTextWithKeywords
+                oracleText={oracleText}
+                className="text-sm text-gray-800 whitespace-pre-line"
+                data-testid="card-oracle-text"
+              />
             </div>
           )}
 
