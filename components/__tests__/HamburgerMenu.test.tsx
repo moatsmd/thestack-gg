@@ -25,6 +25,7 @@ describe('HamburgerMenu', () => {
     expect(screen.getByText('🏠 Home')).toBeInTheDocument()
     expect(screen.getByText('❤️ Life Tracker')).toBeInTheDocument()
     expect(screen.getByText('🔍 Card Lookup')).toBeInTheDocument()
+    expect(screen.getByText('Rules Lookup')).toBeInTheDocument()
   })
 
   it('closes menu when close button is clicked', async () => {
@@ -89,9 +90,11 @@ describe('HamburgerMenu', () => {
     const homeLink = screen.getByText('🏠 Home')
     const trackerLink = screen.getByText('❤️ Life Tracker')
     const toolkitLink = screen.getByText('🔍 Card Lookup')
+    const rulesLink = screen.getByText('Rules Lookup')
 
     expect(homeLink.closest('a')).toHaveAttribute('href', '/')
     expect(trackerLink.closest('a')).toHaveAttribute('href', '/tracker')
     expect(toolkitLink.closest('a')).toHaveAttribute('href', '/toolkit')
+    expect(rulesLink.closest('a')).toHaveAttribute('href', '/rules')
   })
 })

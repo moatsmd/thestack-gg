@@ -161,6 +161,20 @@ export interface ScryfallSearchResponse {
   warnings?: string[]
 }
 
+export interface ScryfallRuling {
+  object: 'ruling'
+  oracle_id: string
+  source: string
+  published_at: string
+  comment: string
+}
+
+export interface ScryfallRulingsResponse {
+  object: 'list'
+  has_more: boolean
+  data: ScryfallRuling[]
+}
+
 export interface ScryfallError {
   object: 'error'
   code: string

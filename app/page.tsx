@@ -31,9 +31,16 @@ export default function Home() {
           Card Lookup
         </Link>
 
+        <Link
+          href="/rules"
+          className="bg-emerald-600 hover:bg-emerald-700 text-white text-2xl font-bold py-8 px-6 rounded-lg text-center transition min-h-tap"
+        >
+          Rules Lookup
+        </Link>
+
         <div className="mt-8 text-center text-gray-500 dark:text-gray-400 text-sm">
           <p>More features coming soon:</p>
-          <p className="mt-2">Rules Reference • Deck Tracking</p>
+          <p className="mt-2">Deck Tracking</p>
         </div>
       </div>
     </div>

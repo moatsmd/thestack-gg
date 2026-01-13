@@ -2,6 +2,7 @@ import {
   ScryfallCard,
   ScryfallAutocompleteResponse,
   ScryfallSearchResponse,
+  ScryfallRulingsResponse,
   ScryfallError,
   isScryfallError,
   CacheEntry,
@@ -177,6 +178,34 @@ export async function getCardByName(name: string): Promise<ScryfallCard> {
   const url = `${SCRYFALL_API_BASE}/cards/named?exact=${encodeURIComponent(name)}`
   const response = await rateLimitedFetch(url)
   const data = await handleResponse<ScryfallCard>(response)
+
+  setCache(cacheKey, data)
+  return data
+}
+
+/**
+ * Get rulings for a specific card by rulings URL
+ * @param rulingsUrl - Scryfall rulings URL from card data
+ * @returns List of rulings for the card
+ */
+export async function getCardRulings(rulingsUrl: string): Promise<ScryfallRulingsResponse> {
+  if (!rulingsUrl.trim()) {
+    return {
+      object: 'list',
+      has_more: false,
+      data: [],
+    }
+  }
+
+  const cacheKey = getCacheKey('rulings', rulingsUrl)
+  const cached = getFromCache<ScryfallRulingsResponse>(cacheKey)
+
+  if (cached !== null) {
+    return cached
+  }
+
+  const response = await rateLimitedFetch(rulingsUrl)
+  const data = await handleResponse<ScryfallRulingsResponse>(response)
 
   setCache(cacheKey, data)
   return data

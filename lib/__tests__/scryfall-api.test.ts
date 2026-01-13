@@ -3,12 +3,14 @@ import {
   searchCards,
   getCardByName,
   clearCache,
+  getCardRulings,
 } from '../scryfall-api'
 import {
   ScryfallAutocompleteResponse,
   ScryfallSearchResponse,
   ScryfallCard,
   ScryfallError,
+  ScryfallRulingsResponse,
 } from '@/types/scryfall'
 
 // Mock fetch globally
@@ -356,6 +358,55 @@ describe('scryfall-api', () => {
       } as Response)
 
       await expect(getCardByName('Nonexistent Card')).rejects.toThrow('No card found')
+    })
+  })
+
+  describe('getCardRulings', () => {
+    it('should fetch card rulings by url', async () => {
+      const mockResponse: ScryfallRulingsResponse = {
+        object: 'list',
+        has_more: false,
+        data: [
+          {
+            object: 'ruling',
+            oracle_id: 'oracle-123',
+            source: 'wotc',
+            published_at: '2004-10-04',
+            comment: 'Test ruling.',
+          },
+        ],
+      }
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse,
+      } as Response)
+
+      const result = await getCardRulings('https://api.scryfall.com/cards/123/rulings')
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.scryfall.com/cards/123/rulings'
+      )
+      expect(result).toEqual(mockResponse)
+    })
+
+    it('should cache rulings results', async () => {
+      const mockResponse: ScryfallRulingsResponse = {
+        object: 'list',
+        has_more: false,
+        data: [],
+      }
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse,
+      } as Response)
+
+      await getCardRulings('https://api.scryfall.com/cards/abc/rulings')
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+
+      await getCardRulings('https://api.scryfall.com/cards/abc/rulings')
+      expect(mockFetch).toHaveBeenCalledTimes(1)
     })
   })
 
