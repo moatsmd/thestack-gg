@@ -1,20 +1,19 @@
 import { renderHook, waitFor } from '@testing-library/react'
 import { useNews } from '../useNews'
-import * as newsFetcher from '@/lib/news-fetcher'
 
-jest.mock('@/lib/news-fetcher')
+// Mock fetch
+global.fetch = jest.fn()
 
 describe('useNews', () => {
-  const mockFetchWotCNews = newsFetcher.fetchWotCNews as jest.MockedFunction<
-    typeof newsFetcher.fetchWotCNews
-  >
-
   beforeEach(() => {
     jest.clearAllMocks()
   })
 
   it('starts with loading state', () => {
-    mockFetchWotCNews.mockResolvedValue([])
+    ;(global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => ({ items: [] }),
+    })
 
     const { result } = renderHook(() => useNews())
 
@@ -37,7 +36,10 @@ describe('useNews', () => {
       },
     ]
 
-    mockFetchWotCNews.mockResolvedValue(mockItems)
+    ;(global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => ({ items: mockItems }),
+    })
 
     const { result } = renderHook(() => useNews())
 
@@ -50,7 +52,7 @@ describe('useNews', () => {
   })
 
   it('handles fetch errors gracefully', async () => {
-    mockFetchWotCNews.mockRejectedValue(new Error('Network error'))
+    ;(global.fetch as jest.Mock).mockRejectedValue(new Error('Network error'))
 
     const { result } = renderHook(() => useNews())
 
@@ -63,7 +65,10 @@ describe('useNews', () => {
   })
 
   it('returns empty array when fetch fails', async () => {
-    mockFetchWotCNews.mockResolvedValue([])
+    ;(global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => ({ items: [] }),
+    })
 
     const { result } = renderHook(() => useNews())
 
@@ -75,13 +80,16 @@ describe('useNews', () => {
     expect(result.current.error).toBeNull()
   })
 
-  it('calls fetchWotCNews on mount', async () => {
-    mockFetchWotCNews.mockResolvedValue([])
+  it('calls fetch API on mount', async () => {
+    ;(global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => ({ items: [] }),
+    })
 
     renderHook(() => useNews())
 
     await waitFor(() => {
-      expect(mockFetchWotCNews).toHaveBeenCalledTimes(1)
+      expect(global.fetch).toHaveBeenCalledWith('/api/news')
     })
   })
 })

@@ -1,7 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { fetchWotCNews, NewsItem } from '@/lib/news-fetcher'
+
+export interface NewsItem {
+  title: string
+  link: string
+  pubDate: string
+  description?: string
+  category?: string
+}
 
 export interface UseNewsResult {
   items: NewsItem[]
@@ -19,8 +26,19 @@ export function useNews(): UseNewsResult {
       try {
         setIsLoading(true)
         setError(null)
-        const newsItems = await fetchWotCNews()
-        setItems(newsItems)
+
+        // Fetch from our API route (avoids CORS issues)
+        const response = await fetch('/api/news')
+        if (!response.ok) {
+          throw new Error(`Failed to fetch news: ${response.status}`)
+        }
+
+        const data = await response.json()
+        if (data.error) {
+          throw new Error(data.message || 'Failed to load news')
+        }
+
+        setItems(data.items || [])
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to load news'
         setError(errorMessage)
