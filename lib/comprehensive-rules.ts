@@ -1,9 +1,9 @@
-// Official Wizards of the Coast Comprehensive Rules (text format)
-// NOTE: WotC includes the date in the filename, so this URL will need periodic updates
-// Latest versions available at: https://magic.wizards.com/en/rules
-// Current version: December 6, 2024
+// Comprehensive Rules from Yawgatog archive (community-maintained, CORS-enabled)
+// This is more reliable for browser fetching than WotC's media server
+// Updated regularly from official WotC releases
+// Source: https://yawgatog.com/resources/magic-rules/
 export const COMPREHENSIVE_RULES_URL =
-  'https://media.wizards.com/2024/downloads/MagicCompRules%2020241206.txt'
+  'https://yawgatog.com/resources/magic-rules/MagicCompRules.txt'
 
 export const COMPREHENSIVE_RULES_CACHE_KEY = 'manadork-cr-cache'
 const CACHE_DURATION_MS = 24 * 60 * 60 * 1000

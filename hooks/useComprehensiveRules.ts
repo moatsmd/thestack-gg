@@ -19,41 +19,37 @@ export function useComprehensiveRules(): UseComprehensiveRulesState {
   const [results, setResults] = useState<ComprehensiveRuleSection[]>([])
   const [selected, setSelected] = useState<ComprehensiveRuleSection | null>(null)
   const [query, setQuery] = useState('')
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [hasAttemptedLoad, setHasAttemptedLoad] = useState(false)
 
-  useEffect(() => {
-    let isMounted = true
-
-    const loadRules = async () => {
-      try {
-        setIsLoading(true)
-        const text = await getComprehensiveRulesText()
-        const parsed = parseComprehensiveRules(text)
-
-        if (!isMounted) {
-          return
-        }
-
-        setSections(parsed)
-        setError(null)
-      } catch (err) {
-        if (!isMounted) {
-          return
-        }
-        setError(err instanceof Error ? err.message : 'Failed to load rules')
-      } finally {
-        if (isMounted) {
-          setIsLoading(false)
-        }
+  const loadRules = async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+      setHasAttemptedLoad(true)
+      const text = await getComprehensiveRulesText()
+      const parsed = parseComprehensiveRules(text)
+      setSections(parsed)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load rules'
+      // Provide more helpful error message for CORS issues
+      if (errorMessage.includes('fetch')) {
+        setError('Unable to load Comprehensive Rules. This may be due to browser security restrictions. Try using the Card Rulings feature instead.')
+      } else {
+        setError(errorMessage)
       }
+    } finally {
+      setIsLoading(false)
     }
+  }
 
-    loadRules()
-
-    return () => {
-      isMounted = false
+  // Auto-load rules on first mount
+  useEffect(() => {
+    if (!hasAttemptedLoad) {
+      loadRules()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleSearch = () => {
