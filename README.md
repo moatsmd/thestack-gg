@@ -22,6 +22,14 @@ A mobile-first Magic: The Gathering toolkit, starting with a comprehensive life 
 - **Performance**: Smart caching (24hr) and rate limiting
 - **Mobile-Friendly**: Touch-optimized interface with fullscreen image view
 
+### Rules Lookup
+- **Comprehensive Rules**: Search the complete MTG Comprehensive Rules
+- **Card Rulings**: View official rulings for any card via Scryfall
+- **Full-Text Search**: Find specific rules by keyword
+- **Smart Caching**: 24-hour cache for offline access
+- **Integrated Search**: Look up cards and see their rulings in one place
+- **Mobile Tabs**: Switch between card lookup and rules search
+
 ### Dark Mode
 - **Theme Toggle**: Switch between light and dark themes
 - **Persistent**: Your theme preference is saved
@@ -29,7 +37,7 @@ A mobile-first Magic: The Gathering toolkit, starting with a comprehensive life 
 
 ### Navigation
 - **Hamburger Menu**: Easy navigation between all pages
-- **Quick Access**: Access home, life tracker, and card lookup from anywhere
+- **Quick Access**: Access home, life tracker, card lookup, and rules from anywhere
 
 ## Getting Started
 
@@ -85,6 +93,7 @@ npm start
 - [x] Poison counter tracking
 - [x] Mana pool tracking
 - [x] Card lookup (Scryfall integration)
+- [x] Rules reference (Comprehensive Rules + card rulings)
 - [x] Dark mode
 - [x] Global navigation (hamburger menu)
 
@@ -92,10 +101,10 @@ npm start
 - [ ] PWA support (installable app)
 - [ ] User accounts
 - [ ] Deck win/loss tracking
-- [ ] Rules reference
-- [ ] Terminology lookup
+- [ ] Terminology lookup (MTG glossary)
 - [ ] Life history timeline view
 - [ ] Export game statistics
+- [ ] Improved rules search UI (snippets, highlighting)
 
 ## Contributing
 
