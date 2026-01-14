@@ -1,0 +1,67 @@
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { CompactCard } from '../CompactCard'
+import { ScryfallCard } from '@/types/scryfall'
+
+const mockCard: ScryfallCard = {
+  id: '1',
+  name: 'Lightning Bolt',
+  type_line: 'Instant',
+  mana_cost: '{R}',
+  oracle_text: 'Lightning Bolt deals 3 damage to any target.',
+  image_uris: {
+    small: 'https://example.com/small.jpg',
+    normal: 'https://example.com/normal.jpg',
+    large: 'https://example.com/large.jpg',
+    png: 'https://example.com/card.png',
+    art_crop: 'https://example.com/art.jpg',
+    border_crop: 'https://example.com/border.jpg',
+  },
+  set_name: 'Alpha',
+  set: 'lea',
+  rarity: 'common',
+  legalities: {},
+  prices: { usd: '1.50' },
+} as ScryfallCard
+
+describe('CompactCard', () => {
+  it('renders card name and image', () => {
+    render(<CompactCard card={mockCard} onClick={() => {}} />)
+
+    expect(screen.getByText('Lightning Bolt')).toBeInTheDocument()
+    expect(screen.getByAltText('Lightning Bolt')).toBeInTheDocument()
+    expect(screen.getByAltText('Lightning Bolt')).toHaveAttribute('src', mockCard.image_uris?.small)
+  })
+
+  it('displays mana cost', () => {
+    render(<CompactCard card={mockCard} onClick={() => {}} />)
+
+    expect(screen.getByText('{R}')).toBeInTheDocument()
+  })
+
+  it('displays type line', () => {
+    render(<CompactCard card={mockCard} onClick={() => {}} />)
+
+    expect(screen.getByText('Instant')).toBeInTheDocument()
+  })
+
+  it('calls onClick when clicked', async () => {
+    const user = userEvent.setup()
+    const handleClick = jest.fn()
+
+    render(<CompactCard card={mockCard} onClick={handleClick} />)
+
+    await user.click(screen.getByTestId('compact-card'))
+
+    expect(handleClick).toHaveBeenCalledTimes(1)
+    expect(handleClick).toHaveBeenCalledWith(mockCard)
+  })
+
+  it('shows placeholder when no image available', () => {
+    const cardWithoutImage = { ...mockCard, image_uris: undefined }
+
+    render(<CompactCard card={cardWithoutImage} onClick={() => {}} />)
+
+    expect(screen.getByText('No image')).toBeInTheDocument()
+  })
+})
