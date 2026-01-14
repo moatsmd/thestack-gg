@@ -64,4 +64,55 @@ describe('CompactCard', () => {
 
     expect(screen.getByText('No image')).toBeInTheDocument()
   })
+
+  it('displays DFC indicator for multi-faced cards', () => {
+    const doubleFacedCard: ScryfallCard = {
+      ...mockCard,
+      card_faces: [
+        {
+          object: 'card_face',
+          name: 'Front Face',
+          type_line: 'Creature — Human',
+          mana_cost: '{1}{U}',
+          image_uris: {
+            small: 'https://example.com/front-small.jpg',
+            normal: 'https://example.com/front-normal.jpg',
+            large: 'https://example.com/front-large.jpg',
+            png: 'https://example.com/front.png',
+            art_crop: 'https://example.com/front-art.jpg',
+            border_crop: 'https://example.com/front-border.jpg',
+          },
+        },
+        {
+          object: 'card_face',
+          name: 'Back Face',
+          type_line: 'Creature — Werewolf',
+          mana_cost: '',
+          image_uris: {
+            small: 'https://example.com/back-small.jpg',
+            normal: 'https://example.com/back-normal.jpg',
+            large: 'https://example.com/back-large.jpg',
+            png: 'https://example.com/back.png',
+            art_crop: 'https://example.com/back-art.jpg',
+            border_crop: 'https://example.com/back-border.jpg',
+          },
+        },
+      ],
+      image_uris: undefined, // Multi-faced cards don't have top-level image_uris
+    } as ScryfallCard
+
+    render(<CompactCard card={doubleFacedCard} onClick={() => {}} />)
+
+    // Should show DFC indicator
+    expect(screen.getByText('DFC')).toBeInTheDocument()
+
+    // Should display first face data
+    expect(screen.getByText('Front Face')).toBeInTheDocument()
+    expect(screen.getByText('{1}{U}')).toBeInTheDocument()
+    expect(screen.getByText('Creature — Human')).toBeInTheDocument()
+
+    // Should use first face image
+    const image = screen.getByAltText('Front Face')
+    expect(image).toHaveAttribute('src', 'https://example.com/front-small.jpg')
+  })
 })

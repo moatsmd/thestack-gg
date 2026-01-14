@@ -24,6 +24,7 @@ export function CompactCard({ card, onClick }: CompactCardProps) {
       onClick={() => onClick(card)}
       className="group relative rounded-lg overflow-hidden bg-white dark:bg-gray-800 shadow-md hover:shadow-xl transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-500"
       data-testid="compact-card"
+      aria-label={`View details for ${name}`}
     >
       {/* Card Image */}
       <div className="aspect-[5/7] relative overflow-hidden bg-gray-200 dark:bg-gray-700">
