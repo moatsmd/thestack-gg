@@ -1,6 +1,6 @@
 'use client'
 
-type ViewMode = 'single' | 'grid'
+export type ViewMode = 'single' | 'grid'
 
 interface ViewModeToggleProps {
   mode: ViewMode
