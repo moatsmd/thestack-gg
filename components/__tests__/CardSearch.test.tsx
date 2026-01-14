@@ -29,11 +29,13 @@ jest.mock('../CardDisplay', () => ({
 }))
 
 jest.mock('../CardGrid', () => ({
-  CardGrid: ({ cards }: any) => (
+  CardGrid: ({ cards, onCardClick, onLoadMore, hasMore, isLoadingMore }: any) => (
     <div data-testid="card-grid">
-      {cards.map((card: any) => (
-        <div key={card.id}>{card.name}</div>
-      ))}
+      <div data-testid="card-grid-props" data-onloadmore={!!onLoadMore} data-hasmore={hasMore} data-isloadingmore={isLoadingMore}>
+        {cards.map((card: any) => (
+          <button key={card.id} onClick={() => onCardClick(card)}>{card.name}</button>
+        ))}
+      </div>
     </div>
   ),
 }))
@@ -165,6 +167,72 @@ describe('CardSearch', () => {
     render(<CardSearch />)
 
     expect(screen.getByTestId('card-display')).toBeInTheDocument()
+    expect(screen.queryByTestId('card-grid')).not.toBeInTheDocument()
+  })
+
+  it('passes pagination props to CardGrid when in grid view', async () => {
+    const user = userEvent.setup()
+
+    mockUseCardSearch.mockReturnValue({
+      ...defaultHookReturn,
+      results: [
+        { id: '1', name: 'Card 1' } as any,
+        { id: '2', name: 'Card 2' } as any,
+      ],
+      hasMore: true,
+      isLoadingMore: false,
+    })
+
+    render(<CardSearch />)
+
+    await user.click(screen.getByText('Grid'))
+
+    const gridProps = screen.getByTestId('card-grid-props')
+    expect(gridProps).toHaveAttribute('data-onloadmore', 'true')
+    expect(gridProps).toHaveAttribute('data-hasmore', 'true')
+    expect(gridProps).toHaveAttribute('data-isloadingmore', 'false')
+  })
+
+  it('switches to single view when card clicked in grid', async () => {
+    const user = userEvent.setup()
+    const mockSelectCard = jest.fn()
+
+    mockUseCardSearch.mockReturnValue({
+      ...defaultHookReturn,
+      results: [
+        { id: '1', name: 'Card 1' } as any,
+        { id: '2', name: 'Card 2' } as any,
+      ],
+      selectCard: mockSelectCard,
+    })
+
+    render(<CardSearch />)
+
+    // Switch to grid mode
+    await user.click(screen.getByText('Grid'))
+    expect(screen.getByTestId('card-grid')).toBeInTheDocument()
+    expect(screen.getByTestId('current-mode')).toHaveTextContent('grid')
+
+    // Click a card in grid
+    await user.click(screen.getByText('Card 1'))
+
+    // Should switch back to single mode
+    expect(screen.getByTestId('current-mode')).toHaveTextContent('single')
+    expect(mockSelectCard).toHaveBeenCalledWith({ id: '1', name: 'Card 1' })
+  })
+
+  it('does not show grid with single result even in grid mode', async () => {
+    mockUseCardSearch.mockReturnValue({
+      ...defaultHookReturn,
+      results: [{ id: '1', name: 'Card 1' } as any],
+    })
+
+    render(<CardSearch />)
+
+    // No toggle shown (only 1 result)
+    expect(screen.queryByText('Grid')).not.toBeInTheDocument()
+
+    // Grid should not render (results.length === 1)
     expect(screen.queryByTestId('card-grid')).not.toBeInTheDocument()
   })
 })
