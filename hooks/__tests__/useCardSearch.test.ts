@@ -9,6 +9,7 @@ jest.mock('@/lib/scryfall-api')
 const mockAutocomplete = scryfallApi.autocomplete as jest.MockedFunction<typeof scryfallApi.autocomplete>
 const mockSearchCards = scryfallApi.searchCards as jest.MockedFunction<typeof scryfallApi.searchCards>
 const mockGetCardByName = scryfallApi.getCardByName as jest.MockedFunction<typeof scryfallApi.getCardByName>
+const mockFetchSearchPage = scryfallApi.fetchSearchPage as jest.MockedFunction<typeof scryfallApi.fetchSearchPage>
 
 describe('useCardSearch', () => {
   beforeEach(() => {
@@ -405,6 +406,221 @@ describe('useCardSearch', () => {
 
       // Should not crash and suggestions should be empty
       expect(result.current.suggestions).toEqual([])
+    })
+  })
+
+  describe('pagination', () => {
+    beforeEach(() => {
+      mockAutocomplete.mockResolvedValue([])
+    })
+
+    it('loads more results when loadMore is called', async () => {
+      // First page response
+      const firstPageCards = [
+        { id: '1', name: 'Card 1', type_line: 'Creature' } as any,
+        { id: '2', name: 'Card 2', type_line: 'Creature' } as any,
+      ]
+      const secondPageCards = [
+        { id: '3', name: 'Card 3', type_line: 'Creature' } as any,
+      ]
+
+      mockSearchCards.mockResolvedValueOnce({
+        object: 'list',
+        total_cards: 3,
+        has_more: true,
+        next_page: 'https://api.scryfall.com/cards/search?page=2',
+        data: firstPageCards,
+      })
+
+      mockFetchSearchPage.mockResolvedValueOnce({
+        object: 'list',
+        total_cards: 3,
+        has_more: false,
+        data: secondPageCards,
+      })
+
+      const { result } = renderHook(() => useCardSearch())
+
+      // Search initial query
+      act(() => {
+        result.current.setQuery('o:draw')
+      })
+      await act(async () => {
+        await result.current.search()
+      })
+
+      await waitFor(() => {
+        expect(result.current.results).toHaveLength(2)
+        expect(result.current.hasMore).toBe(true)
+      })
+
+      // Load more results
+      await act(async () => {
+        await result.current.loadMore()
+      })
+
+      await waitFor(() => {
+        expect(result.current.results).toHaveLength(3)
+        expect(result.current.hasMore).toBe(false)
+        expect(result.current.isLoadingMore).toBe(false)
+      })
+    })
+
+    it('does not load more when hasMore is false', async () => {
+      mockSearchCards.mockResolvedValue({
+        object: 'list',
+        total_cards: 1,
+        has_more: false,
+        data: [{ id: '1', name: 'Card 1' } as any],
+      })
+
+      const { result } = renderHook(() => useCardSearch())
+
+      act(() => {
+        result.current.setQuery('test')
+      })
+      await act(async () => {
+        await result.current.search()
+      })
+
+      await waitFor(() => {
+        expect(result.current.hasMore).toBe(false)
+      })
+
+      const initialCallCount = mockFetchSearchPage.mock.calls.length
+
+      await act(async () => {
+        await result.current.loadMore()
+      })
+
+      expect(mockFetchSearchPage.mock.calls.length).toBe(initialCallCount)
+    })
+
+    it('sets isLoadingMore to true while loading more results', async () => {
+      const firstPageCards = [{ id: '1', name: 'Card 1' } as any]
+      const secondPageCards = [{ id: '2', name: 'Card 2' } as any]
+
+      let resolveSecondPage: (value: any) => void
+      const secondPagePromise = new Promise(resolve => {
+        resolveSecondPage = resolve
+      })
+
+      mockSearchCards.mockResolvedValueOnce({
+        object: 'list',
+        total_cards: 2,
+        has_more: true,
+        next_page: 'https://api.scryfall.com/cards/search?page=2',
+        data: firstPageCards,
+      })
+
+      mockFetchSearchPage.mockReturnValueOnce(secondPagePromise as any)
+
+      const { result } = renderHook(() => useCardSearch())
+
+      act(() => {
+        result.current.setQuery('test')
+      })
+      await act(async () => {
+        await result.current.search()
+      })
+
+      // Start loading more
+      act(() => {
+        result.current.loadMore()
+      })
+
+      // Should be loading
+      expect(result.current.isLoadingMore).toBe(true)
+
+      // Resolve the second page
+      await act(async () => {
+        resolveSecondPage!({
+          object: 'list',
+          total_cards: 2,
+          has_more: false,
+          data: secondPageCards,
+        })
+        await secondPagePromise
+      })
+
+      await waitFor(() => {
+        expect(result.current.isLoadingMore).toBe(false)
+      })
+    })
+
+    it('appends new results to existing results', async () => {
+      const firstPageCards = [
+        { id: '1', name: 'Card 1' } as any,
+        { id: '2', name: 'Card 2' } as any,
+      ]
+      const secondPageCards = [
+        { id: '3', name: 'Card 3' } as any,
+        { id: '4', name: 'Card 4' } as any,
+      ]
+
+      mockSearchCards.mockResolvedValueOnce({
+        object: 'list',
+        total_cards: 4,
+        has_more: true,
+        next_page: 'https://api.scryfall.com/cards/search?page=2',
+        data: firstPageCards,
+      })
+
+      mockFetchSearchPage.mockResolvedValueOnce({
+        object: 'list',
+        total_cards: 4,
+        has_more: false,
+        data: secondPageCards,
+      })
+
+      const { result } = renderHook(() => useCardSearch())
+
+      act(() => {
+        result.current.setQuery('test')
+      })
+      await act(async () => {
+        await result.current.search()
+      })
+
+      expect(result.current.results).toEqual(firstPageCards)
+
+      await act(async () => {
+        await result.current.loadMore()
+      })
+
+      await waitFor(() => {
+        expect(result.current.results).toEqual([...firstPageCards, ...secondPageCards])
+      })
+    })
+
+    it('handles loadMore errors gracefully', async () => {
+      mockSearchCards.mockResolvedValueOnce({
+        object: 'list',
+        total_cards: 2,
+        has_more: true,
+        next_page: 'https://api.scryfall.com/cards/search?page=2',
+        data: [{ id: '1', name: 'Card 1' } as any],
+      })
+
+      mockFetchSearchPage.mockRejectedValueOnce(new Error('Network error'))
+
+      const { result } = renderHook(() => useCardSearch())
+
+      act(() => {
+        result.current.setQuery('test')
+      })
+      await act(async () => {
+        await result.current.search()
+      })
+
+      await act(async () => {
+        await result.current.loadMore()
+      })
+
+      await waitFor(() => {
+        expect(result.current.error).toBe('Network error')
+        expect(result.current.isLoadingMore).toBe(false)
+      })
     })
   })
 })

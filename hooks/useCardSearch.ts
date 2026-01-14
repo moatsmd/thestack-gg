@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { ScryfallCard } from '@/types/scryfall'
-import { autocomplete, searchCards } from '@/lib/scryfall-api'
+import { autocomplete, searchCards, fetchSearchPage } from '@/lib/scryfall-api'
 
 export interface UseCardSearchResult {
   query: string
@@ -8,11 +8,14 @@ export interface UseCardSearchResult {
   suggestions: string[]
   selectedCard: ScryfallCard | null
   isLoading: boolean
+  isLoadingMore: boolean
+  hasMore: boolean
   error: string | null
   setQuery: (query: string) => void
   selectCard: (card: ScryfallCard) => void
   clearSelection: () => void
   search: () => Promise<void>
+  loadMore: () => Promise<void>
 }
 
 const AUTOCOMPLETE_DEBOUNCE_MS = 300
@@ -23,6 +26,9 @@ export function useCardSearch(): UseCardSearchResult {
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [selectedCard, setSelectedCard] = useState<ScryfallCard | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(false)
+  const [nextPage, setNextPage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -76,6 +82,8 @@ export function useCardSearch(): UseCardSearchResult {
     try {
       const response = await searchCards(query)
       setResults(response.data)
+      setHasMore(response.has_more)
+      setNextPage(response.next_page || null)
 
       // Automatically select the first result
       if (response.data.length > 0) {
@@ -90,10 +98,34 @@ export function useCardSearch(): UseCardSearchResult {
       setError(message)
       setResults([])
       setSelectedCard(null)
+      setHasMore(false)
+      setNextPage(null)
     } finally {
       setIsLoading(false)
     }
   }, [query])
+
+  const loadMore = useCallback(async () => {
+    // Don't load if there's no more data, no next page URL, or already loading
+    if (!hasMore || !nextPage || isLoadingMore) {
+      return
+    }
+
+    setIsLoadingMore(true)
+
+    try {
+      const response = await fetchSearchPage(nextPage)
+      // Append new results to existing results
+      setResults(prev => [...prev, ...response.data])
+      setHasMore(response.has_more)
+      setNextPage(response.next_page || null)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to load more results'
+      setError(message)
+    } finally {
+      setIsLoadingMore(false)
+    }
+  }, [hasMore, nextPage, isLoadingMore])
 
   const selectCard = useCallback((card: ScryfallCard) => {
     setSelectedCard(card)
@@ -110,10 +142,13 @@ export function useCardSearch(): UseCardSearchResult {
     suggestions,
     selectedCard,
     isLoading,
+    isLoadingMore,
+    hasMore,
     error,
     setQuery,
     selectCard,
     clearSelection,
     search,
+    loadMore,
   }
 }

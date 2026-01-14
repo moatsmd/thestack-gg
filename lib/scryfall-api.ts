@@ -210,3 +210,32 @@ export async function getCardRulings(rulingsUrl: string): Promise<ScryfallRuling
   setCache(cacheKey, data)
   return data
 }
+
+/**
+ * Fetch a page of search results from a specific URL (for pagination)
+ * @param url - Full Scryfall URL to fetch (typically from next_page field)
+ * @returns Search response with array of matching cards
+ */
+export async function fetchSearchPage(url: string): Promise<ScryfallSearchResponse> {
+  if (!url.trim()) {
+    return {
+      object: 'list',
+      total_cards: 0,
+      has_more: false,
+      data: [],
+    }
+  }
+
+  const cacheKey = getCacheKey('search-page', url)
+  const cached = getFromCache<ScryfallSearchResponse>(cacheKey)
+
+  if (cached !== null) {
+    return cached
+  }
+
+  const response = await rateLimitedFetch(url)
+  const data = await handleResponse<ScryfallSearchResponse>(response)
+
+  setCache(cacheKey, data)
+  return data
+}
