@@ -88,4 +88,52 @@ describe('useInfiniteScroll', () => {
 
     expect(onLoadMore).not.toHaveBeenCalled()
   })
+
+  it('observes the sentinel element when attached', () => {
+    const onLoadMore = jest.fn()
+    const mockObserve = jest.fn()
+    const mockDisconnect = jest.fn()
+
+    mockIntersectionObserver.mockImplementation(() => ({
+      observe: mockObserve,
+      unobserve: jest.fn(),
+      disconnect: mockDisconnect,
+    }))
+
+    const { result } = renderHook(() =>
+      useInfiniteScroll({ onLoadMore, hasMore: true, isLoading: false })
+    )
+
+    const mockElement = document.createElement('div')
+    act(() => {
+      result.current(mockElement)
+    })
+
+    expect(mockObserve).toHaveBeenCalledWith(mockElement)
+  })
+
+  it('disconnects observer on cleanup', () => {
+    const onLoadMore = jest.fn()
+    const mockDisconnect = jest.fn()
+
+    mockIntersectionObserver.mockImplementation(() => ({
+      observe: jest.fn(),
+      unobserve: jest.fn(),
+      disconnect: mockDisconnect,
+    }))
+
+    const { result, unmount } = renderHook(() =>
+      useInfiniteScroll({ onLoadMore, hasMore: true, isLoading: false })
+    )
+
+    // Attach element to create observer
+    const mockElement = document.createElement('div')
+    act(() => {
+      result.current(mockElement)
+    })
+
+    unmount()
+
+    expect(mockDisconnect).toHaveBeenCalled()
+  })
 })

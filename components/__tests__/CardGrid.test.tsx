@@ -103,4 +103,34 @@ describe('CardGrid', () => {
 
     expect(screen.queryByTestId('infinite-scroll-sentinel')).not.toBeInTheDocument()
   })
+
+  it('shows empty state when no cards provided', () => {
+    render(
+      <CardGrid
+        cards={[]}
+        onCardClick={() => {}}
+        onLoadMore={() => {}}
+        hasMore={false}
+        isLoadingMore={false}
+      />
+    )
+
+    expect(screen.getByText('No cards found')).toBeInTheDocument()
+    expect(screen.queryByTestId('card-grid')).not.toBeInTheDocument()
+  })
+
+  it('shows end of results message with card count', () => {
+    render(
+      <CardGrid
+        cards={mockCards}
+        onCardClick={() => {}}
+        onLoadMore={() => {}}
+        hasMore={false}
+        isLoadingMore={false}
+      />
+    )
+
+    expect(screen.getByText('End of results (2 cards)')).toBeInTheDocument()
+    expect(screen.queryByTestId('infinite-scroll-sentinel')).not.toBeInTheDocument()
+  })
 })
