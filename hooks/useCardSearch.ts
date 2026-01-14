@@ -32,6 +32,7 @@ export function useCardSearch(): UseCardSearchResult {
   const [error, setError] = useState<string | null>(null)
 
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const loadingRef = useRef(false)
 
   // Debounced autocomplete
   useEffect(() => {
@@ -77,6 +78,7 @@ export function useCardSearch(): UseCardSearchResult {
     }
 
     setIsLoading(true)
+    setIsLoadingMore(false)
     setError(null)
 
     try {
@@ -107,10 +109,11 @@ export function useCardSearch(): UseCardSearchResult {
 
   const loadMore = useCallback(async () => {
     // Don't load if there's no more data, no next page URL, or already loading
-    if (!hasMore || !nextPage || isLoadingMore) {
+    if (!hasMore || !nextPage || loadingRef.current) {
       return
     }
 
+    loadingRef.current = true
     setIsLoadingMore(true)
 
     try {
@@ -122,10 +125,12 @@ export function useCardSearch(): UseCardSearchResult {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load more results'
       setError(message)
+      setHasMore(false)
     } finally {
       setIsLoadingMore(false)
+      loadingRef.current = false
     }
-  }, [hasMore, nextPage, isLoadingMore])
+  }, [hasMore, nextPage])
 
   const selectCard = useCallback((card: ScryfallCard) => {
     setSelectedCard(card)

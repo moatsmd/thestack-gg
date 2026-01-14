@@ -622,5 +622,47 @@ describe('useCardSearch', () => {
         expect(result.current.isLoadingMore).toBe(false)
       })
     })
+
+    it('prevents concurrent loadMore calls', async () => {
+      mockSearchCards.mockResolvedValue({
+        object: 'list',
+        total_cards: 10,
+        has_more: true,
+        next_page: 'https://api.scryfall.com/cards/search?page=2',
+        data: [{ id: '1', name: 'Card 1' } as any],
+      })
+
+      // Make fetchSearchPage slow
+      mockFetchSearchPage.mockImplementation(() =>
+        new Promise(resolve => setTimeout(() => resolve({
+          object: 'list',
+          total_cards: 10,
+          has_more: false,
+          data: [{ id: '2', name: 'Card 2' } as any],
+        }), 100))
+      )
+
+      const { result } = renderHook(() => useCardSearch())
+
+      act(() => {
+        result.current.setQuery('test')
+      })
+      await act(async () => {
+        await result.current.search()
+      })
+
+      // Call loadMore twice rapidly
+      act(() => {
+        result.current.loadMore()
+        result.current.loadMore()  // Should be ignored
+      })
+
+      await waitFor(() => {
+        expect(result.current.isLoadingMore).toBe(false)
+      })
+
+      // Only called once, not twice
+      expect(mockFetchSearchPage).toHaveBeenCalledTimes(1)
+    })
   })
 })
