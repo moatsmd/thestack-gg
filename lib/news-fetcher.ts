@@ -4,6 +4,7 @@ export interface NewsItem {
   pubDate: string
   description?: string
   category?: string
+  imageUrl?: string
 }
 
 export interface NewsFeed {
@@ -79,12 +80,16 @@ function parseRSS(xmlText: string): NewsItem[] {
       const category = item.querySelector('category')?.textContent
 
       if (title && link && pubDate) {
+        // Extract image URL from description HTML
+        const imageUrl = description ? extractImageUrl(description) : undefined
+
         items.push({
           title: title.trim(),
           link: link.trim(),
           pubDate: pubDate.trim(),
           description: description?.trim(),
           category: category?.trim(),
+          imageUrl,
         })
       }
     })
@@ -95,6 +100,26 @@ function parseRSS(xmlText: string): NewsItem[] {
     console.error('Error parsing RSS:', error)
     return []
   }
+}
+
+/**
+ * Extract image URL from description HTML
+ * Prefers 300w size from srcset if available, falls back to src
+ */
+function extractImageUrl(html: string): string | undefined {
+  // First try to get 300w version from srcset for better quality
+  const srcsetMatch = html.match(/srcset="[^"]*?(https:\/\/[^\s"]+300w[^\s"]*\.jpg)\s+300w/)
+  if (srcsetMatch) {
+    return srcsetMatch[1]
+  }
+
+  // Fall back to src attribute from first img tag
+  const srcMatch = html.match(/<img[^>]+src="(https:\/\/[^"]+)"/)
+  if (srcMatch) {
+    return srcMatch[1]
+  }
+
+  return undefined
 }
 
 /**

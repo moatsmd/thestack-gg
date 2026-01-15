@@ -9,6 +9,7 @@ export interface NewsItem {
   pubDate: string
   description?: string
   category?: string
+  imageUrl?: string
 }
 
 // In-memory cache
@@ -111,12 +112,16 @@ function parseRSS(xmlText: string): NewsItem[] {
       const category = extractTag(itemContent, 'category')
 
       if (title && link && pubDate) {
+        // Extract image URL from description HTML
+        const imageUrl = description ? extractImageUrl(description) : undefined
+
         items.push({
           title: decodeHtml(title.trim()),
           link: link.trim(),
           pubDate: pubDate.trim(),
           description: description ? decodeHtml(description.trim()) : undefined,
           category: category ? decodeHtml(category.trim()) : undefined,
+          imageUrl,
         })
       }
     }
@@ -136,6 +141,26 @@ function extractTag(xml: string, tagName: string): string | null {
   const regex = new RegExp(`<${tagName}(?:[^>]*)>([\\s\\S]*?)<\\/${tagName}>`, 'i')
   const match = xml.match(regex)
   return match ? match[1] : null
+}
+
+/**
+ * Extract image URL from description HTML
+ * Prefers 300w size from srcset if available, falls back to src
+ */
+function extractImageUrl(html: string): string | undefined {
+  // First try to get 300w version from srcset for better quality
+  const srcsetMatch = html.match(/srcset="[^"]*?(https:\/\/[^\s"]+300w[^\s"]*\.jpg)\s+300w/)
+  if (srcsetMatch) {
+    return srcsetMatch[1]
+  }
+
+  // Fall back to src attribute from first img tag
+  const srcMatch = html.match(/<img[^>]+src="(https:\/\/[^"]+)"/)
+  if (srcMatch) {
+    return srcMatch[1]
+  }
+
+  return undefined
 }
 
 /**
