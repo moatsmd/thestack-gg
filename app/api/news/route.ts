@@ -145,13 +145,19 @@ function extractTag(xml: string, tagName: string): string | null {
 
 /**
  * Extract image URL from description HTML
- * Prefers 300w size from srcset if available, falls back to src
+ * Prefers 768w size from srcset for good quality, falls back to smaller sizes
  */
 function extractImageUrl(html: string): string | undefined {
-  // First try to get 300w version from srcset for better quality
-  const srcsetMatch = html.match(/srcset="[^"]*?(https:\/\/[^\s"]+300w[^\s"]*\.jpg)\s+300w/)
-  if (srcsetMatch) {
-    return srcsetMatch[1]
+  // Try to get 768w version from srcset for good quality
+  const match768 = html.match(/srcset="[^"]*?(https:\/\/[^\s"]+768x[^\s"]*\.jpg)\s+768w/)
+  if (match768) {
+    return match768[1]
+  }
+
+  // Fall back to 1024w if 768w not available
+  const match1024 = html.match(/srcset="[^"]*?(https:\/\/[^\s"]+1024x[^\s"]*\.jpg)\s+1024w/)
+  if (match1024) {
+    return match1024[1]
   }
 
   // Fall back to src attribute from first img tag
