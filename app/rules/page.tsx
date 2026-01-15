@@ -30,9 +30,9 @@ export default function RulesPage() {
           <button
             type="button"
             onClick={() => setActiveTab('card')}
-            className={`flex-1 rounded-md px-4 py-2 text-sm font-semibold ${
+            className={`flex-1 rounded-md px-4 py-2 text-sm font-semibold transition-colors ${
               activeTab === 'card'
-                ? 'bg-gray-900 text-white'
+                ? 'bg-purple-600 text-white'
                 : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700'
             }`}
           >
@@ -41,9 +41,9 @@ export default function RulesPage() {
           <button
             type="button"
             onClick={() => setActiveTab('rules')}
-            className={`flex-1 rounded-md px-4 py-2 text-sm font-semibold ${
+            className={`flex-1 rounded-md px-4 py-2 text-sm font-semibold transition-colors ${
               activeTab === 'rules'
-                ? 'bg-gray-900 text-white'
+                ? 'bg-purple-600 text-white'
                 : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700'
             }`}
           >
