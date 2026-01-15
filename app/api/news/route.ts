@@ -98,7 +98,7 @@ function parseRSS(xmlText: string): NewsItem[] {
 
     // Extract all <item> blocks
     const itemRegex = /<item>([\s\S]*?)<\/item>/g
-    const itemMatches = xmlText.matchAll(itemRegex)
+    const itemMatches = Array.from(xmlText.matchAll(itemRegex))
 
     for (const itemMatch of itemMatches) {
       const itemContent = itemMatch[1]
