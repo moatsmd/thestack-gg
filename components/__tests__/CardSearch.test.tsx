@@ -54,6 +54,16 @@ jest.mock('../ErrorBanner', () => ({
   ErrorBanner: ({ message }: any) => <div role="alert">{message}</div>,
 }))
 
+jest.mock('../CardModal', () => ({
+  CardModal: ({ card, isOpen, onClose }: any) =>
+    isOpen ? (
+      <div data-testid="card-modal">
+        <div>{card.name}</div>
+        <button onClick={onClose}>Close Modal</button>
+      </div>
+    ) : null,
+}))
+
 describe('CardSearch', () => {
   const mockUseCardSearch = useCardSearchModule.useCardSearch as jest.MockedFunction<
     typeof useCardSearchModule.useCardSearch
@@ -193,9 +203,8 @@ describe('CardSearch', () => {
     expect(gridProps).toHaveAttribute('data-isloadingmore', 'false')
   })
 
-  it('switches to single view when card clicked in grid', async () => {
+  it('opens modal when card clicked in grid view', async () => {
     const user = userEvent.setup()
-    const mockSelectCard = jest.fn()
 
     mockUseCardSearch.mockReturnValue({
       ...defaultHookReturn,
@@ -203,22 +212,43 @@ describe('CardSearch', () => {
         { id: '1', name: 'Card 1' } as any,
         { id: '2', name: 'Card 2' } as any,
       ],
-      selectCard: mockSelectCard,
     })
 
     render(<CardSearch />)
 
-    // Switch to grid mode
+    // Switch to grid
     await user.click(screen.getByText('Grid'))
-    expect(screen.getByTestId('card-grid')).toBeInTheDocument()
-    expect(screen.getByTestId('current-mode')).toHaveTextContent('grid')
 
-    // Click a card in grid
+    // Click card in grid
     await user.click(screen.getByText('Card 1'))
 
-    // Should switch back to single mode
-    expect(screen.getByTestId('current-mode')).toHaveTextContent('single')
-    expect(mockSelectCard).toHaveBeenCalledWith({ id: '1', name: 'Card 1' })
+    // Modal should open
+    expect(screen.getByTestId('card-modal')).toBeInTheDocument()
+  })
+
+  it('closes modal when close button clicked', async () => {
+    const user = userEvent.setup()
+
+    mockUseCardSearch.mockReturnValue({
+      ...defaultHookReturn,
+      results: [
+        { id: '1', name: 'Card 1' } as any,
+        { id: '2', name: 'Card 2' } as any,
+      ],
+    })
+
+    render(<CardSearch />)
+
+    // Switch to grid and click card
+    await user.click(screen.getByText('Grid'))
+    await user.click(screen.getByText('Card 1'))
+
+    expect(screen.getByTestId('card-modal')).toBeInTheDocument()
+
+    // Close modal
+    await user.click(screen.getByText('Close Modal'))
+
+    expect(screen.queryByTestId('card-modal')).not.toBeInTheDocument()
   })
 
   it('does not show grid with single result even in grid mode', async () => {

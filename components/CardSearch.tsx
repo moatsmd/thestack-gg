@@ -8,6 +8,7 @@ import { ErrorBanner } from './ErrorBanner'
 import { CardDisplay } from './CardDisplay'
 import { CardGrid } from './CardGrid'
 import { ViewModeToggle, ViewMode } from './ViewModeToggle'
+import { CardModal } from './CardModal'
 import { ScryfallCard } from '@/types/scryfall'
 
 export function CardSearch() {
@@ -27,14 +28,24 @@ export function CardSearch() {
   } = useCardSearch()
 
   const [viewMode, setViewMode] = useState<ViewMode>('single')
+  const [modalCard, setModalCard] = useState<ScryfallCard | null>(null)
 
   const handleSelectSuggestion = (suggestion: string) => {
     setQuery(suggestion)
   }
 
   const handleCardClick = (card: ScryfallCard) => {
-    selectCard(card)
-    setViewMode('single') // Switch to single view when card selected
+    if (viewMode === 'grid') {
+      // In grid view, open modal
+      setModalCard(card)
+    } else {
+      // In single view, select card normally (shouldn't happen, but defensive)
+      selectCard(card)
+    }
+  }
+
+  const handleCloseModal = () => {
+    setModalCard(null)
   }
 
   const showToggle = results.length > 1
@@ -76,6 +87,15 @@ export function CardSearch() {
 
       {/* Single Card View */}
       {showSingleCard && <CardDisplay card={selectedCard} />}
+
+      {/* Card Modal */}
+      {modalCard && (
+        <CardModal
+          card={modalCard}
+          isOpen={!!modalCard}
+          onClose={handleCloseModal}
+        />
+      )}
     </div>
   )
 }
