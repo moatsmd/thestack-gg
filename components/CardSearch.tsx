@@ -8,6 +8,7 @@ import { ErrorBanner } from './ErrorBanner'
 import { CardDisplay } from './CardDisplay'
 import { CardGrid } from './CardGrid'
 import { ViewModeToggle, ViewMode } from './ViewModeToggle'
+import { ScryfallCard } from '@/types/scryfall'
 
 export function CardSearch() {
   const {
@@ -31,8 +32,8 @@ export function CardSearch() {
     setQuery(suggestion)
   }
 
-  const handleCardClick = (card: typeof selectedCard) => {
-    selectCard(card!)
+  const handleCardClick = (card: ScryfallCard) => {
+    selectCard(card)
     setViewMode('single') // Switch to single view when card selected
   }
 
