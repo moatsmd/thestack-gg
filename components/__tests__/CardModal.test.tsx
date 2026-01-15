@@ -77,4 +77,15 @@ describe('CardModal', () => {
 
     expect(handleClose).not.toHaveBeenCalled()
   })
+
+  it('calls onClose when Escape key pressed', async () => {
+    const user = userEvent.setup()
+    const handleClose = jest.fn()
+
+    render(<CardModal card={mockCard} isOpen={true} onClose={handleClose} />)
+
+    await user.keyboard('{Escape}')
+
+    expect(handleClose).toHaveBeenCalledTimes(1)
+  })
 })
