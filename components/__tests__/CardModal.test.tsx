@@ -88,4 +88,26 @@ describe('CardModal', () => {
 
     expect(handleClose).toHaveBeenCalledTimes(1)
   })
+
+  it('prevents body scroll when modal is open', () => {
+    const { rerender, unmount } = render(<CardModal card={mockCard} isOpen={true} onClose={() => {}} />)
+
+    // Body scroll should be prevented
+    expect(document.body.style.overflow).toBe('hidden')
+
+    // Close modal
+    rerender(<CardModal card={mockCard} isOpen={false} onClose={() => {}} />)
+
+    // Body scroll should be restored
+    expect(document.body.style.overflow).toBe('')
+
+    // Cleanup - remount and unmount to test cleanup function
+    rerender(<CardModal card={mockCard} isOpen={true} onClose={() => {}} />)
+    expect(document.body.style.overflow).toBe('hidden')
+
+    unmount()
+
+    // Body scroll should be restored on unmount
+    expect(document.body.style.overflow).toBe('')
+  })
 })

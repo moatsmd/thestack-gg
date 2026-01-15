@@ -92,7 +92,7 @@ export function CardSearch() {
       {modalCard && (
         <CardModal
           card={modalCard}
-          isOpen={!!modalCard}
+          isOpen={true}
           onClose={handleCloseModal}
         />
       )}

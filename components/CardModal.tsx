@@ -58,6 +58,7 @@ export function CardModal({ card, isOpen, onClose }: CardModalProps) {
         <button
           type="button"
           onClick={onClose}
+          autoFocus
           className="absolute top-2 right-2 z-10 bg-black/70 hover:bg-black/80 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
           aria-label="Close modal"
         >
