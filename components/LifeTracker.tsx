@@ -8,6 +8,7 @@ import { PoisonCounterModal } from './PoisonCounterModal'
 import { ManaPoolModal } from './ManaPoolModal'
 import { HelpLegendBanner } from './HelpLegendBanner'
 import { HamburgerMenu } from './HamburgerMenu'
+import { ShareGameModal } from './ShareGameModal'
 import { useMemo, useState, useEffect } from 'react'
 
 interface LifeTrackerProps {
@@ -33,6 +34,9 @@ export function LifeTracker({ initialGameState, onReset }: LifeTrackerProps) {
     false
   )
   const [showHelpLegend, setShowHelpLegend] = useState(false)
+  const [shareSessionId, setShareSessionId] = useState<string | null>(null)
+  const [shareUrl, setShareUrl] = useState('')
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false)
 
   const handleLifeChange = (playerId: string, amount: number) => {
     setGameState((prev) => ({
@@ -212,6 +216,41 @@ export function LifeTracker({ initialGameState, onReset }: LifeTrackerProps) {
     setHasSeenHelpLegend(true)
   }
 
+  const handleStartSharing = async () => {
+    try {
+      const response = await fetch('/api/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state: gameState }),
+      })
+      if (!response.ok) {
+        return
+      }
+      const data = await response.json()
+      setShareSessionId(data.id)
+      setShareUrl(data.shareUrl)
+      setIsShareModalOpen(true)
+    } catch (error) {
+      console.error('Failed to start sharing:', error)
+    }
+  }
+
+  const handleStopSharing = async () => {
+    if (!shareSessionId) {
+      setIsShareModalOpen(false)
+      return
+    }
+    try {
+      await fetch(`/api/share/${shareSessionId}`, { method: 'DELETE' })
+    } catch (error) {
+      console.error('Failed to stop sharing:', error)
+    } finally {
+      setShareSessionId(null)
+      setShareUrl('')
+      setIsShareModalOpen(false)
+    }
+  }
+
   useEffect(() => {
     if (isCommander && !hasSeenCommanderTip) {
       setShowBanner(true)
@@ -229,6 +268,25 @@ export function LifeTracker({ initialGameState, onReset }: LifeTrackerProps) {
     }
   }, [hasSeenHelpLegend])
 
+  useEffect(() => {
+    if (!shareSessionId) {
+      return
+    }
+    const timeout = window.setTimeout(async () => {
+      try {
+        await fetch(`/api/share/${shareSessionId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ state: gameState }),
+        })
+      } catch (error) {
+        console.error('Failed to sync share state:', error)
+      }
+    }, 350)
+
+    return () => window.clearTimeout(timeout)
+  }, [gameState, shareSessionId])
+
   return (
     <div className="min-h-screen flex flex-col arcane-shell text-[var(--ink)]">
       <div className="arcane-panel mana-border px-4 py-3 flex justify-between items-center">
@@ -236,6 +294,19 @@ export function LifeTracker({ initialGameState, onReset }: LifeTrackerProps) {
           {gameState.gameType === 'standard' ? 'Standard' : gameState.gameType === 'commander' ? 'Commander' : 'Custom'} ({gameState.startingLife} life)
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              if (shareSessionId) {
+                setIsShareModalOpen(true)
+              } else {
+                handleStartSharing()
+              }
+            }}
+            className="rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-[var(--muted)] hover:text-[var(--ink)] hover:bg-white/5"
+          >
+            Share this game state
+          </button>
           <button
             type="button"
             onClick={handleReset}
@@ -325,6 +396,13 @@ export function LifeTracker({ initialGameState, onReset }: LifeTrackerProps) {
         onChange={handleManaChange}
         onClearAll={handleClearManaPool}
         onClose={() => setSelectedPlayerIdForMana(null)}
+      />
+
+      <ShareGameModal
+        isOpen={isShareModalOpen}
+        shareUrl={shareUrl}
+        onClose={() => setIsShareModalOpen(false)}
+        onStop={handleStopSharing}
       />
     </div>
   )

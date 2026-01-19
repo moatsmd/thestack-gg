@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="sigilGlow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f2d183"/>
+      <stop offset="1" stop-color="#b8892b"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="120" fill="#121015"/>
+  <circle cx="256" cy="256" r="180" fill="none" stroke="url(#sigilGlow)" stroke-width="18"/>
+  <rect x="152" y="152" width="208" height="208" fill="none" stroke="url(#sigilGlow)" stroke-width="14" transform="rotate(45 256 256)"/>
+  <circle cx="256" cy="256" r="72" fill="none" stroke="url(#sigilGlow)" stroke-width="10"/>
+  <path d="M256 104 L292 180 L368 216 L292 252 L256 328 L220 252 L144 216 L220 180 Z" fill="none" stroke="url(#sigilGlow)" stroke-width="12" stroke-linejoin="round"/>
+  <circle cx="256" cy="256" r="18" fill="url(#sigilGlow)"/>
+</svg>
