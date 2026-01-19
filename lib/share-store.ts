@@ -11,11 +11,11 @@ const sessions = new Map<string, ShareSession>()
 
 const cleanupExpired = () => {
   const now = Date.now()
-  for (const [id, session] of sessions) {
+  sessions.forEach((session, id) => {
     if (session.expiresAt <= now) {
       sessions.delete(id)
     }
-  }
+  })
 }
 
 const createId = () => {
