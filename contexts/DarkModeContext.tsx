@@ -10,16 +10,14 @@ interface DarkModeContextType {
 const DarkModeContext = createContext<DarkModeContextType | undefined>(undefined)
 
 export function DarkModeProvider({ children }: { children: ReactNode }) {
-  const [isDarkMode, setIsDarkMode] = useState(false)
+  const [isDarkMode, setIsDarkMode] = useState(true)
   const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
     setIsMounted(true)
     // Load dark mode preference from localStorage
     const stored = localStorage.getItem('manadork-dark-mode')
-    if (stored !== null) {
-      setIsDarkMode(stored === 'true')
-    }
+    setIsDarkMode(stored !== null ? stored === 'true' : true)
   }, [])
 
   useEffect(() => {
@@ -30,8 +28,10 @@ export function DarkModeProvider({ children }: { children: ReactNode }) {
       // Update document class
       if (isDarkMode) {
         document.documentElement.classList.add('dark')
+        document.documentElement.classList.remove('light')
       } else {
         document.documentElement.classList.remove('dark')
+        document.documentElement.classList.add('light')
       }
     }
   }, [isDarkMode, isMounted])

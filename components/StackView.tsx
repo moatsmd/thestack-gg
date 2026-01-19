@@ -1,10 +1,10 @@
 'use client'
 
-import type { StackItem, StackPlayer } from '@/types/stack'
+import type { StackItem as StackItemType, StackPlayer } from '@/types/stack'
 import { StackItem } from '@/components/StackItem'
 
 interface StackViewProps {
-  items: StackItem[]
+  items: StackItemType[]
   players: StackPlayer[]
   resolvingId?: string | null
 }

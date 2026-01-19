@@ -117,7 +117,6 @@ export function CardSearchInput({
             aria-label="Card search input"
             aria-autocomplete="list"
             aria-controls="search-suggestions"
-            aria-expanded={isDropdownOpen}
           />
 
           {isDropdownOpen && suggestions.length > 0 && (
