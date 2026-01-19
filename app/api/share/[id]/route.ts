@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { deleteSession, getSession, updateSession } from '@/lib/share-store'
 
 export async function GET(_: Request, { params }: { params: { id: string } }) {
-  const session = getSession(params.id)
+  const session = await getSession(params.id)
   if (!session) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
@@ -19,7 +19,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     return NextResponse.json({ error: 'Missing state' }, { status: 400 })
   }
 
-  const updated = updateSession(params.id, body.state)
+  const updated = await updateSession(params.id, body.state)
   if (!updated) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
@@ -30,6 +30,6 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 }
 
 export async function DELETE(_: Request, { params }: { params: { id: string } }) {
-  deleteSession(params.id)
+  await deleteSession(params.id)
   return NextResponse.json({ ok: true })
 }

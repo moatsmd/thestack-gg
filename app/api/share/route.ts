@@ -7,7 +7,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Missing state' }, { status: 400 })
   }
 
-  const session = createSession(body.state)
+  const session = await createSession(body.state)
   const url = new URL(request.url)
   url.pathname = `/share/${session.id}`
 

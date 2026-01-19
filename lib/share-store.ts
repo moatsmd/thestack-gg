@@ -1,3 +1,5 @@
+import { getRedis } from '@/lib/redis'
+
 export interface ShareSession {
   id: string
   state: unknown
@@ -7,6 +9,7 @@ export interface ShareSession {
 }
 
 const SESSION_TTL_MS = 5 * 60 * 60 * 1000
+const SESSION_TTL_SEC = Math.floor(SESSION_TTL_MS / 1000)
 const sessions = new Map<string, ShareSession>()
 
 const cleanupExpired = () => {
@@ -25,8 +28,9 @@ const createId = () => {
   return Math.random().toString(16).slice(2, 10)
 }
 
-export const createSession = (state: unknown): ShareSession => {
-  cleanupExpired()
+const getKey = (id: string) => `share:${id}`
+
+export const createSession = async (state: unknown): Promise<ShareSession> => {
   const now = Date.now()
   const session: ShareSession = {
     id: createId(),
@@ -35,16 +39,46 @@ export const createSession = (state: unknown): ShareSession => {
     updatedAt: now,
     expiresAt: now + SESSION_TTL_MS,
   }
-  sessions.set(session.id, session)
+
+  const redis = await getRedis()
+  if (!redis) {
+    cleanupExpired()
+    sessions.set(session.id, session)
+    return session
+  }
+
+  await redis.set(getKey(session.id), JSON.stringify(session), {
+    EX: SESSION_TTL_SEC,
+  })
   return session
 }
 
-export const updateSession = (id: string, state: unknown): ShareSession | null => {
-  cleanupExpired()
-  const existing = sessions.get(id)
-  if (!existing) {
+export const updateSession = async (id: string, state: unknown): Promise<ShareSession | null> => {
+  const redis = await getRedis()
+  if (!redis) {
+    cleanupExpired()
+    const existing = sessions.get(id)
+    if (!existing) {
+      return null
+    }
+    const now = Date.now()
+    const updated: ShareSession = {
+      ...existing,
+      state,
+      updatedAt: now,
+      expiresAt: now + SESSION_TTL_MS,
+    }
+    sessions.set(id, updated)
+    return updated
+  }
+
+  const key = getKey(id)
+  const cached = await redis.get(key)
+  if (!cached) {
     return null
   }
+
+  const existing = JSON.parse(cached) as ShareSession
   const now = Date.now()
   const updated: ShareSession = {
     ...existing,
@@ -52,21 +86,32 @@ export const updateSession = (id: string, state: unknown): ShareSession | null =
     updatedAt: now,
     expiresAt: now + SESSION_TTL_MS,
   }
-  sessions.set(id, updated)
+
+  await redis.set(key, JSON.stringify(updated), { EX: SESSION_TTL_SEC })
   return updated
 }
 
-export const getSession = (id: string): ShareSession | null => {
-  cleanupExpired()
-  const session = sessions.get(id)
-  if (!session) {
+export const getSession = async (id: string): Promise<ShareSession | null> => {
+  const redis = await getRedis()
+  if (!redis) {
+    cleanupExpired()
+    return sessions.get(id) ?? null
+  }
+
+  const cached = await redis.get(getKey(id))
+  if (!cached) {
     return null
   }
-  return session
+  return JSON.parse(cached) as ShareSession
 }
 
-export const deleteSession = (id: string): void => {
-  sessions.delete(id)
+export const deleteSession = async (id: string): Promise<void> => {
+  const redis = await getRedis()
+  if (!redis) {
+    sessions.delete(id)
+    return
+  }
+  await redis.del(getKey(id))
 }
 
 export const getSessionTtlMs = () => SESSION_TTL_MS
