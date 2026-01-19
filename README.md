@@ -1,6 +1,6 @@
 # TheStack.gg
 
-A mobile-first Magic: The Gathering toolkit, starting with a comprehensive life tracker.
+A mobile-first Magic: The Gathering toolkit with life tracking, rules lookup, and stack visualization.
 
 ## Features
 
@@ -23,14 +23,33 @@ A mobile-first Magic: The Gathering toolkit, starting with a comprehensive life 
 - **Performance**: Smart caching (24hr) and rate limiting
 - **Mobile-Friendly**: Touch-optimized interface with fullscreen image view
 
+### Stack Visualizer
+- **Live Stack View**: LIFO ordering with newest effects on top
+- **Quick Add**: Common actions like counter, destroy, draw, trigger, activate
+- **Resolve Flow**: One-tap resolution with history tracking
+- **Priority**: Track and pass priority between players
+- **Persistence**: Saves stack state between refreshes
+- **Guide**: Dismissible "How to use" panel
+
+### Glossary
+- **Keyword Library**: Search and filter MTG keywords
+- **Categories**: Abilities, actions, and mechanics
+- **Readable Cards**: Compact definitions with reminder text
+
+### Rules Lookup
+- **Comprehensive Rules**: Full-text search with section detail
+- **Card-Linked**: Jump from card search to rulings
+- **Caching**: Cached rules data for faster lookups
+
 ### Dark Mode
 - **Theme Toggle**: Switch between light and dark themes
 - **Persistent**: Your theme preference is saved
 - **System-Wide**: Consistent theming across all pages
+ - **Default Dark**: Dark mode is on by default
 
 ### Navigation
 - **Hamburger Menu**: Easy navigation between all pages
-- **Quick Access**: Access home, life tracker, card lookup, and rules from anywhere
+- **Quick Access**: Access home, life tracker, stack, card lookup, glossary, and rules from anywhere
 
 ## Getting Started
 
@@ -86,15 +105,16 @@ npm start
 - [x] Poison counter tracking
 - [x] Mana pool tracking
 - [x] Card lookup with official rulings (Scryfall integration)
+- [x] Stack visualizer with resolution history
+- [x] MTG keyword glossary
+- [x] Comprehensive Rules search
 - [x] Dark mode
 - [x] Global navigation (hamburger menu)
 
 ### Planned
 - [ ] PWA support (installable app)
-- [ ] Comprehensive Rules search (pending CORS solution)
 - [ ] User accounts
 - [ ] Deck win/loss tracking
-- [ ] Terminology lookup (MTG glossary)
 - [ ] Life history timeline view
 - [ ] Export game statistics
 

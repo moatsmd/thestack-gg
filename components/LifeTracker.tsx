@@ -230,16 +230,16 @@ export function LifeTracker({ initialGameState, onReset }: LifeTrackerProps) {
   }, [hasSeenHelpLegend])
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <div className="bg-gray-800 text-white px-4 py-3 flex justify-between items-center">
-        <div className="text-sm">
+    <div className="min-h-screen flex flex-col arcane-shell text-[var(--ink)]">
+      <div className="arcane-panel mana-border px-4 py-3 flex justify-between items-center">
+        <div className="text-sm text-[var(--muted)]">
           {gameState.gameType === 'standard' ? 'Standard' : gameState.gameType === 'commander' ? 'Commander' : 'Custom'} ({gameState.startingLife} life)
         </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={handleReset}
-            className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-sm font-semibold"
+            className="bg-[var(--accent-3)] hover:bg-[var(--accent-3)]/90 px-4 py-2 rounded text-sm font-semibold text-white"
           >
             Reset Game
           </button>
@@ -248,14 +248,14 @@ export function LifeTracker({ initialGameState, onReset }: LifeTrackerProps) {
       </div>
 
       {showBanner && isCommander && (
-        <div className="bg-blue-600 text-white px-4 py-3 flex justify-between items-center" data-testid="commander-tip-banner">
-          <div className="text-sm">
+        <div className="arcane-panel-soft mana-border px-4 py-3 flex justify-between items-center" data-testid="commander-tip-banner">
+          <div className="text-sm text-[var(--ink)]">
             💡 Tip: Tap any player to track commander damage
           </div>
           <button
             type="button"
             onClick={handleDismissBanner}
-            className="ml-4 rounded-md px-3 py-1 text-sm font-semibold hover:bg-blue-700"
+            className="ml-4 rounded-md px-3 py-1 text-sm font-semibold text-[var(--muted)] hover:text-[var(--ink)] hover:bg-white/5"
             aria-label="Dismiss tip"
           >
             Got it

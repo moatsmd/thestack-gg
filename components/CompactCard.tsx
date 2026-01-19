@@ -22,12 +22,12 @@ export function CompactCard({ card, onClick }: CompactCardProps) {
     <button
       type="button"
       onClick={() => onClick(card)}
-      className="group relative rounded-lg overflow-hidden bg-white dark:bg-gray-800 shadow-md hover:shadow-xl transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-500"
+      className="group relative rounded-lg overflow-hidden bg-white dark:bg-[var(--surface-1)] border border-white/10 shadow-md hover:shadow-xl transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-[var(--accent-4)]"
       data-testid="compact-card"
       aria-label={`View details for ${name}`}
     >
       {/* Card Image */}
-      <div className="aspect-[5/7] relative overflow-hidden bg-gray-200 dark:bg-gray-700">
+      <div className="aspect-[5/7] relative overflow-hidden bg-gray-200 dark:bg-gray-900">
         {imageUri ? (
           <img
             src={imageUri}
@@ -48,16 +48,16 @@ export function CompactCard({ card, onClick }: CompactCardProps) {
       {/* Card Info */}
       <div className="p-2 space-y-1">
         <div className="flex items-start justify-between gap-1">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white text-left line-clamp-2 flex-1">
+          <h3 className="text-sm font-semibold text-[var(--ink)] text-left line-clamp-2 flex-1">
             {name}
           </h3>
           {manaCost && (
-            <span className="text-xs text-gray-600 dark:text-gray-400 font-mono whitespace-nowrap">
+            <span className="text-xs text-[var(--muted)] font-mono whitespace-nowrap">
               {manaCost}
             </span>
           )}
         </div>
-        <p className="text-xs text-gray-600 dark:text-gray-400 text-left line-clamp-1">
+        <p className="text-xs text-[var(--muted)] text-left line-clamp-1">
           {typeLine}
         </p>
       </div>

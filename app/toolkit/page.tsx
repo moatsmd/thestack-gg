@@ -5,10 +5,12 @@ import { CardSearch } from '@/components/CardSearch'
 
 export default function ToolkitPage() {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gradient-to-br dark:from-gray-900 dark:to-gray-800 transition-colors">
+    <div className="min-h-screen arcane-shell text-[var(--ink)] transition-colors">
       <ToolkitHeader />
-      <div className="container mx-auto px-4 py-6">
-        <CardSearch />
+      <div className="container mx-auto px-4 py-8">
+        <div className="arcane-panel mana-border rounded-2xl p-6">
+          <CardSearch />
+        </div>
       </div>
     </div>
   )

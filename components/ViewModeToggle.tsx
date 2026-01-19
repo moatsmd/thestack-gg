@@ -10,7 +10,7 @@ interface ViewModeToggleProps {
 export function ViewModeToggle({ mode, onModeChange }: ViewModeToggleProps) {
   return (
     <div
-      className="inline-flex rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 p-1"
+      className="inline-flex rounded-lg border border-white/10 bg-[var(--surface-1)] p-1"
       role="group"
       aria-label="View mode"
     >
@@ -19,8 +19,8 @@ export function ViewModeToggle({ mode, onModeChange }: ViewModeToggleProps) {
         onClick={() => mode !== 'single' && onModeChange('single')}
         className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
           mode === 'single'
-            ? 'bg-purple-600 text-white'
-            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+            ? 'bg-[var(--accent-4)] text-white'
+            : 'text-[var(--muted)] hover:bg-white/5'
         }`}
         aria-label="Single card view"
         aria-pressed={mode === 'single'}
@@ -44,8 +44,8 @@ export function ViewModeToggle({ mode, onModeChange }: ViewModeToggleProps) {
         onClick={() => mode !== 'grid' && onModeChange('grid')}
         className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
           mode === 'grid'
-            ? 'bg-purple-600 text-white'
-            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+            ? 'bg-[var(--accent-4)] text-white'
+            : 'text-[var(--muted)] hover:bg-white/5'
         }`}
         aria-label="Grid view"
         aria-pressed={mode === 'grid'}

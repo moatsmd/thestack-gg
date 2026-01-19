@@ -68,14 +68,14 @@ export function CommanderDamageModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-lg rounded-lg bg-white shadow-lg">
-        <div className="flex items-start justify-between border-b border-gray-200 px-4 py-3">
-          <div className="text-lg font-semibold text-gray-900">{playerName}&apos;s Commander Damage</div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+      <div className="w-full max-w-lg rounded-2xl bg-[var(--surface-1)] text-[var(--ink)] shadow-lg border border-white/10">
+        <div className="flex items-start justify-between border-b border-white/10 px-4 py-3">
+          <div className="text-lg font-semibold text-[var(--ink)]">{playerName}&apos;s Commander Damage</div>
           <button
             type="button"
             onClick={onClose}
-            className="ml-4 rounded-md px-3 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100"
+            className="ml-4 rounded-md px-3 py-2 text-sm font-semibold text-[var(--muted)] hover:text-[var(--ink)] hover:bg-white/5"
             aria-label="Close commander damage"
           >
             Close
@@ -88,10 +88,10 @@ export function CommanderDamageModal({
             data-warning-level={warningLevel}
             className={`rounded-md px-3 py-2 text-sm font-semibold ${
               warningLevel === 'danger'
-                ? 'bg-red-100 text-red-700'
+                ? 'bg-red-100 text-red-700 dark:bg-red-900/60 dark:text-red-100'
                 : warningLevel === 'warning'
-                  ? 'bg-yellow-100 text-yellow-700'
-                  : 'bg-gray-100 text-gray-700'
+                  ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/60 dark:text-yellow-100'
+                  : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200'
             }`}
           >
             Total: {totalDamage}
@@ -106,10 +106,10 @@ export function CommanderDamageModal({
               return (
                 <div
                   key={opponent.id}
-                  className="flex items-center justify-between rounded-lg border border-gray-200 p-3"
+                  className="flex items-center justify-between rounded-lg border border-white/10 p-3"
                 >
                   <div className="flex-1">
-                    <div className="text-sm font-medium text-gray-900 mb-1">
+                    <div className="text-sm font-medium text-[var(--ink)] mb-1">
                       From {opponent.name}&apos;s{' '}
                       {isEditingThisCommander ? (
                         <input
@@ -130,26 +130,26 @@ export function CommanderDamageModal({
                             }
                           }}
                           autoFocus
-                          className="inline-block w-32 rounded border border-gray-300 px-2 py-1 text-sm"
+                          className="inline-block w-32 rounded border border-white/10 bg-[var(--surface-2)] px-2 py-1 text-sm text-[var(--ink)]"
                           placeholder="Commander"
                         />
                       ) : (
                         <button
                           type="button"
                           onClick={() => handleStartEditCommander(opponent.id, commanderLabel)}
-                          className="inline-block rounded px-1 hover:bg-gray-100"
+                          className="inline-block rounded px-1 hover:bg-white/5"
                         >
                           {commanderLabel}
                         </button>
                       )}
                     </div>
-                    <div className="text-2xl font-bold text-gray-900">{amount}</div>
+                    <div className="text-2xl font-bold text-[var(--ink)]">{amount}</div>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={() => handleDecrease(opponent.id, amount)}
-                      className="min-h-tap min-w-tap rounded-md bg-gray-200 px-3 py-2 text-lg font-bold text-gray-700 hover:bg-gray-300"
+                      className="min-h-tap min-w-tap rounded-md bg-[var(--surface-2)] px-3 py-2 text-lg font-bold text-[var(--muted)] hover:bg-white/5"
                       aria-label={`Decrease damage from ${opponent.name}`}
                     >
                       -
@@ -157,7 +157,7 @@ export function CommanderDamageModal({
                     <button
                       type="button"
                       onClick={() => onChange(opponent.id, 1)}
-                      className="min-h-tap min-w-tap rounded-md bg-gray-900 px-3 py-2 text-lg font-bold text-white hover:bg-gray-800"
+                      className="min-h-tap min-w-tap rounded-md bg-[var(--accent-1)] px-3 py-2 text-lg font-bold text-gray-900 hover:bg-[var(--accent-1)]/90"
                       aria-label={`Increase damage from ${opponent.name}`}
                     >
                       +

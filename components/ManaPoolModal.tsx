@@ -15,17 +15,16 @@ interface ManaColor {
   key: keyof ManaPool
   name: string
   symbol: string
-  bgColor: string
-  textColor: string
+  accent: string
 }
 
 const manaColors: ManaColor[] = [
-  { key: 'white', name: 'White', symbol: '⚪', bgColor: 'bg-gray-50', textColor: 'text-gray-900' },
-  { key: 'blue', name: 'Blue', symbol: '🔵', bgColor: 'bg-blue-50', textColor: 'text-blue-900' },
-  { key: 'black', name: 'Black', symbol: '⚫', bgColor: 'bg-gray-900', textColor: 'text-white' },
-  { key: 'red', name: 'Red', symbol: '🔴', bgColor: 'bg-red-50', textColor: 'text-red-900' },
-  { key: 'green', name: 'Green', symbol: '🟢', bgColor: 'bg-green-50', textColor: 'text-green-900' },
-  { key: 'colorless', name: 'Colorless', symbol: '◇', bgColor: 'bg-gray-100', textColor: 'text-gray-700' },
+  { key: 'white', name: 'White', symbol: '⚪', accent: 'border-l-4 border-yellow-300' },
+  { key: 'blue', name: 'Blue', symbol: '🔵', accent: 'border-l-4 border-sky-400' },
+  { key: 'black', name: 'Black', symbol: '⚫', accent: 'border-l-4 border-slate-500' },
+  { key: 'red', name: 'Red', symbol: '🔴', accent: 'border-l-4 border-rose-400' },
+  { key: 'green', name: 'Green', symbol: '🟢', accent: 'border-l-4 border-emerald-400' },
+  { key: 'colorless', name: 'Colorless', symbol: '◇', accent: 'border-l-4 border-gray-300' },
 ]
 
 export function ManaPoolModal({
@@ -48,16 +47,16 @@ export function ManaPoolModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-lg bg-white shadow-lg">
-        <div className="flex items-start justify-between border-b border-gray-200 px-4 py-3">
-          <div className="text-lg font-semibold text-gray-900">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+      <div className="w-full max-w-md rounded-2xl bg-[var(--surface-1)] text-[var(--ink)] shadow-lg border border-white/10">
+        <div className="flex items-start justify-between border-b border-white/10 px-4 py-3">
+          <div className="text-lg font-semibold text-[var(--ink)]">
             {playerName}&apos;s Mana Pool
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="ml-4 rounded-md px-3 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100"
+            className="ml-4 rounded-md px-3 py-2 text-sm font-semibold text-[var(--muted)] hover:text-[var(--ink)] hover:bg-white/5"
             aria-label="Close mana pool"
           >
             Close
@@ -71,9 +70,9 @@ export function ManaPoolModal({
             return (
               <div
                 key={color.key}
-                className={`flex items-center justify-between rounded-lg border border-gray-200 p-3 ${color.bgColor}`}
+                className={`flex items-center justify-between rounded-lg border border-white/10 p-3 bg-[var(--surface-2)] ${color.accent}`}
               >
-                <div className={`flex items-center gap-3 ${color.textColor}`}>
+                <div className="flex items-center gap-3 text-[var(--ink)]">
                   <div className="text-2xl">{color.symbol}</div>
                   <div>
                     <div className="text-sm font-medium">{color.name}</div>
@@ -84,7 +83,7 @@ export function ManaPoolModal({
                   <button
                     type="button"
                     onClick={() => handleDecrease(color.key, amount)}
-                    className="min-h-tap min-w-tap rounded-md bg-gray-200 px-3 py-2 text-lg font-bold text-gray-700 hover:bg-gray-300"
+                    className="min-h-tap min-w-tap rounded-md bg-[var(--surface-1)] px-3 py-2 text-lg font-bold text-[var(--muted)] hover:bg-white/5"
                     aria-label={`Decrease ${color.name} mana`}
                   >
                     -
@@ -92,7 +91,7 @@ export function ManaPoolModal({
                   <button
                     type="button"
                     onClick={() => onChange(color.key, 1)}
-                    className="min-h-tap min-w-tap rounded-md bg-gray-900 px-3 py-2 text-lg font-bold text-white hover:bg-gray-800"
+                    className="min-h-tap min-w-tap rounded-md bg-[var(--accent-2)] px-3 py-2 text-lg font-bold text-gray-900 hover:bg-[var(--accent-2)]/90"
                     aria-label={`Increase ${color.name} mana`}
                   >
                     +
@@ -105,7 +104,7 @@ export function ManaPoolModal({
           <button
             type="button"
             onClick={onClearAll}
-            className="w-full rounded-md bg-red-600 px-4 py-3 text-sm font-semibold text-white hover:bg-red-700 active:bg-red-800 transition"
+            className="w-full rounded-md bg-[var(--accent-3)] px-4 py-3 text-sm font-semibold text-white hover:bg-[var(--accent-3)]/90 active:bg-[var(--accent-3)] transition"
             aria-label="Clear all mana"
           >
             Clear All Mana

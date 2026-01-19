@@ -113,7 +113,7 @@ export function CardSearchInput({
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             placeholder="Search for a card..."
-            className="w-full min-h-[48px] px-4 py-3 text-base rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+            className="w-full min-h-[48px] px-4 py-3 text-base rounded-lg border border-white/10 bg-[var(--surface-1)] text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-2)] focus:border-transparent transition-colors"
             aria-label="Card search input"
             aria-autocomplete="list"
             aria-controls="search-suggestions"
@@ -125,7 +125,7 @@ export function CardSearchInput({
               ref={dropdownRef}
               id="search-suggestions"
               role="listbox"
-              className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-64 overflow-y-auto"
+              className="absolute z-10 w-full mt-1 bg-[var(--surface-1)] border border-white/10 rounded-lg shadow-lg max-h-64 overflow-y-auto"
             >
               {suggestions.map((suggestion, index) => (
                 <button
@@ -134,10 +134,10 @@ export function CardSearchInput({
                   role="option"
                   aria-selected={index === highlightedIndex}
                   onClick={() => handleSelectSuggestion(suggestion)}
-                  className={`w-full text-left px-4 py-3 min-h-[48px] border-b border-gray-100 dark:border-gray-700 last:border-b-0 transition ${
+                  className={`w-full text-left px-4 py-3 min-h-[48px] border-b border-white/5 last:border-b-0 transition ${
                     index === highlightedIndex
-                      ? 'bg-blue-50 dark:bg-blue-900 text-blue-900 dark:text-blue-100'
-                      : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white'
+                      ? 'bg-[var(--surface-2)] text-[var(--ink)]'
+                      : 'hover:bg-white/5 text-[var(--ink)]'
                   }`}
                 >
                   {suggestion}
@@ -151,7 +151,7 @@ export function CardSearchInput({
           type="button"
           onClick={onSearch}
           disabled={isLoading}
-          className="min-h-[48px] px-6 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition"
+          className="min-h-[48px] px-6 bg-[var(--accent-2)] hover:bg-[var(--accent-2)]/90 disabled:bg-gray-600 text-gray-900 font-semibold rounded-lg transition"
           aria-label="Search"
         >
           {isLoading ? (

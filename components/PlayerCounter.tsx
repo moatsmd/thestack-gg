@@ -76,12 +76,13 @@ export function PlayerCounter({
     setIsEditingName(false)
   }
 
-  const lifeColorClass = currentLife < 0 ? 'text-red-600' : 'text-gray-900'
+  const lifeColorClass =
+    currentLife < 0 ? 'text-red-600 dark:text-red-400' : 'text-[var(--ink)]'
   const lifeSizeClass = isSolo ? 'text-9xl' : 'text-6xl'
 
   return (
     <div
-      className="flex flex-col items-center justify-center h-full p-4"
+      className="arcane-panel mana-border flex flex-col items-center justify-center h-full p-4 rounded-2xl hover:bg-white/5 transition"
       data-testid="player-card"
       onClick={handleOpenCommanderDamage}
       role={isCommander ? 'button' : undefined}
@@ -111,7 +112,7 @@ export function PlayerCounter({
                 handleNameSubmit()
               }
             }}
-            className="rounded-md border border-gray-300 px-3 py-2 text-base font-semibold text-gray-700 focus:border-gray-500 focus:outline-none"
+            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-base font-semibold text-gray-700 focus:border-gray-500 focus:outline-none dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100"
           />
         ) : (
           <button
@@ -121,7 +122,7 @@ export function PlayerCounter({
               setNameDraft(playerName)
               setIsEditingName(true)
             }}
-            className="text-xl font-semibold text-gray-600"
+            className="text-xl font-semibold text-[var(--muted)] hover:text-[var(--ink)]"
             aria-label="Edit player name"
           >
             {playerName}
@@ -134,7 +135,7 @@ export function PlayerCounter({
               event.stopPropagation()
               onOpenCommanderDamage(playerId)
             }}
-            className="rounded-full border border-gray-300 px-2 py-1 text-xs font-semibold text-gray-500"
+            className="rounded-full border border-white/10 px-2 py-1 text-xs font-semibold text-[var(--muted)]"
             aria-label="Open commander damage"
           >
             CMD
@@ -146,7 +147,7 @@ export function PlayerCounter({
             event.stopPropagation()
             onOpenPoisonCounter(playerId)
           }}
-          className="rounded-full border border-gray-300 px-2 py-1 text-xs font-semibold text-gray-500"
+          className="rounded-full border border-white/10 px-2 py-1 text-xs font-semibold text-[var(--muted)]"
           aria-label="Open poison counters"
         >
           ☠️
@@ -157,7 +158,7 @@ export function PlayerCounter({
             event.stopPropagation()
             onOpenManaPool(playerId)
           }}
-          className="rounded-full border border-gray-300 px-2 py-1 text-xs font-semibold text-gray-500"
+          className="rounded-full border border-white/10 px-2 py-1 text-xs font-semibold text-[var(--muted)]"
           aria-label="Open mana pool"
         >
           💎
@@ -165,7 +166,7 @@ export function PlayerCounter({
       </div>
 
       {/* Life total */}
-      <div className={`font-bold ${lifeSizeClass} ${lifeColorClass} mb-4`}>
+      <div className={`font-bold ${lifeSizeClass} ${lifeColorClass} mb-4 drop-shadow-sm`}>
         {currentLife}
       </div>
 
@@ -179,10 +180,10 @@ export function PlayerCounter({
           }}
           className={`rounded-full px-4 py-2 text-sm font-semibold mb-4 cursor-pointer hover:opacity-80 transition ${
             commanderWarningLevel === 'danger'
-              ? 'bg-red-100 text-red-700'
+              ? 'bg-red-100 text-red-700 dark:bg-red-900/60 dark:text-red-100'
               : commanderWarningLevel === 'warning'
-                ? 'bg-yellow-100 text-yellow-700'
-                : 'bg-gray-100 text-gray-700'
+                ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/60 dark:text-yellow-100'
+                : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200'
           }`}
           data-testid="commander-damage-badge"
           aria-label="Open commander damage"
@@ -201,10 +202,10 @@ export function PlayerCounter({
           }}
           className={`rounded-full px-4 py-2 text-sm font-semibold mb-4 cursor-pointer hover:opacity-80 transition ${
             poisonWarningLevel === 'danger'
-              ? 'bg-red-100 text-red-700'
+              ? 'bg-red-100 text-red-700 dark:bg-red-900/60 dark:text-red-100'
               : poisonWarningLevel === 'warning'
-                ? 'bg-yellow-100 text-yellow-700'
-                : 'bg-gray-100 text-gray-700'
+                ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/60 dark:text-yellow-100'
+                : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200'
           }`}
           data-testid="poison-badge"
           aria-label="Open poison counters"
@@ -221,7 +222,7 @@ export function PlayerCounter({
             event.stopPropagation()
             onOpenManaPool(playerId)
           }}
-          className="rounded-full px-4 py-2 text-sm font-semibold mb-4 bg-purple-100 text-purple-700 cursor-pointer hover:opacity-80 transition"
+          className="rounded-full px-4 py-2 text-sm font-semibold mb-4 bg-purple-100 text-purple-700 dark:bg-purple-900/60 dark:text-purple-100 cursor-pointer hover:opacity-80 transition"
           data-testid="mana-badge"
           aria-label="Open mana pool"
         >
@@ -236,7 +237,7 @@ export function PlayerCounter({
             event.stopPropagation()
             handleDecrement()
           }}
-          className="flex-1 bg-red-600 text-white text-4xl font-bold py-8 rounded-lg hover:bg-red-700 active:bg-red-800 transition min-h-tap"
+          className="flex-1 bg-[var(--accent-3)] text-white text-4xl font-bold py-8 rounded-lg hover:bg-[var(--accent-3)]/90 active:bg-[var(--accent-3)] transition min-h-tap"
           aria-label="-"
         >
           -
@@ -246,7 +247,7 @@ export function PlayerCounter({
             event.stopPropagation()
             handleIncrement()
           }}
-          className="flex-1 bg-green-600 text-white text-4xl font-bold py-8 rounded-lg hover:bg-green-700 active:bg-green-800 transition min-h-tap"
+          className="flex-1 bg-[var(--accent-2)] text-gray-900 text-4xl font-bold py-8 rounded-lg hover:bg-[var(--accent-2)]/90 active:bg-[var(--accent-2)] transition min-h-tap"
           aria-label="+"
         >
           +

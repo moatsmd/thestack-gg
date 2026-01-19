@@ -21,7 +21,7 @@ export function CardGrid({ cards, onCardClick, onLoadMore, hasMore, isLoadingMor
 
   if (cards.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+      <div className="text-center py-8 text-[var(--muted)]">
         No cards found
       </div>
     )
@@ -43,7 +43,7 @@ export function CardGrid({ cards, onCardClick, onLoadMore, hasMore, isLoadingMor
       {isLoadingMore && (
         <div className="text-center py-4">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-gray-300 border-t-purple-600" />
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">Loading more cards...</p>
+          <p className="mt-2 text-sm text-[var(--muted)]">Loading more cards...</p>
         </div>
       )}
 
@@ -58,7 +58,7 @@ export function CardGrid({ cards, onCardClick, onLoadMore, hasMore, isLoadingMor
 
       {/* End of results */}
       {!hasMore && cards.length > 0 && (
-        <div className="text-center py-4 text-sm text-gray-500 dark:text-gray-400">
+        <div className="text-center py-4 text-sm text-[var(--muted)]">
           End of results ({cards.length} cards)
         </div>
       )}

@@ -40,7 +40,7 @@ export function CardLegalityDisplay({ legalities }: CardLegalityDisplayProps) {
 
   if (legalEntries.length === 0) {
     return (
-      <div className="text-gray-500 text-sm">
+      <div className="text-[var(--muted)] text-sm">
         Not legal in any format
       </div>
     )
@@ -65,15 +65,15 @@ export function CardLegalityDisplay({ legalities }: CardLegalityDisplayProps) {
 function getLegalityStyles(status: Legality): string {
   switch (status) {
     case 'legal':
-      return 'bg-green-100 text-green-700'
+      return 'bg-green-100 text-green-700 dark:bg-green-900/60 dark:text-green-100'
     case 'banned':
-      return 'bg-red-100 text-red-700'
+      return 'bg-red-100 text-red-700 dark:bg-red-900/60 dark:text-red-100'
     case 'restricted':
-      return 'bg-yellow-100 text-yellow-700'
+      return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/60 dark:text-yellow-100'
     case 'not_legal':
-      return 'bg-gray-100 text-gray-700'
+      return 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200'
     default:
-      return 'bg-gray-100 text-gray-700'
+      return 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200'
   }
 }
 

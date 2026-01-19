@@ -20,12 +20,12 @@ export default function GlossaryPage() {
   }, [debouncedQuery, setQuery])
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors">
+    <div className="min-h-screen arcane-shell text-[var(--ink)] transition-colors">
       <GlossaryHeader />
 
       <main className="container mx-auto px-4 py-8">
         {/* Search and Filter Controls */}
-        <div className="mb-6 space-y-4">
+        <div className="mb-6 space-y-4 arcane-panel mana-border rounded-2xl p-6">
           {/* Search Input */}
           <div>
             <label htmlFor="keyword-search" className="sr-only">
@@ -37,7 +37,7 @@ export default function GlossaryPage() {
               placeholder="Search keywords..."
               value={debouncedQuery}
               onChange={(e) => setDebouncedQuery(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-600 focus:border-transparent"
+              className="w-full px-4 py-2 border border-white/10 rounded-lg bg-[var(--surface-1)] text-[var(--ink)] focus:ring-2 focus:ring-[var(--accent-2)] focus:border-transparent"
               data-testid="keyword-search"
             />
           </div>
@@ -48,8 +48,8 @@ export default function GlossaryPage() {
               onClick={() => setType('all')}
               className={`px-4 py-2 rounded-lg font-semibold transition ${
                 selectedType === 'all'
-                  ? 'bg-teal-600 text-white'
-                  : 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700'
+                  ? 'bg-[var(--accent-2)] text-gray-900'
+                  : 'bg-[var(--surface-2)] text-[var(--muted)] hover:bg-[var(--surface-1)]'
               }`}
               data-testid="filter-all"
             >
@@ -60,7 +60,7 @@ export default function GlossaryPage() {
               className={`px-4 py-2 rounded-lg font-semibold transition ${
                 selectedType === 'ability'
                   ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700'
+                  : 'bg-[var(--surface-2)] text-[var(--muted)] hover:bg-[var(--surface-1)]'
               }`}
               data-testid="filter-ability"
             >
@@ -71,7 +71,7 @@ export default function GlossaryPage() {
               className={`px-4 py-2 rounded-lg font-semibold transition ${
                 selectedType === 'action'
                   ? 'bg-green-600 text-white'
-                  : 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700'
+                  : 'bg-[var(--surface-2)] text-[var(--muted)] hover:bg-[var(--surface-1)]'
               }`}
               data-testid="filter-action"
             >
@@ -82,7 +82,7 @@ export default function GlossaryPage() {
               className={`px-4 py-2 rounded-lg font-semibold transition ${
                 selectedType === 'mechanic'
                   ? 'bg-purple-600 text-white'
-                  : 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700'
+                  : 'bg-[var(--surface-2)] text-[var(--muted)] hover:bg-[var(--surface-1)]'
               }`}
               data-testid="filter-mechanic"
             >
@@ -92,7 +92,7 @@ export default function GlossaryPage() {
         </div>
 
         {/* Results Count */}
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+        <p className="text-sm text-[var(--muted)] mb-4">
           Showing {filteredKeywords.length} keyword{filteredKeywords.length !== 1 ? 's' : ''}
         </p>
 
@@ -108,7 +108,7 @@ export default function GlossaryPage() {
           </div>
         ) : (
           <div
-            className="text-center py-12 text-gray-500 dark:text-gray-400"
+            className="text-center py-12 text-[var(--muted)]"
             data-testid="empty-state"
           >
             <p className="text-lg font-semibold mb-2">No keywords found</p>

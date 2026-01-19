@@ -42,7 +42,10 @@ export function CardDisplay({ card }: CardDisplayProps) {
 
   return (
     <>
-      <div className="rounded-lg bg-white shadow-lg overflow-hidden" data-testid="card-display">
+      <div
+        className="rounded-lg bg-white dark:bg-[var(--surface-1)] shadow-lg overflow-hidden border border-white/10"
+        data-testid="card-display"
+      >
         {/* Card Image */}
         {imageUri ? (
           <div className="relative">
@@ -71,8 +74,8 @@ export function CardDisplay({ card }: CardDisplayProps) {
             )}
           </div>
         ) : (
-          <div className="w-full aspect-[5/7] bg-gray-200 flex items-center justify-center" data-testid="no-image">
-            <span className="text-gray-500">No image available</span>
+          <div className="w-full aspect-[5/7] bg-gray-200 dark:bg-gray-900 flex items-center justify-center" data-testid="no-image">
+            <span className="text-gray-500 dark:text-gray-400">No image available</span>
           </div>
         )}
 
@@ -81,39 +84,39 @@ export function CardDisplay({ card }: CardDisplayProps) {
           {/* Card Header */}
           <div data-testid="card-header">
             <div className="flex items-start justify-between gap-2 mb-1">
-              <h2 className="text-xl font-bold text-gray-900" data-testid="card-name">
+              <h2 className="text-xl font-bold text-[var(--ink)]" data-testid="card-name">
                 {name}
               </h2>
               {manaCost && (
-                <span className="text-gray-600 font-mono text-sm whitespace-nowrap" data-testid="card-mana-cost">
+                <span className="text-[var(--muted)] font-mono text-sm whitespace-nowrap" data-testid="card-mana-cost">
                   {manaCost}
                 </span>
               )}
             </div>
-            <div className="text-gray-700 text-sm" data-testid="card-type-line">
+            <div className="text-[var(--muted)] text-sm" data-testid="card-type-line">
               {typeLine}
             </div>
           </div>
 
           {/* Oracle Text */}
           {oracleText && (
-            <div className="border-t border-gray-200 pt-3">
+            <div className="border-t border-white/10 pt-3">
               <OracleTextWithKeywords
                 oracleText={oracleText}
-                className="text-sm text-gray-800 whitespace-pre-line"
+                className="text-sm text-[var(--ink)] whitespace-pre-line"
                 data-testid="card-oracle-text"
               />
             </div>
           )}
 
           {/* Legalities */}
-          <div className="border-t border-gray-200 pt-3">
-            <h3 className="text-sm font-semibold text-gray-900 mb-2">Format Legality</h3>
+          <div className="border-t border-white/10 pt-3">
+            <h3 className="text-sm font-semibold text-[var(--ink)] mb-2">Format Legality</h3>
             <CardLegalityDisplay legalities={card.legalities} />
           </div>
 
           {/* Metadata */}
-          <div className="border-t border-gray-200 pt-3 text-sm text-gray-600 space-y-1" data-testid="card-metadata">
+          <div className="border-t border-white/10 pt-3 text-sm text-[var(--muted)] space-y-1" data-testid="card-metadata">
             <div>
               <span className="font-medium">Set:</span> {card.set_name} ({card.set.toUpperCase()})
             </div>

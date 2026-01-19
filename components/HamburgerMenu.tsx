@@ -111,6 +111,20 @@ export function HamburgerMenu() {
                 📚 Keywords
               </Link>
               <Link
+                href="/stack"
+                onClick={closeMenu}
+                className="block px-6 py-3 text-white hover:bg-gray-800 transition"
+              >
+                🧱 Stack Visualizer
+              </Link>
+              <Link
+                href="/new-players"
+                onClick={closeMenu}
+                className="block px-6 py-3 text-white hover:bg-gray-800 transition"
+              >
+                🧭 New Players
+              </Link>
+              <Link
                 href="/rules"
                 onClick={closeMenu}
                 className="block px-6 py-3 text-white hover:bg-gray-800 transition"
