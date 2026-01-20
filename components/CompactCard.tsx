@@ -18,6 +18,10 @@ export function CompactCard({ card, onClick }: CompactCardProps) {
   const manaCost = firstFace?.mana_cost || card.mana_cost
   const typeLine = firstFace?.type_line || card.type_line
 
+  // Format price
+  const price = card.prices?.usd
+  const formattedPrice = price ? `$${parseFloat(price).toFixed(2)}` : null
+
   return (
     <button
       type="button"
@@ -43,6 +47,15 @@ export function CompactCard({ card, onClick }: CompactCardProps) {
 
         {/* Hover overlay */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+
+        {/* Price Badge */}
+        {formattedPrice && (
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent pt-4 pb-1.5 px-2">
+            <span className="text-white font-bold text-sm drop-shadow-lg">
+              {formattedPrice}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Card Info */}

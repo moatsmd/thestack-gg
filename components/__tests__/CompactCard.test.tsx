@@ -65,6 +65,20 @@ describe('CompactCard', () => {
     expect(screen.getByText('No image')).toBeInTheDocument()
   })
 
+  it('displays price when available', () => {
+    render(<CompactCard card={mockCard} onClick={() => {}} />)
+
+    expect(screen.getByText('$1.50')).toBeInTheDocument()
+  })
+
+  it('does not display price when not available', () => {
+    const cardWithoutPrice = { ...mockCard, prices: { usd: null } }
+
+    render(<CompactCard card={cardWithoutPrice} onClick={() => {}} />)
+
+    expect(screen.queryByText(/\$/)).not.toBeInTheDocument()
+  })
+
   it('displays DFC indicator for multi-faced cards', () => {
     const doubleFacedCard: ScryfallCard = {
       ...mockCard,
