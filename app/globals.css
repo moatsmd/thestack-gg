@@ -19,18 +19,18 @@
   }
 
   .dark {
-    --canvas: #121015;
-    --surface-1: #1b1820;
-    --surface-2: #24202b;
-    --card-surface-1: rgba(27, 23, 34, 0.96);
-    --card-surface-2: rgba(20, 18, 26, 0.98);
-    --ink: #f4f1ea;
-    --muted: #b0a9a0;
-    --accent-1: #d6b25a;
-    --accent-2: #3fb7c2;
-    --accent-3: #c14f4a;
-    --accent-4: #7b69ff;
-    --ring: rgba(214, 178, 90, 0.35);
+    --canvas: #121212;
+    --surface-1: #1e1e1e;
+    --surface-2: #2a2a2a;
+    --card-surface-1: rgba(30, 30, 30, 0.96);
+    --card-surface-2: rgba(42, 42, 42, 0.98);
+    --ink: #e0e0e0;
+    --muted: #a0a0a0;
+    --accent-1: #6200ea;
+    --accent-2: #03dac6;
+    --accent-3: #cf6679;
+    --accent-4: #6200ea;
+    --ring: rgba(98, 0, 234, 0.35);
   }
 
   .light {
@@ -72,11 +72,11 @@
 
 @layer utilities {
   .arcane-shell {
-    background-image: radial-gradient(circle at 12% 12%, rgba(214, 178, 90, 0.18), transparent 45%),
-      radial-gradient(circle at 88% 15%, rgba(63, 183, 194, 0.22), transparent 52%),
-      radial-gradient(circle at 70% 82%, rgba(193, 79, 74, 0.22), transparent 55%),
-      radial-gradient(circle at 18% 78%, rgba(123, 105, 255, 0.18), transparent 50%),
-      linear-gradient(180deg, rgba(9, 9, 13, 0.9), rgba(12, 10, 16, 0.9));
+    background-image: radial-gradient(circle at 12% 12%, rgba(98, 0, 234, 0.15), transparent 45%),
+      radial-gradient(circle at 88% 15%, rgba(3, 218, 198, 0.18), transparent 52%),
+      radial-gradient(circle at 70% 82%, rgba(207, 102, 121, 0.18), transparent 55%),
+      radial-gradient(circle at 18% 78%, rgba(98, 0, 234, 0.12), transparent 50%),
+      linear-gradient(180deg, rgba(18, 18, 18, 0.95), rgba(18, 18, 18, 0.98));
   }
 
   .arcane-panel {
@@ -91,12 +91,12 @@
   }
 
   .arcane-glow {
-    box-shadow: 0 0 0 1px rgba(214, 178, 90, 0.25), 0 22px 60px rgba(8, 6, 14, 0.6);
+    box-shadow: 0 0 0 1px rgba(98, 0, 234, 0.25), 0 22px 60px rgba(8, 6, 14, 0.6);
   }
 
   .arcane-sigil {
     background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0)),
-      conic-gradient(from 120deg, rgba(214, 178, 90, 0.4), rgba(63, 183, 194, 0.35), rgba(193, 79, 74, 0.45), rgba(123, 105, 255, 0.4), rgba(214, 178, 90, 0.4));
+      conic-gradient(from 120deg, rgba(98, 0, 234, 0.4), rgba(3, 218, 198, 0.35), rgba(207, 102, 121, 0.45), rgba(98, 0, 234, 0.4), rgba(98, 0, 234, 0.4));
   }
 
   .tool-card {
@@ -139,7 +139,7 @@
 
   .frame-divider {
     height: 2px;
-    background: linear-gradient(90deg, transparent, rgba(214, 178, 90, 0.6), transparent);
+    background: linear-gradient(90deg, transparent, rgba(98, 0, 234, 0.6), transparent);
   }
 
   .stack-item-card {
@@ -147,7 +147,7 @@
   }
 
   .stack-item-top {
-    box-shadow: 0 0 0 1px rgba(214, 178, 90, 0.45), 0 14px 30px rgba(8, 6, 14, 0.6);
+    box-shadow: 0 0 0 1px rgba(98, 0, 234, 0.45), 0 14px 30px rgba(8, 6, 14, 0.6);
   }
 
   .stack-item-resolving {

@@ -32,30 +32,9 @@ export function NewsSection({ items, isLoading, error }: NewsSectionProps) {
     )
   }
 
+  // Hide the entire section if there's an error or no items
   if (error || items.length === 0) {
-    return (
-      <section className="w-full max-w-4xl" data-testid="news-section">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Latest from Card Kingdom Blog</h2>
-
-        {/* Error or Fallback Message */}
-        <div
-          className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm text-center"
-          data-testid="news-error"
-        >
-          <p className="text-gray-600 dark:text-gray-400 mb-2">
-            Unable to load latest news at this time.
-          </p>
-          <a
-            href="https://blog.cardkingdom.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-teal-600 dark:text-teal-400 hover:underline font-medium"
-          >
-            Visit Card Kingdom Blog →
-          </a>
-        </div>
-      </section>
-    )
+    return null
   }
 
   return (

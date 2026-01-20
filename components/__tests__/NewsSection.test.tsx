@@ -48,23 +48,14 @@ describe('NewsSection', () => {
     expect(newsItems).toHaveLength(3)
   })
 
-  it('displays error message when error occurs', () => {
-    renderWithProviders(<NewsSection items={[]} isLoading={false} error="Network error" />)
-    expect(screen.getByTestId('news-error')).toBeInTheDocument()
-    expect(screen.getByText('Unable to load latest news at this time.')).toBeInTheDocument()
+  it('renders nothing when error occurs', () => {
+    const { container } = renderWithProviders(<NewsSection items={[]} isLoading={false} error="Network error" />)
+    expect(container).toBeEmptyDOMElement()
   })
 
-  it('displays fallback message when no items', () => {
-    renderWithProviders(<NewsSection items={[]} isLoading={false} error={null} />)
-    expect(screen.getByTestId('news-error')).toBeInTheDocument()
-    expect(screen.getByText('Unable to load latest news at this time.')).toBeInTheDocument()
-  })
-
-  it('shows link to Card Kingdom Blog on error', () => {
-    renderWithProviders(<NewsSection items={[]} isLoading={false} error="Error" />)
-    const link = screen.getByText('Visit Card Kingdom Blog →')
-    expect(link).toHaveAttribute('href', 'https://blog.cardkingdom.com/')
-    expect(link).toHaveAttribute('target', '_blank')
+  it('renders nothing when no items', () => {
+    const { container } = renderWithProviders(<NewsSection items={[]} isLoading={false} error={null} />)
+    expect(container).toBeEmptyDOMElement()
   })
 
   it('shows link to more news when items loaded', () => {
