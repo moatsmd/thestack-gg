@@ -229,3 +229,13 @@
 body {
   overscroll-behavior-y: contain;
 }
+
+/* Safe area padding for bottom nav on iOS */
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Content padding to account for bottom nav */
+.pb-nav {
+  padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+}
