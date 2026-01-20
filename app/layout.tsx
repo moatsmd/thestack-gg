@@ -18,6 +18,7 @@ const bodyFont = Space_Grotesk({
 export const metadata: Metadata = {
   title: "TheStack.gg - MTG Life Tracker",
   description: "Mobile-friendly Magic: The Gathering life tracker and toolkit",
+  manifest: "/manifest.webmanifest",
   viewport: {
     width: 'device-width',
     initialScale: 1,

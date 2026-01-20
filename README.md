@@ -45,11 +45,12 @@ A mobile-first Magic: The Gathering toolkit with life tracking, rules lookup, an
 - **Theme Toggle**: Switch between light and dark themes
 - **Persistent**: Your theme preference is saved
 - **System-Wide**: Consistent theming across all pages
- - **Default Dark**: Dark mode is on by default
+- **Default Dark**: Dark mode is on by default
 
 ### Navigation
 - **Hamburger Menu**: Easy navigation between all pages
 - **Quick Access**: Access home, life tracker, stack, card lookup, glossary, and rules from anywhere
+- **Installable**: Add to home screen with offline support
 
 ## Getting Started
 
@@ -97,6 +98,10 @@ npm start
 - **Testing**: Jest + React Testing Library
 - **State**: React hooks + localStorage
 
+## Operations
+
+- Deployment and security plan: `docs/deployment-scale-security.md`
+
 ## Roadmap
 
 ### Completed
@@ -110,9 +115,9 @@ npm start
 - [x] Comprehensive Rules search
 - [x] Dark mode
 - [x] Global navigation (hamburger menu)
+- [x] PWA support (installable app)
 
 ### Planned
-- [ ] PWA support (installable app)
 - [ ] User accounts
 - [ ] Deck win/loss tracking
 - [ ] Life history timeline view
