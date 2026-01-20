@@ -194,10 +194,10 @@ export function BottomNavBar() {
 
       {/* Bottom Navigation Bar */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-30 bg-[var(--surface-1)] border-t border-[var(--ink)]/10 safe-area-pb"
+        className="fixed bottom-0 left-0 right-0 z-30 bg-[var(--surface-1)] border-t border-[var(--ink)]/10 safe-area-pb bottom-nav"
         data-testid="bottom-nav"
       >
-        <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-2">
+        <div className="flex items-center justify-around h-full max-w-lg mx-auto px-2">
           {navItems.map((item) => (
             <Link
               key={item.href}

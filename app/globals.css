@@ -235,6 +235,11 @@ body {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+.bottom-nav {
+  height: calc(4rem + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
 /* Content padding to account for bottom nav */
 .pb-nav {
   padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));

@@ -49,14 +49,14 @@ export function HamburgerMenu() {
         <>
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-black/50 z-40"
+            className="fixed inset-0 bg-black/50 z-[70]"
             onClick={closeMenu}
             data-testid="menu-backdrop"
           />
 
           {/* Menu Panel */}
           <nav
-            className="fixed top-0 right-0 h-full w-64 bg-gray-900 shadow-xl z-50 border-l border-gray-700"
+            className="fixed top-0 right-0 h-full w-64 bg-gray-900 shadow-xl z-[80] border-l border-gray-700"
             data-testid="hamburger-menu"
           >
             <div className="p-4 border-b border-gray-700 flex items-center justify-between">
