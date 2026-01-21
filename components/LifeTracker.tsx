@@ -7,7 +7,6 @@ import { CommanderDamageModal } from './CommanderDamageModal'
 import { PoisonCounterModal } from './PoisonCounterModal'
 import { ManaPoolModal } from './ManaPoolModal'
 import { HelpLegendBanner } from './HelpLegendBanner'
-import { HamburgerMenu } from './HamburgerMenu'
 import { ShareGameModal } from './ShareGameModal'
 import { useMemo, useState, useEffect } from 'react'
 
@@ -314,7 +313,6 @@ export function LifeTracker({ initialGameState, onReset }: LifeTrackerProps) {
           >
             Reset Game
           </button>
-          <HamburgerMenu />
         </div>
       </div>
 

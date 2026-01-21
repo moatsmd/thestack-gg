@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import { HamburgerMenu } from '@/components/HamburgerMenu'
 import { NewsSection } from '@/components/NewsSection'
 import { useNews } from '@/hooks/useNews'
 
@@ -13,11 +12,6 @@ export default function Home() {
       <div className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full blur-3xl opacity-70 arcane-sigil float-slower" />
       <div className="pointer-events-none absolute top-32 right-[-40px] h-56 w-56 rounded-full bg-[var(--accent-2)]/20 blur-3xl float-slow" />
       <div className="pointer-events-none absolute bottom-10 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-[var(--accent-3)]/20 blur-3xl float-slower" />
-
-      {/* Hamburger Menu */}
-      <div className="fixed top-4 right-4 z-10">
-        <HamburgerMenu />
-      </div>
 
       <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col gap-10">
         <header className="arcane-panel mana-border rounded-3xl px-6 py-10 md:px-10 md:py-12 reveal">

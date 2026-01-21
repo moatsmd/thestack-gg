@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { HamburgerMenu } from '@/components/HamburgerMenu'
+
 
 const STACK_POINTS = [
   'Spells and abilities go on the stack.',
@@ -39,9 +39,6 @@ const STACK_TERMS = [
 export default function NewPlayersStackPage() {
   return (
     <div className="min-h-screen arcane-shell text-[var(--ink)]">
-      <div className="fixed top-4 right-4 z-10">
-        <HamburgerMenu />
-      </div>
 
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-10">
         <header className="arcane-panel mana-border rounded-3xl px-6 py-8">

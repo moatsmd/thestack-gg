@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { HamburgerMenu } from '@/components/HamburgerMenu'
+
 
 const QUICK_LINKS = [
   { href: '/stack', label: 'Stack Visualizer' },
@@ -38,9 +38,6 @@ const LEARNING_TIPS = [
 export default function NewPlayersPage() {
   return (
     <div className="min-h-screen arcane-shell text-[var(--ink)]">
-      <div className="fixed top-4 right-4 z-10">
-        <HamburgerMenu />
-      </div>
 
       <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-10">
         <header className="arcane-panel mana-border rounded-3xl px-6 py-10 md:px-10 md:py-12">

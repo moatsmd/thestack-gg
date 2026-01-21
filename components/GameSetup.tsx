@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { GameState, GameType } from '@/types/game'
-import { HamburgerMenu } from './HamburgerMenu'
 
 interface GameSetupProps {
   onStartGame: (gameState: GameState) => void
@@ -63,9 +62,6 @@ export function GameSetup({ onStartGame }: GameSetupProps) {
   if (setupStep === 'mode') {
     return (
       <div className="min-h-screen arcane-shell text-[var(--ink)] px-4 py-10">
-        <div className="fixed top-4 right-4 z-10">
-          <HamburgerMenu />
-        </div>
 
         <div className="mx-auto flex max-w-xl flex-col gap-6">
           <header className="arcane-panel mana-border rounded-3xl px-6 py-8 text-center">
@@ -111,9 +107,6 @@ export function GameSetup({ onStartGame }: GameSetupProps) {
   if (setupStep === 'solo-type') {
     return (
       <div className="min-h-screen arcane-shell text-[var(--ink)] px-4 py-10">
-        <div className="fixed top-4 right-4 z-10">
-          <HamburgerMenu />
-        </div>
 
         <div className="mx-auto flex max-w-xl flex-col gap-6">
           <header className="arcane-panel mana-border rounded-3xl px-6 py-8 text-center">
@@ -165,9 +158,6 @@ export function GameSetup({ onStartGame }: GameSetupProps) {
   if (setupStep === 'multi-players') {
     return (
       <div className="min-h-screen arcane-shell text-[var(--ink)] px-4 py-10">
-        <div className="fixed top-4 right-4 z-10">
-          <HamburgerMenu />
-        </div>
 
         <div className="mx-auto flex max-w-xl flex-col gap-6">
           <header className="arcane-panel mana-border rounded-3xl px-6 py-8 text-center">
@@ -209,9 +199,6 @@ export function GameSetup({ onStartGame }: GameSetupProps) {
   if (setupStep === 'multi-type') {
     return (
       <div className="min-h-screen arcane-shell text-[var(--ink)] px-4 py-10">
-        <div className="fixed top-4 right-4 z-10">
-          <HamburgerMenu />
-        </div>
 
         <div className="mx-auto flex max-w-xl flex-col gap-6">
           <header className="arcane-panel mana-border rounded-3xl px-6 py-8 text-center">

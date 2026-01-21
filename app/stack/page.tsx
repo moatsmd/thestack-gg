@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { HamburgerMenu } from '@/components/HamburgerMenu'
 import { AddToStackModal } from '@/components/AddToStackModal'
 import { PriorityIndicator } from '@/components/PriorityIndicator'
 import { QuickAddButtons } from '@/components/QuickAddButtons'
@@ -75,10 +74,6 @@ export default function StackPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-100 via-white to-slate-200 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800 text-gray-900 dark:text-white transition-colors">
-      <div className="fixed top-4 right-4 z-10">
-        <HamburgerMenu />
-      </div>
-
       <div className="max-w-6xl mx-auto px-4 py-10 space-y-6">
         <header className="space-y-2">
           <p className="text-sm uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">
