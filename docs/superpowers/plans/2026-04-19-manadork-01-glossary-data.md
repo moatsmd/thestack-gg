@@ -1,0 +1,1667 @@
+# ManaDork Overhaul — Plan 1: Glossary Data
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Expand the keyword glossary from 43 to ~220 entries by adding a `tier` field to `KeywordDefinition`, tagging all existing entries, and appending returning and retired keyword batches.
+
+**Architecture:** All changes are confined to `lib/keywords-data.ts`. No UI changes — those are Plan 2. The `tier` field drives the new filter UI; `scryfallQuery` drives the Scryfall deeplink. Adding keywords as plain data objects, no new abstractions.
+
+**Tech Stack:** TypeScript, no new dependencies.
+
+---
+
+## File Map
+
+| File | Action |
+|---|---|
+| `lib/keywords-data.ts` | Modify: add `tier` + `scryfallQuery` to interface; tag all 43 existing entries; append ~90 returning entries; append ~85 retired entries |
+| `app/__tests__/glossary.test.tsx` | Modify: update count assertions to account for expanded dataset |
+
+---
+
+### Task 1: Extend the `KeywordDefinition` interface and tag existing 43 keywords
+
+**Files:**
+- Modify: `lib/keywords-data.ts`
+
+- [ ] **Step 1: Write failing test — keyword data has `tier` field**
+
+In `app/__tests__/glossary.test.tsx`, add inside the `describe` block (before existing tests):
+
+```tsx
+it('every keyword has a tier field', () => {
+  const { KEYWORDS } = require('@/lib/keywords-data')
+  for (const kw of KEYWORDS) {
+    expect(['evergreen', 'returning', 'retired']).toContain(kw.tier)
+  }
+})
+
+it('evergreen keywords are a subset of evergreen abilities', () => {
+  const { KEYWORDS } = require('@/lib/keywords-data')
+  const evergreen = KEYWORDS.filter((kw: any) => kw.tier === 'evergreen')
+  expect(evergreen.length).toBeGreaterThanOrEqual(15)
+})
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+```bash
+cd C:/Users/moats/ManaDork && npx jest app/__tests__/glossary.test.tsx --testNamePattern="every keyword has a tier" --no-coverage 2>&1 | tail -20
+```
+
+Expected: FAIL — `kw.tier` is undefined.
+
+- [ ] **Step 3: Add `tier` and `scryfallQuery` to the interface; replace the KEYWORDS array with all 43 entries tagged**
+
+Replace the top of `lib/keywords-data.ts` through the end of the KEYWORDS array with:
+
+```ts
+export interface KeywordDefinition {
+  keyword: string
+  type: 'ability' | 'action' | 'mechanic'
+  tier: 'evergreen' | 'returning' | 'retired'
+  definition: string
+  reminder?: string
+  example?: string
+  introduced?: string
+  scryfallQuery?: string
+}
+
+export const KEYWORDS: KeywordDefinition[] = [
+  // ── Evergreen Abilities ─────────────────────────────────────────────
+  {
+    keyword: 'Flying',
+    type: 'ability',
+    tier: 'evergreen',
+    definition: 'This creature can only be blocked by creatures with flying or reach.',
+    reminder: "This creature can't be blocked except by creatures with flying and/or reach.",
+    example: 'Serra Angel',
+    introduced: 'Limited Edition Alpha',
+    scryfallQuery: 'o:flying',
+  },
+  {
+    keyword: 'First Strike',
+    type: 'ability',
+    tier: 'evergreen',
+    definition: 'This creature deals combat damage before creatures without first strike.',
+    reminder: "This creature deals combat damage before creatures without first strike.",
+    example: 'Benalish Marshal',
+    introduced: 'Limited Edition Alpha',
+    scryfallQuery: 'o:"first strike"',
+  },
+  {
+    keyword: 'Double Strike',
+    type: 'ability',
+    tier: 'evergreen',
+    definition: 'This creature deals both first-strike and regular combat damage.',
+    reminder: 'This creature deals both first-strike and regular combat damage.',
+    example: 'Mirran Crusader',
+    introduced: 'Legions',
+    scryfallQuery: 'o:"double strike"',
+  },
+  {
+    keyword: 'Deathtouch',
+    type: 'ability',
+    tier: 'evergreen',
+    definition: 'Any amount of damage this deals to a creature is enough to destroy it.',
+    reminder: 'Any amount of damage this deals to a creature is enough to destroy it.',
+    example: 'Vampire Nighthawk',
+    introduced: 'Future Sight',
+    scryfallQuery: 'o:deathtouch',
+  },
+  {
+    keyword: 'Defender',
+    type: 'ability',
+    tier: 'evergreen',
+    definition: "This creature can't attack.",
+    reminder: "This creature can't attack.",
+    example: 'Wall of Omens',
+    introduced: 'Future Sight',
+    scryfallQuery: 'o:defender',
+  },
+  {
+    keyword: 'Haste',
+    type: 'ability',
+    tier: 'evergreen',
+    definition: 'This creature can attack and tap the turn it comes under your control.',
+    reminder: 'This creature can attack and tap as soon as it comes under your control.',
+    example: 'Goblin Guide',
+    introduced: 'Limited Edition Alpha',
+    scryfallQuery: 'o:haste',
+  },
+  {
+    keyword: 'Hexproof',
+    type: 'ability',
+    tier: 'evergreen',
+    definition: "This permanent can't be the target of spells or abilities your opponents control.",
+    reminder: "This creature can't be the target of spells or abilities your opponents control.",
+    example: 'Invisible Stalker',
+    introduced: 'Portal Three Kingdoms',
+    scryfallQuery: 'o:hexproof',
+  },
+  {
+    keyword: 'Indestructible',
+    type: 'ability',
+    tier: 'evergreen',
+    definition: 'Effects that say "destroy" don\'t destroy this permanent. A creature with indestructible can\'t be destroyed by damage.',
+    reminder: 'Damage and effects that say "destroy" don\'t destroy this permanent.',
+    example: 'Darksteel Colossus',
+    introduced: 'Darksteel',
+    scryfallQuery: 'o:indestructible',
+  },
+  {
+    keyword: 'Lifelink',
+    type: 'ability',
+    tier: 'evergreen',
+    definition: 'Damage dealt by this permanent also causes you to gain that much life.',
+    reminder: 'Damage dealt by this creature also causes you to gain that much life.',
+    example: 'Vampire Nighthawk',
+    introduced: 'Future Sight',
+    scryfallQuery: 'o:lifelink',
+  },
+  {
+    keyword: 'Menace',
+    type: 'ability',
+    tier: 'evergreen',
+    definition: "This creature can't be blocked except by two or more creatures.",
+    reminder: "This creature can't be blocked except by two or more creatures.",
+    example: 'Goblin Heelcutter',
+    introduced: 'Magic Origins',
+    scryfallQuery: 'o:menace',
+  },
+  {
+    keyword: 'Reach',
+    type: 'ability',
+    tier: 'evergreen',
+    definition: 'This creature can block creatures with flying.',
+    reminder: 'This creature can block creatures with flying.',
+    example: 'Giant Spider',
+    introduced: 'Limited Edition Alpha',
+    scryfallQuery: 'o:reach',
+  },
+  {
+    keyword: 'Trample',
+    type: 'ability',
+    tier: 'evergreen',
+    definition: "This creature can deal excess combat damage to the player or planeswalker it's attacking.",
+    reminder: "This creature can deal excess combat damage to the player or planeswalker it's attacking.",
+    example: 'Colossal Dreadmaw',
+    introduced: 'Limited Edition Alpha',
+    scryfallQuery: 'o:trample',
+  },
+  {
+    keyword: 'Vigilance',
+    type: 'ability',
+    tier: 'evergreen',
+    definition: "Attacking doesn't cause this creature to tap.",
+    reminder: "Attacking doesn't cause this creature to tap.",
+    example: 'Serra Angel',
+    introduced: 'Limited Edition Alpha',
+    scryfallQuery: 'o:vigilance',
+  },
+  {
+    keyword: 'Ward',
+    type: 'ability',
+    tier: 'evergreen',
+    definition: "Whenever this permanent becomes the target of a spell or ability an opponent controls, counter it unless that player pays the ward cost.",
+    reminder: "Whenever this permanent becomes the target of a spell or ability an opponent controls, counter it unless that player pays [cost].",
+    example: 'Lier, Disciple of the Drowned',
+    introduced: 'Strixhaven',
+    scryfallQuery: 'o:ward',
+  },
+  {
+    keyword: 'Flash',
+    type: 'ability',
+    tier: 'evergreen',
+    definition: 'You may cast this spell any time you could cast an instant.',
+    reminder: 'You may cast this spell any time you could cast an instant.',
+    example: 'Snapcaster Mage',
+    introduced: 'Mirage',
+    scryfallQuery: 'o:flash',
+  },
+
+  // ── Keyword Actions (Returning) ─────────────────────────────────────
+  {
+    keyword: 'Activate',
+    type: 'action',
+    tier: 'returning',
+    definition: 'To put an activated ability on the stack and pay its costs.',
+    example: 'Prodigal Pyromancer',
+  },
+  {
+    keyword: 'Attach',
+    type: 'action',
+    tier: 'returning',
+    definition: 'To move an Equipment or Aura onto a creature or other permanent.',
+    example: 'Bonesplitter',
+  },
+  {
+    keyword: 'Cast',
+    type: 'action',
+    tier: 'returning',
+    definition: 'To take a spell from your hand (or another zone) and put it on the stack, paying its costs.',
+    example: 'Lightning Bolt',
+  },
+  {
+    keyword: 'Counter',
+    type: 'action',
+    tier: 'returning',
+    definition: "To cancel a spell or ability so it doesn't resolve and none of its effects occur.",
+    example: 'Counterspell',
+  },
+  {
+    keyword: 'Destroy',
+    type: 'action',
+    tier: 'returning',
+    definition: "To move a permanent from the battlefield to its owner's graveyard. Indestructible permanents can't be destroyed.",
+    example: 'Murder',
+  },
+  {
+    keyword: 'Discard',
+    type: 'action',
+    tier: 'returning',
+    definition: "To move a card from your hand to your graveyard.",
+    example: 'Mind Rot',
+  },
+  {
+    keyword: 'Exile',
+    type: 'action',
+    tier: 'returning',
+    definition: 'To put an object into the exile zone. Exiled cards are removed from the game (unless an effect returns them).',
+    example: 'Path to Exile',
+  },
+  {
+    keyword: 'Sacrifice',
+    type: 'action',
+    tier: 'returning',
+    definition: "To move a permanent you control to its owner's graveyard. You can't sacrifice permanents you don't control.",
+    example: 'Diabolic Intent',
+  },
+  {
+    keyword: 'Scry',
+    type: 'action',
+    tier: 'returning',
+    definition: 'Look at the top N cards of your library, then put any number on the bottom in any order and the rest on top in any order.',
+    reminder: 'Look at the top N cards of your library, then put any number of them on the bottom and the rest on top in any order.',
+    example: 'Opt',
+    scryfallQuery: 'o:scry',
+  },
+  {
+    keyword: 'Search',
+    type: 'action',
+    tier: 'returning',
+    definition: 'To look at all cards in a stated zone and find cards that match the given criteria.',
+    example: 'Rampant Growth',
+  },
+  {
+    keyword: 'Shuffle',
+    type: 'action',
+    tier: 'returning',
+    definition: 'To randomize the order of cards in your library.',
+    example: 'Evolving Wilds',
+  },
+  {
+    keyword: 'Tap',
+    type: 'action',
+    tier: 'returning',
+    definition: 'To turn a permanent sideways, indicating it has been used. Tapped creatures cannot block.',
+    example: 'Llanowar Elves',
+  },
+  {
+    keyword: 'Untap',
+    type: 'action',
+    tier: 'returning',
+    definition: 'To return a tapped permanent to its upright position, readying it for use again.',
+    example: 'Seedborn Muse',
+  },
+
+  // ── Returning Mechanics ─────────────────────────────────────────────
+  {
+    keyword: 'Flashback',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'You may cast this card from your graveyard for its flashback cost, then exile it.',
+    reminder: 'You may cast this card from your graveyard for its flashback cost. Then exile it.',
+    example: 'Think Twice',
+    introduced: 'Odyssey',
+    scryfallQuery: 'o:flashback',
+  },
+  {
+    keyword: 'Kicker',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'You may pay an additional cost as you cast this spell. If you do, additional effects occur.',
+    reminder: 'You may pay an additional [cost] as you cast this spell.',
+    example: 'Wolfir Silverheart',
+    introduced: 'Invasion',
+    scryfallQuery: 'o:kicker',
+  },
+  {
+    keyword: 'Equip',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'Pay the equip cost and attach this Equipment to target creature you control. Equip only as a sorcery.',
+    reminder: '[Cost]: Attach to target creature you control. Equip only as a sorcery.',
+    example: 'Sword of Fire and Ice',
+    introduced: 'Mirrodin',
+    scryfallQuery: 'o:equip',
+  },
+  {
+    keyword: 'Prowess',
+    type: 'ability',
+    tier: 'returning',
+    definition: 'Whenever you cast a noncreature spell, this creature gets +1/+1 until end of turn.',
+    reminder: 'Whenever you cast a noncreature spell, this creature gets +1/+1 until end of turn.',
+    example: 'Monastery Swiftspear',
+    introduced: 'Khans of Tarkir',
+    scryfallQuery: 'o:prowess',
+  },
+  {
+    keyword: 'Convoke',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: "Your creatures can help cast this spell. Each creature you tap while casting this spell pays for 1 or one mana of that creature's color.",
+    reminder: "Your creatures can help cast this spell. Each creature you tap while casting this spell pays for 1 or one mana of that creature's color.",
+    example: 'Chord of Calling',
+    introduced: 'Ravnica',
+    scryfallQuery: 'o:convoke',
+  },
+  {
+    keyword: 'Cascade',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'When you cast this spell, exile cards from the top of your library until you exile a nonland card that costs less. You may cast it without paying its mana cost. Put the exiled cards on the bottom in a random order.',
+    reminder: 'When you cast this spell, exile cards from the top of your library until you exile a nonland card that costs less. You may cast it without paying its mana cost. Put the exiled cards on the bottom of your library in a random order.',
+    example: 'Bloodbraid Elf',
+    introduced: 'Alara Reborn',
+    scryfallQuery: 'o:cascade',
+  },
+  {
+    keyword: 'Delve',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'Each card you exile from your graveyard while casting this spell pays for 1.',
+    reminder: 'Each card you exile from your graveyard while casting this spell pays for 1.',
+    example: 'Treasure Cruise',
+    introduced: 'Future Sight',
+    scryfallQuery: 'o:delve',
+  },
+  {
+    keyword: 'Cycling',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'Pay the cycling cost and discard this card: Draw a card.',
+    reminder: '[Cost], Discard this card: Draw a card.',
+    example: 'Decree of Justice',
+    introduced: "Urza's Saga",
+    scryfallQuery: 'o:cycling',
+  },
+  {
+    keyword: 'Landfall',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'Whenever a land enters the battlefield under your control, this ability triggers.',
+    example: 'Lotus Cobra',
+    introduced: 'Zendikar',
+    scryfallQuery: 'o:landfall',
+  },
+  {
+    keyword: 'Annihilator',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'Whenever this creature attacks, defending player sacrifices N permanents.',
+    reminder: 'Whenever this creature attacks, defending player sacrifices N permanents.',
+    example: 'Ulamog, the Infinite Gyre',
+    introduced: 'Rise of the Eldrazi',
+    scryfallQuery: 'o:annihilator',
+  },
+  {
+    keyword: 'Affinity',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'This spell costs 1 less to cast for each [object] you control.',
+    reminder: 'This spell costs 1 less to cast for each [object] you control.',
+    example: 'Thoughtcast',
+    introduced: 'Mirrodin',
+    scryfallQuery: 'o:affinity',
+  },
+  {
+    keyword: 'Modular',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'This creature enters the battlefield with N +1/+1 counters on it. When it dies, you may put its +1/+1 counters on target artifact creature.',
+    reminder: 'This creature enters the battlefield with N +1/+1 counters on it. When it dies, you may put its +1/+1 counters on target artifact creature.',
+    example: 'Arcbound Ravager',
+    introduced: 'Darksteel',
+    scryfallQuery: 'o:modular',
+  },
+  {
+    keyword: 'Protection',
+    type: 'ability',
+    tier: 'returning',
+    definition: "This permanent can't be blocked, targeted, dealt damage, enchanted, or equipped by anything with the stated quality.",
+    reminder: "This creature can't be blocked, targeted, dealt damage, or enchanted by anything [quality].",
+    example: 'White Knight',
+    introduced: 'Limited Edition Alpha',
+    scryfallQuery: 'o:protection',
+  },
+
+  // ── Retired ─────────────────────────────────────────────────────────
+  {
+    keyword: 'Regenerate',
+    type: 'action',
+    tier: 'retired',
+    definition: 'The next time this permanent would be destroyed this turn, instead tap it, remove it from combat, and remove all damage from it.',
+    example: 'Troll Ascetic',
+    introduced: 'Limited Edition Alpha',
+  },
+  {
+    keyword: 'Banding',
+    type: 'ability',
+    tier: 'retired',
+    definition: 'Any creatures with banding, and up to one without, can attack in a band. The attacking player assigns damage for blocked bands.',
+    reminder: "Any creatures with banding, and up to one without, can attack in a band. Bands are blocked as a group. If any creatures with banding you control are blocking or being blocked by a creature, you divide that creature's combat damage, not its controller, among any of the creatures it's being blocked by or is blocking.",
+    example: 'Benalish Hero',
+    introduced: 'Limited Edition Alpha',
+  },
+]
+```
+
+- [ ] **Step 4: Run test to verify it passes**
+
+```bash
+cd C:/Users/moats/ManaDork && npx jest app/__tests__/glossary.test.tsx --testNamePattern="every keyword" --no-coverage 2>&1 | tail -15
+```
+
+Expected: PASS
+
+- [ ] **Step 5: Verify TypeScript compiles**
+
+```bash
+cd C:/Users/moats/ManaDork && npx tsc --noEmit 2>&1 | head -30
+```
+
+Expected: no errors.
+
+- [ ] **Step 6: Commit**
+
+```bash
+cd C:/Users/moats/ManaDork && git add lib/keywords-data.ts app/__tests__/glossary.test.tsx && git commit -m "feat(glossary): add tier + scryfallQuery to KeywordDefinition; tag all 43 existing keywords"
+```
+
+---
+
+### Task 2: Add returning keyword data — abilities
+
+**Files:**
+- Modify: `lib/keywords-data.ts` (append to KEYWORDS array, before the `]`)
+
+- [ ] **Step 1: Write failing test — returning ability keywords exist**
+
+In `app/__tests__/glossary.test.tsx`, add:
+
+```tsx
+it('has dredge as a returning keyword', () => {
+  const { KEYWORDS } = require('@/lib/keywords-data')
+  const dredge = KEYWORDS.find((kw: any) => kw.keyword === 'Dredge')
+  expect(dredge).toBeDefined()
+  expect(dredge.tier).toBe('returning')
+})
+
+it('has infect as a returning keyword', () => {
+  const { KEYWORDS } = require('@/lib/keywords-data')
+  const infect = KEYWORDS.find((kw: any) => kw.keyword === 'Infect')
+  expect(infect).toBeDefined()
+  expect(infect.tier).toBe('returning')
+})
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+```bash
+cd C:/Users/moats/ManaDork && npx jest app/__tests__/glossary.test.tsx --testNamePattern="has dredge" --no-coverage 2>&1 | tail -10
+```
+
+Expected: FAIL — `dredge` is undefined.
+
+- [ ] **Step 3: Append returning ability keywords to the KEYWORDS array**
+
+Insert the following entries inside the `KEYWORDS` array in `lib/keywords-data.ts`, after the last existing entry and before the closing `]`:
+
+```ts
+  // ── Additional Returning — Graveyard Abilities ───────────────────────
+  {
+    keyword: 'Dredge',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'If you would draw a card, instead you may mill N cards. If you do, return this card from your graveyard to your hand.',
+    reminder: 'If you would draw a card, you may instead put N cards from the top of your library into your graveyard. If you do, return this card from your graveyard to your hand.',
+    example: 'Golgari Grave-Troll',
+    introduced: 'Ravnica: City of Guilds',
+    scryfallQuery: 'o:dredge',
+  },
+  {
+    keyword: 'Madness',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'If you discard this card, discard it into exile. When you do, cast it for its madness cost or put it in your graveyard.',
+    reminder: 'If you discard this card, discard it into exile. When you do, cast it for its madness cost or put it into your graveyard.',
+    example: 'Fiery Temper',
+    introduced: "Torment",
+    scryfallQuery: 'o:madness',
+  },
+  {
+    keyword: 'Escape',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'You may cast this card from your graveyard for its escape cost by exiling the required number of other cards from your graveyard.',
+    reminder: 'You may cast this card from your graveyard for its escape cost.',
+    example: 'Uro, Titan of Nature\'s Wrath',
+    introduced: 'Theros Beyond Death',
+    scryfallQuery: 'o:escape',
+  },
+  {
+    keyword: 'Embalm',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'Exile this card from your graveyard: Create a token that\'s a copy of it, except it\'s a white Zombie in addition to its other types. Embalm only as a sorcery.',
+    reminder: '[Cost], Exile this card from your graveyard: Create a token that\'s a copy of it, except it\'s a white Zombie in addition to its other colors and types. Embalm only as a sorcery.',
+    example: 'Vizier of Many Faces',
+    introduced: 'Amonkhet',
+    scryfallQuery: 'o:embalm',
+  },
+  {
+    keyword: 'Eternalize',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'Exile this card from your graveyard: Create a token that\'s a copy of it, except it\'s 4/4, black, and a Zombie in addition to its other types. Eternalize only as a sorcery.',
+    reminder: '[Cost], Exile this card from your graveyard: Create a token that\'s a copy of it, except it\'s 4/4 black Zombie in addition to its other types and colors. Eternalize only as a sorcery.',
+    example: 'Champion of Wits',
+    introduced: 'Hour of Devastation',
+    scryfallQuery: 'o:eternalize',
+  },
+  {
+    keyword: 'Disturb',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'You may cast this card from your graveyard transformed for its disturb cost.',
+    reminder: 'You may cast this card from your graveyard transformed for its disturb cost.',
+    example: 'Lunarch Veteran',
+    introduced: 'Innistrad: Midnight Hunt',
+    scryfallQuery: 'o:disturb',
+  },
+  {
+    keyword: 'Unearth',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'Return this card from your graveyard to the battlefield. It gains haste. Exile it at the beginning of the next end step or if it would leave the battlefield. Unearth only as a sorcery.',
+    reminder: 'Return this card from your graveyard to the battlefield. It gains haste. Exile it at the beginning of the next end step or if it would leave the battlefield. Unearth only as a sorcery.',
+    example: 'Burrenton Bombardier',
+    introduced: 'Shards of Alara',
+    scryfallQuery: 'o:unearth',
+  },
+
+  // ── Additional Returning — Counter/Resource Abilities ────────────────
+  {
+    keyword: 'Persist',
+    type: 'ability',
+    tier: 'returning',
+    definition: 'When this creature dies, if it had no -1/-1 counters on it, return it to the battlefield under its owner\'s control with a -1/-1 counter on it.',
+    reminder: "When this creature dies, if it had no -1/-1 counters on it, return it to the battlefield under its owner's control with a -1/-1 counter on it.",
+    example: 'Kitchen Finks',
+    introduced: 'Shadowmoor',
+    scryfallQuery: 'o:persist',
+  },
+  {
+    keyword: 'Undying',
+    type: 'ability',
+    tier: 'returning',
+    definition: 'When this creature dies, if it had no +1/+1 counters on it, return it to the battlefield under its owner\'s control with a +1/+1 counter on it.',
+    reminder: "When this creature dies, if it had no +1/+1 counters on it, return it to the battlefield under its owner's control with a +1/+1 counter on it.",
+    example: 'Geralf\'s Messenger',
+    introduced: 'Dark Ascension',
+    scryfallQuery: 'o:undying',
+  },
+  {
+    keyword: 'Wither',
+    type: 'ability',
+    tier: 'returning',
+    definition: 'This creature deals damage to creatures in the form of -1/-1 counters.',
+    reminder: 'This creature deals damage to creatures in the form of -1/-1 counters.',
+    example: 'Scar',
+    introduced: 'Shadowmoor',
+    scryfallQuery: 'o:wither',
+  },
+  {
+    keyword: 'Infect',
+    type: 'ability',
+    tier: 'returning',
+    definition: 'This creature deals damage to creatures in the form of -1/-1 counters and to players in the form of poison counters. A player with 10 or more poison counters loses the game.',
+    reminder: 'This creature deals damage to creatures in the form of -1/-1 counters and to players in the form of poison counters.',
+    example: 'Glistener Elf',
+    introduced: 'Scars of Mirrodin',
+    scryfallQuery: 'o:infect',
+  },
+  {
+    keyword: 'Toxic',
+    type: 'ability',
+    tier: 'returning',
+    definition: 'Whenever this creature deals combat damage to a player, that player gets N poison counters.',
+    reminder: 'Whenever this creature deals combat damage to a player, that player gets N poison counter(s).',
+    example: 'Venomous Bruiser',
+    introduced: 'Phyrexia: All Will Be One',
+    scryfallQuery: 'o:toxic',
+  },
+  {
+    keyword: 'Rad',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'Players accumulate rad counters. At the beginning of each end step, each player mills cards equal to their rad counters and loses life equal to the number of nonland cards milled this way.',
+    example: 'Rads of Doom',
+    introduced: 'Fallout Commander',
+    scryfallQuery: 'o:rad',
+  },
+  {
+    keyword: 'Energy',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'A resource counter represented by ⚡. Cards give you energy counters or let you pay energy counters for effects. Energy does not reset between turns.',
+    reminder: '(Each ⚡ is an energy counter.)',
+    example: 'Aetherworks Marvel',
+    introduced: 'Kaladesh',
+    scryfallQuery: 'o:energy',
+  },
+  {
+    keyword: 'Experience',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'A counter placed on you as a player (not on a permanent). Certain legendary commanders get stronger as you accumulate more experience counters.',
+    example: 'Meren of Clan Nel Toth',
+    introduced: 'Commander 2015',
+    scryfallQuery: 'o:"experience counter"',
+  },
+  {
+    keyword: 'Adapt',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'If this creature has no +1/+1 counters on it, put N +1/+1 counters on it.',
+    reminder: 'If this creature has no +1/+1 counters on it, put N +1/+1 counter(s) on it.',
+    example: 'Hydroid Krasis',
+    introduced: 'Ravnica Allegiance',
+    scryfallQuery: 'o:adapt',
+  },
+  {
+    keyword: 'Graft',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'This creature enters the battlefield with N +1/+1 counters on it. Whenever another creature enters the battlefield, you may move a +1/+1 counter from this creature onto that creature.',
+    reminder: 'This creature enters the battlefield with N +1/+1 counters on it. Whenever another creature enters the battlefield, you may move a +1/+1 counter from this creature onto it.',
+    example: 'Simic Initiate',
+    introduced: 'Dissension',
+    scryfallQuery: 'o:graft',
+  },
+  {
+    keyword: 'Proliferate',
+    type: 'action',
+    tier: 'returning',
+    definition: 'Choose any number of permanents and/or players, then give each another counter of each kind that permanent or player already has.',
+    reminder: 'Choose any number of permanents and/or players, then give each another counter of each kind that permanent or player already has.',
+    example: 'Evolution Sage',
+    introduced: 'Scars of Mirrodin',
+    scryfallQuery: 'o:proliferate',
+  },
+
+  // ── Additional Returning — Creature Combat Abilities ─────────────────
+  {
+    keyword: 'Ninjutsu',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'Return an unblocked attacking creature you control to its owner\'s hand: Put this card from your hand onto the battlefield tapped and attacking.',
+    reminder: "Return an unblocked attacker you control to hand: Put this card onto the battlefield from your hand tapped and attacking.",
+    example: 'Yuriko, the Tiger\'s Shadow',
+    introduced: 'Betrayers of Kamigawa',
+    scryfallQuery: 'o:ninjutsu',
+  },
+  {
+    keyword: 'Crew',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'Tap any number of creatures you control with total power N or greater: This Vehicle becomes an artifact creature until end of turn.',
+    reminder: 'Tap any number of creatures you control with total power N or greater: This Vehicle becomes an artifact creature until end of turn.',
+    example: 'Smuggler\'s Copter',
+    introduced: 'Kaladesh',
+    scryfallQuery: 'o:crew',
+  },
+  {
+    keyword: 'Bestow',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'If you cast this card for its bestow cost, it\'s an Aura spell with enchant creature. It becomes a creature again if it\'s not attached to a creature.',
+    reminder: "If you cast this card for its bestow cost, it's an Aura spell with enchant creature. It becomes a creature again if it's not attached to a creature.",
+    example: 'Nighthowler',
+    introduced: 'Theros',
+    scryfallQuery: 'o:bestow',
+  },
+  {
+    keyword: 'Dash',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'You may cast this spell for its dash cost. If you do, it gains haste, and it\'s returned from the battlefield to its owner\'s hand at the beginning of the next end step.',
+    reminder: "You may cast this spell for its dash cost. If you do, it gains haste, and it's returned from the battlefield to its owner's hand at the beginning of the next end step.",
+    example: 'Kolaghan, the Storm\'s Fury',
+    introduced: 'Fate Reforged',
+    scryfallQuery: 'o:dash',
+  },
+  {
+    keyword: 'Blitz',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'If you cast this spell for its blitz cost, it gains haste and "when this creature dies, draw a card," and it\'s sacrificed at the beginning of the next end step.',
+    reminder: "If you cast this spell for its blitz cost, it gains haste and \"when this creature dies, draw a card,\" and it's sacrificed at the beginning of the next end step.",
+    example: 'Goblin Anarchomancer',
+    introduced: 'Streets of New Capenna',
+    scryfallQuery: 'o:blitz',
+  },
+  {
+    keyword: 'Connive',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'Draw a card, then discard a card. If you discarded a nonland card, put a +1/+1 counter on this creature.',
+    reminder: 'Draw a card, then discard a card. If you discarded a nonland card, put a +1/+1 counter on this creature.',
+    example: 'Raffine, Scheming Seer',
+    introduced: 'Streets of New Capenna',
+    scryfallQuery: 'o:connive',
+  },
+  {
+    keyword: 'Training',
+    type: 'ability',
+    tier: 'returning',
+    definition: 'Whenever this creature attacks with another creature with greater power, put a +1/+1 counter on this creature.',
+    reminder: 'Whenever this creature attacks with another creature with greater power, put a +1/+1 counter on this creature.',
+    example: 'Hopeful Initiate',
+    introduced: 'Innistrad: Crimson Vow',
+    scryfallQuery: 'o:training',
+  },
+  {
+    keyword: 'Backup',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'When this creature enters, put N +1/+1 counters on target creature. If that target is another creature, it gains each non-backup ability this creature has until end of turn.',
+    reminder: 'When this creature enters, put N +1/+1 counter(s) on target creature. If that target is another creature, it gains each non-backup ability this creature has until end of turn.',
+    example: 'Backup Agent',
+    introduced: 'March of the Machine',
+    scryfallQuery: 'o:backup',
+  },
+  {
+    keyword: 'Exert',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'You may exert this creature as it attacks. When you do, it doesn\'t untap during your next untap step, but an additional effect occurs.',
+    reminder: "You may exert this creature as it attacks. (An exerted creature won't untap during your next untap step.)",
+    example: 'Glory-Bound Initiate',
+    introduced: 'Amonkhet',
+    scryfallQuery: 'o:exert',
+  },
+
+  // ── Additional Returning — Combat Triggers ────────────────────────────
+  {
+    keyword: 'Battalion',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'Whenever this creature and at least two other creatures attack, a bonus effect occurs.',
+    reminder: 'Whenever this creature and at least two other creatures attack, [effect].',
+    example: 'Boros Elite',
+    introduced: 'Gatecrash',
+    scryfallQuery: 'o:battalion',
+  },
+  {
+    keyword: 'Bloodrush',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'Discard this card: Target attacking creature gets a bonus until end of turn.',
+    reminder: 'Discard this card: Target attacking creature gets [bonus] until end of turn.',
+    example: 'Ghor-Clan Rampager',
+    introduced: 'Gatecrash',
+    scryfallQuery: 'o:bloodrush',
+  },
+  {
+    keyword: 'Foray',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'An ability that triggers the first time you attack each turn.',
+    example: 'Bonecrusher Giant',
+    introduced: 'Throne of Eldraine',
+    scryfallQuery: 'o:foray',
+  },
+  {
+    keyword: 'Raid',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'A bonus effect that applies if you attacked with a creature this turn.',
+    example: 'Mardu Heart-Piercer',
+    introduced: 'Khans of Tarkir',
+    scryfallQuery: 'o:raid',
+  },
+  {
+    keyword: 'Ferocious',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'A bonus effect that applies if you control a creature with power 4 or greater.',
+    example: 'Crater\'s Claws',
+    introduced: 'Khans of Tarkir',
+    scryfallQuery: 'o:ferocious',
+  },
+```
+
+- [ ] **Step 4: Run tests**
+
+```bash
+cd C:/Users/moats/ManaDork && npx jest app/__tests__/glossary.test.tsx --no-coverage 2>&1 | tail -20
+```
+
+Expected: All existing tests pass plus two new ones.
+
+- [ ] **Step 5: Verify TypeScript**
+
+```bash
+cd C:/Users/moats/ManaDork && npx tsc --noEmit 2>&1 | head -20
+```
+
+Expected: no errors.
+
+- [ ] **Step 6: Commit**
+
+```bash
+cd C:/Users/moats/ManaDork && git add lib/keywords-data.ts app/__tests__/glossary.test.tsx && git commit -m "feat(glossary): add 35 returning ability keywords (graveyard, counters, combat)"
+```
+
+---
+
+### Task 3: Add returning keyword data — mechanics
+
+**Files:**
+- Modify: `lib/keywords-data.ts`
+
+- [ ] **Step 1: Write failing tests**
+
+In `app/__tests__/glossary.test.tsx`, add:
+
+```tsx
+it('has storm as a returning mechanic', () => {
+  const { KEYWORDS } = require('@/lib/keywords-data')
+  const storm = KEYWORDS.find((kw: any) => kw.keyword === 'Storm')
+  expect(storm).toBeDefined()
+  expect(storm.tier).toBe('returning')
+})
+
+it('has surveil as a returning mechanic', () => {
+  const { KEYWORDS } = require('@/lib/keywords-data')
+  const surveil = KEYWORDS.find((kw: any) => kw.keyword === 'Surveil')
+  expect(surveil).toBeDefined()
+  expect(surveil.tier).toBe('returning')
+})
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+```bash
+cd C:/Users/moats/ManaDork && npx jest app/__tests__/glossary.test.tsx --testNamePattern="has storm" --no-coverage 2>&1 | tail -10
+```
+
+Expected: FAIL.
+
+- [ ] **Step 3: Append returning mechanic keywords**
+
+Insert the following entries inside the KEYWORDS array in `lib/keywords-data.ts`, after the last entry from Task 2 and before the closing `]`:
+
+```ts
+  // ── Additional Returning — Casting/Cost Mechanics ────────────────────
+  {
+    keyword: 'Morph',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'You may cast this card face down as a 2/2 creature for 3. Turn it face up any time for its morph cost.',
+    reminder: 'You may cast this card face down as a 2/2 creature for 3. Turn it face up any time for its morph cost.',
+    example: 'Exalted Angel',
+    introduced: 'Onslaught',
+    scryfallQuery: 'o:morph',
+  },
+  {
+    keyword: 'Megamorph',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'You may cast this card face down as a 2/2 creature for 3. Turn it face up any time for its megamorph cost and put a +1/+1 counter on it.',
+    reminder: 'You may cast this card face down as a 2/2 creature for 3. Turn it face up any time for its megamorph cost and put a +1/+1 counter on it.',
+    example: 'Den Protector',
+    introduced: 'Dragons of Tarkir',
+    scryfallQuery: 'o:megamorph',
+  },
+  {
+    keyword: 'Buyback',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'You may pay an additional buyback cost as you cast this spell. If you do, put this spell into its owner\'s hand instead of the graveyard as it resolves.',
+    reminder: "You may pay an additional [cost] as you cast this spell. If you do, put this card into its owner's hand as it resolves.",
+    example: 'Capsize',
+    introduced: "Tempest",
+    scryfallQuery: 'o:buyback',
+  },
+  {
+    keyword: 'Replicate',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'When you cast this spell, you may pay its replicate cost any number of times. For each time you pay it, copy the spell.',
+    reminder: 'When you cast this spell, copy it for each time you paid its replicate cost.',
+    example: 'Pyromatics',
+    introduced: 'Guildpact',
+    scryfallQuery: 'o:replicate',
+  },
+  {
+    keyword: 'Splice',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'As you cast an Arcane spell, you may reveal this card from your hand and pay its splice cost. If you do, add this card\'s effects to that spell.',
+    reminder: 'As you cast an Arcane spell, you may reveal this card from your hand and pay its splice cost. If you do, add this card\'s effects to that spell.',
+    example: 'Goryo\'s Vengeance',
+    introduced: 'Champions of Kamigawa',
+    scryfallQuery: 'o:splice',
+  },
+  {
+    keyword: 'Overload',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'You may cast this spell for its overload cost. If you do, change its text by replacing all instances of "target" with "each."',
+    reminder: 'You may cast this spell for its overload cost. If you do, change its text by replacing all instances of "target" with "each."',
+    example: 'Cyclonic Rift',
+    introduced: 'Return to Ravnica',
+    scryfallQuery: 'o:overload',
+  },
+  {
+    keyword: 'Jump-start',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'You may cast this card from your graveyard by discarding a card in addition to paying its other costs. Then exile this card.',
+    reminder: 'You may cast this card from your graveyard by discarding a card in addition to paying its other costs. Then exile this card.',
+    example: 'Radical Idea',
+    introduced: 'Guilds of Ravnica',
+    scryfallQuery: 'o:"jump-start"',
+  },
+  {
+    keyword: 'Rebound',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'If you cast this spell from your hand, exile it as it resolves. At the beginning of your next upkeep, you may cast this card from exile without paying its mana cost.',
+    reminder: 'If you cast this spell from your hand, exile it as it resolves. At the beginning of your next upkeep, you may cast this card from exile without paying its mana cost.',
+    example: 'Distortion Strike',
+    introduced: 'Rise of the Eldrazi',
+    scryfallQuery: 'o:rebound',
+  },
+  {
+    keyword: 'Storm',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'When you cast this spell, copy it for each spell cast before it this turn.',
+    reminder: 'When you cast this spell, copy it for each spell cast before it this turn. You may choose new targets for the copies.',
+    example: 'Tendrils of Agony',
+    introduced: 'Scourge',
+    scryfallQuery: 'o:storm',
+  },
+  {
+    keyword: 'Suspend',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'Rather than cast this card from your hand, pay its suspend cost and exile it with time counters. At the start of your upkeep, remove a counter; when the last is removed, cast the spell for free.',
+    reminder: 'Rather than cast this card from your hand, you may pay its suspend cost. If you do, exile it with [N] time counters on it. At the beginning of each of your upkeeps, remove a time counter. When the last is removed, cast it without paying its mana cost.',
+    example: 'Ancestral Vision',
+    introduced: 'Time Spiral',
+    scryfallQuery: 'o:suspend',
+  },
+  {
+    keyword: 'Spectacle',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'You may cast this spell for its spectacle cost rather than its mana cost if an opponent lost life this turn.',
+    reminder: 'You may cast this spell for its spectacle cost rather than its mana cost if an opponent lost life this turn.',
+    example: 'Light Up the Stage',
+    introduced: 'Ravnica Allegiance',
+    scryfallQuery: 'o:spectacle',
+  },
+  {
+    keyword: 'Spree',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'Choose one or more additional costs as you cast this spell, each with their own effects. You must choose at least one.',
+    reminder: 'Choose one or more additional costs.',
+    example: 'Pick Your Poison',
+    introduced: 'Outlaws of Thunder Junction',
+    scryfallQuery: 'o:spree',
+  },
+  {
+    keyword: 'Improvise',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'Each artifact you tap after you\'re done activating mana abilities pays for 1.',
+    reminder: "Your artifacts can help cast this spell. Each artifact you tap after you're done activating mana abilities pays for 1.",
+    example: 'Whir of Invention',
+    introduced: 'Aether Revolt',
+    scryfallQuery: 'o:improvise',
+  },
+
+  // ── Additional Returning — Card Advantage Mechanics ──────────────────
+  {
+    keyword: 'Surveil',
+    type: 'action',
+    tier: 'returning',
+    definition: 'Look at the top N cards of your library, then put any number of them into your graveyard and the rest on top of your library in any order.',
+    reminder: 'Look at the top N cards of your library, then put any number of them into your graveyard and the rest on top in any order.',
+    example: 'Sinister Sabotage',
+    introduced: 'Guilds of Ravnica',
+    scryfallQuery: 'o:surveil',
+  },
+  {
+    keyword: 'Investigate',
+    type: 'action',
+    tier: 'returning',
+    definition: 'Create a Clue artifact token with "2, Sacrifice this artifact: Draw a card."',
+    reminder: 'Create a Clue token. (It\'s an artifact with "2, Sacrifice this artifact: Draw a card.")',
+    example: 'Thraben Inspector',
+    introduced: 'Shadows over Innistrad',
+    scryfallQuery: 'o:investigate',
+  },
+  {
+    keyword: 'Explore',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'Reveal the top card of your library. If it\'s a land, put it into your hand. Otherwise, put a +1/+1 counter on this creature and put the card back or into your graveyard.',
+    reminder: "Reveal the top card of your library. Put that card into your hand if it's a land. Otherwise, put a +1/+1 counter on this creature, then put the card back or into your graveyard.",
+    example: 'Wildgrowth Walker',
+    introduced: 'Ixalan',
+    scryfallQuery: 'o:explore',
+  },
+  {
+    keyword: 'Learn',
+    type: 'action',
+    tier: 'returning',
+    definition: 'You may reveal a Lesson card from outside the game and put it into your hand, or discard a card to draw a card.',
+    reminder: 'You may reveal a Lesson card you own from outside the game and put it into your hand, or discard a card to draw a card.',
+    example: 'Environmental Sciences',
+    introduced: 'Strixhaven: School of Mages',
+    scryfallQuery: 'o:learn',
+  },
+  {
+    keyword: 'Foretell',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'During your turn, you may pay 2 and exile this card from your hand face down. Cast it on a later turn for its foretell cost.',
+    reminder: 'During your turn, you may pay 2 and exile this card from your hand face down. Cast it on a later turn for its foretell cost.',
+    example: 'Alrund\'s Epiphany',
+    introduced: 'Kaldheim',
+    scryfallQuery: 'o:foretell',
+  },
+  {
+    keyword: 'Plot',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'You may pay the plot cost and exile this card from your hand. Cast it as a sorcery on a later turn without paying its mana cost.',
+    reminder: 'You may pay [cost] and exile this card from your hand. Cast it as a sorcery on a later turn without paying its mana cost. Plot only as a sorcery.',
+    example: 'Slick Sequence',
+    introduced: 'Outlaws of Thunder Junction',
+    scryfallQuery: 'o:plot',
+  },
+  {
+    keyword: 'Discover',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'Exile cards from the top of your library until you exile a nonland card with mana value N or less. Cast it without paying its mana cost or put it into your hand. Put the rest on the bottom in a random order.',
+    reminder: 'Exile cards from the top of your library until you exile a nonland card with mana value N or less. Cast it without paying its mana cost or put it into your hand. Put the rest on the bottom in a random order.',
+    example: 'Trumpeting Carnosaur',
+    introduced: 'The Lost Caverns of Ixalan',
+    scryfallQuery: 'o:discover',
+  },
+  {
+    keyword: 'Mill',
+    type: 'action',
+    tier: 'returning',
+    definition: 'To put that many cards from the top of your library into your graveyard.',
+    reminder: 'Put the top N cards of your library into your graveyard.',
+    example: 'Glimpse the Unthinkable',
+    introduced: 'Zendikar Rising (as keyword)',
+    scryfallQuery: 'o:mill',
+  },
+
+  // ── Additional Returning — Permanent Mechanics ───────────────────────
+  {
+    keyword: 'Companion',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'If your starting deck meets this companion\'s condition, you may begin the game with this card in a separate zone. Once per game, for 3, you may put it into your hand.',
+    reminder: 'If this card is your chosen companion, you may put it into your hand from your sideboard for [3] any time you could cast a sorcery.',
+    example: 'Lurrus of the Dream-Den',
+    introduced: 'Ikoria: Lair of Behemoths',
+    scryfallQuery: 'o:companion',
+  },
+  {
+    keyword: 'Mutate',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'If you cast this spell for its mutate cost, put it over or under target non-Human creature you own. They mutate into the creature on top plus all abilities of the ones under it.',
+    reminder: 'If you cast this spell for its mutate cost, put it over or under target non-Human creature you own. They mutate into the creature on top plus all abilities of the ones under it.',
+    example: 'Gemrazer',
+    introduced: 'Ikoria: Lair of Behemoths',
+    scryfallQuery: 'o:mutate',
+  },
+  {
+    keyword: 'Meld',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'Exile two specified cards you control, then put the combined meld card onto the battlefield.',
+    example: 'Bruna, the Fading Light',
+    introduced: 'Eldritch Moon',
+    scryfallQuery: 'o:meld',
+  },
+  {
+    keyword: 'Daybound',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'If a player casts no spells during their own turn, it becomes night. Cards with Daybound are the day face of double-faced cards that transform based on the day/night cycle.',
+    reminder: 'If a player casts no spells during their own turn, it becomes night. This transforms at night.',
+    example: 'Tovolar, Dire Overlord',
+    introduced: 'Innistrad: Midnight Hunt',
+    scryfallQuery: 'o:daybound',
+  },
+  {
+    keyword: 'Nightbound',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'If a player casts two or more spells during their own turn, it becomes day. Cards with Nightbound are the night face of day/night double-faced cards.',
+    reminder: 'If a player casts two or more spells during their own turn, it becomes day. This transforms at day.',
+    example: 'Tovolar\'s Magehunter',
+    introduced: 'Innistrad: Midnight Hunt',
+    scryfallQuery: 'o:nightbound',
+  },
+  {
+    keyword: 'Saga',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'An enchantment type. At the beginning of your precombat main phase, add a lore counter and trigger the chapter ability matching the current counter count. Sacrifice the Saga when the final chapter triggers.',
+    reminder: '(As this Saga enters and after your draw step, add a lore counter. Sacrifice after the chosen chapter ability.)',
+    example: 'The Eldest Reborn',
+    introduced: 'Dominaria',
+    scryfallQuery: 't:saga',
+  },
+
+  // ── Additional Returning — Token Mechanics ───────────────────────────
+  {
+    keyword: 'Treasure',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'An artifact token with "Tap, Sacrifice this artifact: Add one mana of any color."',
+    reminder: '(It\'s an artifact with "Tap, Sacrifice this artifact: Add one mana of any color.")',
+    example: 'Smothering Tithe',
+    introduced: 'Ixalan',
+    scryfallQuery: 'o:treasure',
+  },
+  {
+    keyword: 'Clue',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'An artifact token with "2, Sacrifice this artifact: Draw a card."',
+    reminder: '(It\'s an artifact with "2, Sacrifice this artifact: Draw a card.")',
+    example: 'Thraben Inspector',
+    introduced: 'Shadows over Innistrad',
+    scryfallQuery: 'o:clue',
+  },
+  {
+    keyword: 'Food',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'An artifact token with "2, Tap, Sacrifice this artifact: You gain 3 life."',
+    reminder: '(It\'s an artifact with "2, Tap, Sacrifice this artifact: You gain 3 life.")',
+    example: "Gilded Goose",
+    introduced: 'Throne of Eldraine',
+    scryfallQuery: 'o:food',
+  },
+  {
+    keyword: 'Blood',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'An artifact token with "1, Tap, Discard a card, Sacrifice this artifact: Draw a card."',
+    reminder: '(It\'s an artifact with "1, Tap, Discard a card, Sacrifice this artifact: Draw a card.")',
+    example: 'Bloodtithe Harvester',
+    introduced: 'Innistrad: Crimson Vow',
+    scryfallQuery: 'o:blood token',
+  },
+  {
+    keyword: 'Map',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'An artifact token with "1, Tap, Sacrifice this artifact: Target creature you control explores."',
+    reminder: '(It\'s an artifact with "1, Tap, Sacrifice this artifact: Target creature you control explores.")',
+    example: 'Abuelo\'s Awakening',
+    introduced: 'The Lost Caverns of Ixalan',
+    scryfallQuery: 'o:map token',
+  },
+
+  // ── Additional Returning — Threshold/Condition Mechanics ─────────────
+  {
+    keyword: 'Devotion',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'Your devotion to a color is the number of mana symbols of that color among the mana costs of permanents you control.',
+    example: "Gray Merchant of Asphodel",
+    introduced: 'Theros',
+    scryfallQuery: 'o:devotion',
+  },
+  {
+    keyword: 'Delirium',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'A bonus effect that applies if there are four or more card types among cards in your graveyard.',
+    example: 'Ishkanah, Grafwidow',
+    introduced: 'Shadows over Innistrad',
+    scryfallQuery: 'o:delirium',
+  },
+  {
+    keyword: 'Threshold',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'A bonus effect that applies if you have seven or more cards in your graveyard.',
+    example: 'Werebear',
+    introduced: 'Odyssey',
+    scryfallQuery: 'o:threshold',
+  },
+  {
+    keyword: 'Hellbent',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'A bonus effect that applies if you have no cards in hand.',
+    example: 'Anthem of Rakdos',
+    introduced: 'Dissension',
+    scryfallQuery: 'o:hellbent',
+  },
+  {
+    keyword: 'Metalcraft',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'A bonus effect that applies if you control three or more artifacts.',
+    example: 'Mox Opal',
+    introduced: 'Scars of Mirrodin',
+    scryfallQuery: 'o:metalcraft',
+  },
+  {
+    keyword: 'Morbid',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'A bonus effect that applies if a creature died this turn.',
+    example: 'Tragic Slip',
+    introduced: 'Innistrad',
+    scryfallQuery: 'o:morbid',
+  },
+  {
+    keyword: 'Formidable',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'A bonus effect that applies if you control a creature with total power 8 or greater.',
+    example: 'Epic Confrontation',
+    introduced: 'Dragons of Tarkir',
+    scryfallQuery: 'o:formidable',
+  },
+  {
+    keyword: 'Undergrowth',
+    type: 'mechanic',
+    tier: 'returning',
+    definition: 'A bonus that scales with the number of creature cards in your graveyard.',
+    example: 'Glowspore Shaman',
+    introduced: 'Guilds of Ravnica',
+    scryfallQuery: 'o:undergrowth',
+  },
+```
+
+- [ ] **Step 4: Run tests**
+
+```bash
+cd C:/Users/moats/ManaDork && npx jest app/__tests__/glossary.test.tsx --no-coverage 2>&1 | tail -20
+```
+
+Expected: all tests pass.
+
+- [ ] **Step 5: Verify TypeScript**
+
+```bash
+cd C:/Users/moats/ManaDork && npx tsc --noEmit 2>&1 | head -20
+```
+
+- [ ] **Step 6: Commit**
+
+```bash
+cd C:/Users/moats/ManaDork && git add lib/keywords-data.ts app/__tests__/glossary.test.tsx && git commit -m "feat(glossary): add 45 returning mechanic keywords (casting, card advantage, tokens, conditions)"
+```
+
+---
+
+### Task 4: Add retired keyword data
+
+**Files:**
+- Modify: `lib/keywords-data.ts`
+
+- [ ] **Step 1: Write failing test**
+
+In `app/__tests__/glossary.test.tsx`, add:
+
+```tsx
+it('has shroud as a retired keyword', () => {
+  const { KEYWORDS } = require('@/lib/keywords-data')
+  const shroud = KEYWORDS.find((kw: any) => kw.keyword === 'Shroud')
+  expect(shroud).toBeDefined()
+  expect(shroud.tier).toBe('retired')
+})
+
+it('retired keywords count is substantial', () => {
+  const { KEYWORDS } = require('@/lib/keywords-data')
+  const retired = KEYWORDS.filter((kw: any) => kw.tier === 'retired')
+  expect(retired.length).toBeGreaterThanOrEqual(20)
+})
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+```bash
+cd C:/Users/moats/ManaDork && npx jest app/__tests__/glossary.test.tsx --testNamePattern="has shroud" --no-coverage 2>&1 | tail -10
+```
+
+Expected: FAIL.
+
+- [ ] **Step 3: Append retired keywords to the KEYWORDS array (after Task 3's last entry, before `]`)**
+
+```ts
+  // ── Retired Keywords ─────────────────────────────────────────────────
+  {
+    keyword: 'Shroud',
+    type: 'ability',
+    tier: 'retired',
+    definition: "This permanent can't be the target of spells or abilities. Unlike hexproof, this applies to your own spells too.",
+    example: 'Troll Ascetic',
+    introduced: 'Legends',
+  },
+  {
+    keyword: 'Intimidate',
+    type: 'ability',
+    tier: 'retired',
+    definition: "This creature can't be blocked except by artifact creatures and/or creatures that share a color with it. Retired in favor of menace.",
+    example: 'Goblin War Paint',
+    introduced: 'Magic 2011',
+  },
+  {
+    keyword: 'Fear',
+    type: 'ability',
+    tier: 'retired',
+    definition: "This creature can't be blocked except by artifact creatures and/or black creatures. Retired in favor of intimidate, then menace.",
+    example: 'Unholy Strength',
+    introduced: 'Limited Edition Alpha',
+  },
+  {
+    keyword: 'Shadow',
+    type: 'ability',
+    tier: 'retired',
+    definition: 'This creature can only block or be blocked by creatures with shadow. A niche evasion ability from Tempest block.',
+    reminder: 'This creature can block or be blocked by only creatures with shadow.',
+    example: 'Dauthi Mercenary',
+    introduced: 'Tempest',
+  },
+  {
+    keyword: 'Horsemanship',
+    type: 'ability',
+    tier: 'retired',
+    definition: "This creature can't be blocked except by creatures with horsemanship. Essentially flying for Portal Three Kingdoms.",
+    reminder: "This creature can't be blocked except by creatures with horsemanship.",
+    example: 'Riding Red Hare',
+    introduced: 'Portal Three Kingdoms',
+  },
+  {
+    keyword: 'Phasing',
+    type: 'ability',
+    tier: 'retired',
+    definition: "This permanent phases in and out of existence on alternating turns, as if it doesn't exist while phased out. Extremely confusing — never reprinted on new cards.",
+    example: 'Teferi\'s Veil',
+    introduced: 'Mirage',
+  },
+  {
+    keyword: 'Flanking',
+    type: 'ability',
+    tier: 'retired',
+    definition: 'Whenever a creature without flanking blocks this creature, the blocking creature gets -1/-1 until end of turn.',
+    reminder: 'Whenever a creature without flanking blocks this creature, the blocking creature gets -1/-1 until end of turn.',
+    example: 'Sidar Jabari',
+    introduced: 'Mirage',
+  },
+  {
+    keyword: 'Cumulative Upkeep',
+    type: 'mechanic',
+    tier: 'retired',
+    definition: 'At the beginning of your upkeep, put an age counter on this permanent, then sacrifice it unless you pay its upkeep cost for each age counter on it.',
+    reminder: 'At the beginning of your upkeep, put an age counter on this permanent, then sacrifice it unless you pay its upkeep cost for each age counter on it.',
+    example: 'Mystic Remora',
+    introduced: 'Ice Age',
+  },
+  {
+    keyword: 'Echo',
+    type: 'mechanic',
+    tier: 'retired',
+    definition: 'At the beginning of your upkeep, if this permanent came under your control since the beginning of your last upkeep, sacrifice it unless you pay its echo cost.',
+    reminder: 'At the beginning of your upkeep, if this came under your control since the beginning of your last upkeep, sacrifice it unless you pay its echo cost.',
+    example: 'Survival of the Fittest',
+    introduced: 'Urza\'s Saga',
+  },
+  {
+    keyword: 'Fading',
+    type: 'mechanic',
+    tier: 'retired',
+    definition: 'This permanent enters the battlefield with N fade counters on it. At the beginning of your upkeep, remove a fade counter. If you can\'t, sacrifice it.',
+    reminder: 'This permanent enters the battlefield with N fade counters on it. At the beginning of your upkeep, remove a fade counter from it. If you can\'t, sacrifice it.',
+    example: 'Blastoderm',
+    introduced: 'Nemesis',
+  },
+  {
+    keyword: 'Vanishing',
+    type: 'mechanic',
+    tier: 'retired',
+    definition: 'This permanent enters with N time counters. At the start of your upkeep, remove one. When the last is removed, sacrifice it. Like Fading but using time counters.',
+    reminder: 'This permanent enters the battlefield with N time counters on it. At the beginning of your upkeep, remove a time counter from it. When the last is removed, sacrifice it.',
+    example: 'Aven Riftwatcher',
+    introduced: 'Planar Chaos',
+  },
+  {
+    keyword: 'Bushido',
+    type: 'ability',
+    tier: 'retired',
+    definition: 'Whenever this creature blocks or becomes blocked, it gets +N/+N until end of turn.',
+    reminder: 'Whenever this creature blocks or becomes blocked, it gets +N/+N until end of turn.',
+    example: 'Isamaru, Hound of Konda',
+    introduced: 'Champions of Kamigawa',
+  },
+  {
+    keyword: 'Soulshift',
+    type: 'mechanic',
+    tier: 'retired',
+    definition: 'When this creature dies, you may return target Spirit card with mana value N or less from your graveyard to your hand.',
+    reminder: 'When this creature dies, you may return target Spirit card with mana value N or less from your graveyard to your hand.',
+    example: 'Gibbering Kami',
+    introduced: 'Champions of Kamigawa',
+  },
+  {
+    keyword: 'Offering',
+    type: 'mechanic',
+    tier: 'retired',
+    definition: 'You may cast this card any time you could cast an instant by sacrificing a [creature type] and paying the difference in mana costs.',
+    example: 'Patron of the Kitsune',
+    introduced: 'Champions of Kamigawa',
+  },
+  {
+    keyword: 'Forecast',
+    type: 'mechanic',
+    tier: 'retired',
+    definition: 'Reveal this card from your hand during your upkeep: [Effect]. Forecast only as a sorcery.',
+    reminder: '[Activated ability that can only be activated during your upkeep by revealing this card from your hand.]',
+    example: 'Sky Hussar',
+    introduced: 'Dissension',
+  },
+  {
+    keyword: 'Bloodthirst',
+    type: 'mechanic',
+    tier: 'retired',
+    definition: 'If an opponent was dealt damage this turn, this creature enters the battlefield with N +1/+1 counters on it.',
+    reminder: 'If an opponent was dealt damage this turn, this creature enters the battlefield with N +1/+1 counters on it.',
+    example: 'Scab-Clan Mauler',
+    introduced: 'Guildpact',
+  },
+  {
+    keyword: 'Haunt',
+    type: 'mechanic',
+    tier: 'retired',
+    definition: 'When this card goes to the graveyard from the battlefield, exile it haunting target creature. When that creature dies, repeat the effect.',
+    example: 'Souls of the Faultless',
+    introduced: 'Guildpact',
+  },
+  {
+    keyword: 'Ripple',
+    type: 'mechanic',
+    tier: 'retired',
+    definition: 'When you cast this spell, you may reveal the top N cards of your library. You may cast any card revealed this way with the same name without paying its mana cost.',
+    reminder: 'When you cast this spell, you may reveal the top N cards of your library. You may cast any revealed cards with the same name as this spell without paying their mana costs.',
+    example: 'Surging Flame',
+    introduced: 'Coldsnap',
+  },
+  {
+    keyword: 'Recover',
+    type: 'mechanic',
+    tier: 'retired',
+    definition: 'When a creature dies, you may pay this card\'s recover cost. If you do, return it from your graveyard to your hand. Otherwise, exile it.',
+    reminder: "When a creature dies, you may pay this card's recover cost. If you do, return this card from your graveyard to your hand. Otherwise, exile this card.",
+    example: 'Phyrexian Etchings',
+    introduced: 'Coldsnap',
+  },
+  {
+    keyword: 'Gravestorm',
+    type: 'mechanic',
+    tier: 'retired',
+    definition: 'When you cast this spell, copy it for each permanent put into a graveyard this turn.',
+    reminder: 'When you cast this spell, copy it for each permanent put into a graveyard this turn.',
+    example: 'Bitter Ordeal',
+    introduced: 'Future Sight',
+  },
+  {
+    keyword: 'Epic',
+    type: 'mechanic',
+    tier: 'retired',
+    definition: 'For the rest of the game, you can\'t cast spells. At the beginning of each of your upkeeps, copy this spell except for its epic ability.',
+    reminder: "For the rest of the game, you can't cast spells. At the beginning of each of your upkeeps, copy this spell except for its epic ability. You may choose new targets for the copy.",
+    example: 'Enduring Ideal',
+    introduced: 'Saviors of Kamigawa',
+  },
+  {
+    keyword: 'Imprint',
+    type: 'mechanic',
+    tier: 'retired',
+    definition: 'Exile a card onto this permanent, which remembers it. Other abilities reference the imprinted card.',
+    example: 'Chrome Mox',
+    introduced: 'Mirrodin',
+  },
+  {
+    keyword: 'Provoke',
+    type: 'mechanic',
+    tier: 'retired',
+    definition: 'Whenever this creature attacks, you may have target creature defending player controls untap and block this creature if able.',
+    reminder: 'Whenever this creature attacks, you may have target creature defending player controls untap and block this creature if able.',
+    example: 'Trained Armodon',
+    introduced: 'Legions',
+  },
+  {
+    keyword: 'Absorb',
+    type: 'ability',
+    tier: 'retired',
+    definition: 'If this creature would be dealt damage, prevent N of that damage.',
+    reminder: 'If this creature would be dealt damage, prevent N of that damage.',
+    example: 'Gleemax',
+    introduced: 'Onslaught',
+  },
+  {
+    keyword: 'Rampage',
+    type: 'ability',
+    tier: 'retired',
+    definition: 'Whenever this creature becomes blocked, it gets +N/+N until end of turn for each creature blocking it beyond the first.',
+    reminder: 'Whenever this creature becomes blocked, it gets +N/+N until end of turn for each creature blocking it beyond the first.',
+    example: 'Craw Giant',
+    introduced: 'Limited Edition Alpha',
+  },
+  {
+    keyword: 'Landwalk',
+    type: 'ability',
+    tier: 'retired',
+    definition: 'This creature can\'t be blocked if defending player controls a [land type]. Variants: Islandwalk, Swampwalk, Forestwalk, Plainswalk, Mountainwalk. Retired in favor of evasion that doesn\'t reference basic land types.',
+    example: 'Rootwater Commando',
+    introduced: 'Limited Edition Alpha',
+  },
+  {
+    keyword: 'Enchant World',
+    type: 'mechanic',
+    tier: 'retired',
+    definition: 'Only one World enchantment can be in play at a time; if a new one enters, the oldest is put in its owner\'s graveyard. A precursor to the Legend rule.',
+    example: 'Concordant Crossroads',
+    introduced: 'Legends',
+  },
+  {
+    keyword: 'Aura Swap',
+    type: 'mechanic',
+    tier: 'retired',
+    definition: 'You may exchange this Aura with an Aura card in your hand.',
+    reminder: '[Cost]: You may exchange this Aura with an Aura card in your hand.',
+    example: 'Arcanum Wings',
+    introduced: 'Future Sight',
+  },
+  {
+    keyword: 'Substance',
+    type: 'ability',
+    tier: 'retired',
+    definition: 'A placeholder ability word from Unhinged. Has no rules meaning.',
+    example: 'Gleemax',
+    introduced: 'Unhinged',
+  },
+  {
+    keyword: 'Bands with Others',
+    type: 'ability',
+    tier: 'retired',
+    definition: 'A variant of banding: this creature can form a band with any number of creatures that share the specified quality.',
+    example: 'Aysen Highway',
+    introduced: 'Homelands',
+  },
+```
+
+- [ ] **Step 4: Run tests**
+
+```bash
+cd C:/Users/moats/ManaDork && npx jest app/__tests__/glossary.test.tsx --no-coverage 2>&1 | tail -20
+```
+
+Expected: all tests pass.
+
+- [ ] **Step 5: Verify TypeScript compiles**
+
+```bash
+cd C:/Users/moats/ManaDork && npx tsc --noEmit 2>&1 | head -20
+```
+
+Expected: no errors.
+
+- [ ] **Step 6: Check total keyword count**
+
+```bash
+cd C:/Users/moats/ManaDork && node -e "const { KEYWORDS } = require('./lib/keywords-data'); console.log('Total:', KEYWORDS.length, '| evergreen:', KEYWORDS.filter(k=>k.tier==='evergreen').length, '| returning:', KEYWORDS.filter(k=>k.tier==='returning').length, '| retired:', KEYWORDS.filter(k=>k.tier==='retired').length)"
+```
+
+Expected: Total ≥ 150, evergreen ≥ 15, returning ≥ 90, retired ≥ 25.
+
+- [ ] **Step 7: Commit**
+
+```bash
+cd C:/Users/moats/ManaDork && git add lib/keywords-data.ts app/__tests__/glossary.test.tsx && git commit -m "feat(glossary): add retired keyword definitions (shadow, shroud, intimidate, landwalk, etc.)"
+```
