@@ -60,7 +60,7 @@ export const TOKENS: TokenDefinition[] = [
     toughness: '2',
     typeLine: 'Creature — Knight',
     abilities: ['Vigilance'],
-    madeBy: ['History of Benalia', 'Gideon, Ally of Zendikar'],
+    madeBy: ['History of Benalia'],
   },
   {
     name: 'Pegasus',
@@ -112,7 +112,7 @@ export const TOKENS: TokenDefinition[] = [
     toughness: '1',
     typeLine: 'Creature — Thopter Artifact',
     abilities: ['Flying'],
-    madeBy: ['Thopter Spy Network', 'Whirler Rogue'],
+    madeBy: ['Thopter Spy Network', 'Sai, Master Thopterist'],
   },
 
   // ── Creature Tokens — Black ─────────────────────────────────────────
@@ -257,7 +257,7 @@ export const TOKENS: TokenDefinition[] = [
     power: '6',
     toughness: '6',
     typeLine: 'Creature — Wurm',
-    abilities: ['Deathtouch'],
+    abilities: [],
     madeBy: ['Garruk, Primal Hunter'],
   },
   {
@@ -392,7 +392,7 @@ export const TOKENS: TokenDefinition[] = [
     toughness: '1',
     typeLine: 'Creature — Thopter Artifact',
     abilities: ['Flying'],
-    madeBy: ['Thopter Foundry', 'Sharding Sphinx', 'Efficient Construction'],
+    madeBy: ['Efficient Construction', 'Whirler Rogue'],
   },
 
   // ── Artifact Tokens ──────────────────────────────────────────────────
