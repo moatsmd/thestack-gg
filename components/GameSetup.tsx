@@ -39,7 +39,7 @@ export function GameSetup({ onStartGame }: GameSetupProps) {
       currentLife: startingLife,
       lifeHistory: [],
       extraCounters: counters.length > 0
-        ? Object.fromEntries(counters.map((c) => [c, 0])) as Record<ExtraCounterType, number>
+        ? { energy: 0, experience: 0, rad: 0, ticket: 0 }
         : undefined,
     }))
 

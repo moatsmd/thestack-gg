@@ -4,8 +4,8 @@ export type ExtraCounterType = 'energy' | 'experience' | 'rad' | 'ticket'
 
 export const EXTRA_COUNTER_CONFIG: Record<ExtraCounterType, { symbol: string; label: string }> = {
   energy:     { symbol: '⚡', label: 'Energy' },
-  experience: { symbol: '★', label: 'Experience' },
-  rad:        { symbol: '☢', label: 'Rad' },
+  experience: { symbol: '⭐', label: 'Experience' },
+  rad:        { symbol: '☣️', label: 'Rad' },
   ticket:     { symbol: '🎟', label: 'Ticket' },
 }
 
