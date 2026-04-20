@@ -11,6 +11,7 @@ describe('KeywordCard', () => {
   const mockKeyword: KeywordDefinition = {
     keyword: 'Flying',
     type: 'ability',
+    tier: 'evergreen',
     definition: 'This creature can only be blocked by creatures with flying or reach.',
     reminder: "This creature can't be blocked except by creatures with flying and/or reach.",
     example: 'Serra Angel',
@@ -59,6 +60,7 @@ describe('KeywordCard', () => {
     const keywordWithoutReminder: KeywordDefinition = {
       keyword: 'Test',
       type: 'action',
+      tier: 'evergreen',
       definition: 'Test definition',
     }
     renderWithProviders(<KeywordCard keyword={keywordWithoutReminder} />)
@@ -69,6 +71,7 @@ describe('KeywordCard', () => {
     const keywordWithoutExample: KeywordDefinition = {
       keyword: 'Test',
       type: 'action',
+      tier: 'evergreen',
       definition: 'Test definition',
     }
     renderWithProviders(<KeywordCard keyword={keywordWithoutExample} />)
@@ -79,6 +82,7 @@ describe('KeywordCard', () => {
     const keywordWithoutIntroduced: KeywordDefinition = {
       keyword: 'Test',
       type: 'action',
+      tier: 'evergreen',
       definition: 'Test definition',
     }
     renderWithProviders(<KeywordCard keyword={keywordWithoutIntroduced} />)
@@ -95,6 +99,7 @@ describe('KeywordCard', () => {
     const actionKeyword: KeywordDefinition = {
       keyword: 'Destroy',
       type: 'action',
+      tier: 'evergreen',
       definition: 'Test definition',
     }
     renderWithProviders(<KeywordCard keyword={actionKeyword} />)
@@ -106,6 +111,7 @@ describe('KeywordCard', () => {
     const mechanicKeyword: KeywordDefinition = {
       keyword: 'Flashback',
       type: 'mechanic',
+      tier: 'evergreen',
       definition: 'Test definition',
     }
     renderWithProviders(<KeywordCard keyword={mechanicKeyword} />)
