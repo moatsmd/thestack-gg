@@ -192,4 +192,17 @@ describe('GlossaryPage', () => {
     expect(surveil).toBeDefined()
     expect(surveil.tier).toBe('returning')
   })
+
+  it('has shroud as a retired keyword', () => {
+    const { KEYWORDS } = require('@/lib/keywords-data')
+    const shroud = KEYWORDS.find((kw: any) => kw.keyword === 'Shroud')
+    expect(shroud).toBeDefined()
+    expect(shroud.tier).toBe('retired')
+  })
+
+  it('retired keywords count is substantial', () => {
+    const { KEYWORDS } = require('@/lib/keywords-data')
+    const retired = KEYWORDS.filter((kw: any) => kw.tier === 'retired')
+    expect(retired.length).toBeGreaterThanOrEqual(20)
+  })
 })
