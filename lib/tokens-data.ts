@@ -20,7 +20,7 @@ export const TOKENS: TokenDefinition[] = [
     toughness: '4',
     typeLine: 'Creature — Angel',
     abilities: ['Flying', 'Vigilance'],
-    madeBy: ['Entreat the Angels', "Emeria's Call", 'Emeria, Shattered Skyclave'],
+    madeBy: ['Entreat the Angels', "Emeria's Call"],
   },
   {
     name: 'Bird',
@@ -60,7 +60,7 @@ export const TOKENS: TokenDefinition[] = [
     toughness: '2',
     typeLine: 'Creature — Knight',
     abilities: ['Vigilance'],
-    madeBy: ['History of Benalia', 'Inspiring Commander'],
+    madeBy: ['History of Benalia', 'Gideon, Ally of Zendikar'],
   },
   {
     name: 'Pegasus',
@@ -70,7 +70,7 @@ export const TOKENS: TokenDefinition[] = [
     toughness: '1',
     typeLine: 'Creature — Pegasus',
     abilities: ['Flying'],
-    madeBy: ["Oketra's Monument", 'Decree of Justice'],
+    madeBy: ['Sacred Mesa'],
   },
 
   // ── Creature Tokens — Blue ──────────────────────────────────────────
@@ -103,16 +103,6 @@ export const TOKENS: TokenDefinition[] = [
     typeLine: 'Creature — Illusion',
     abilities: ['Flying'],
     madeBy: ['Meloku the Clouded Mirror'],
-  },
-  {
-    name: 'Squid',
-    colors: ['U'],
-    type: 'creature',
-    power: '1',
-    toughness: '1',
-    typeLine: 'Creature — Squid',
-    abilities: ['Islandwalk'],
-    madeBy: ['Kiora, the Crashing Wave'],
   },
   {
     name: 'Thopter (Blue)',
@@ -238,7 +228,7 @@ export const TOKENS: TokenDefinition[] = [
     toughness: '1',
     typeLine: 'Creature — Insect',
     abilities: ['Flying', 'Deathtouch'],
-    madeBy: ['Hornet Queen', 'Ishkanah, Grafwidow'],
+    madeBy: ['Hornet Queen'],
   },
   {
     name: 'Plant',
@@ -248,7 +238,7 @@ export const TOKENS: TokenDefinition[] = [
     toughness: '1',
     typeLine: 'Creature — Plant',
     abilities: [],
-    madeBy: ['Avenger of Zendikar', 'Vigor'],
+    madeBy: ['Avenger of Zendikar', 'Nissa, Voice of Zendikar'],
   },
   {
     name: 'Wolf',
@@ -258,7 +248,7 @@ export const TOKENS: TokenDefinition[] = [
     toughness: '2',
     typeLine: 'Creature — Wolf',
     abilities: [],
-    madeBy: ['Garruk, Primal Hunter', 'Arlinn Kord', 'Howlpack Piper'],
+    madeBy: ['Arlinn Kord', 'Howlpack Piper'],
   },
   {
     name: 'Wurm',
@@ -313,16 +303,6 @@ export const TOKENS: TokenDefinition[] = [
     madeBy: ['Voice of Resurgence', 'Rhys the Redeemed'],
   },
   {
-    name: 'Knight (White/Black)',
-    colors: ['W', 'B'],
-    type: 'creature',
-    power: '2',
-    toughness: '2',
-    typeLine: 'Creature — Knight',
-    abilities: ['Vigilance', 'Lifelink'],
-    madeBy: ['Sorin, Solemn Visitor', "Elspeth, Sun's Champion"],
-  },
-  {
     name: 'Human Soldier',
     colors: ['W'],
     type: 'creature',
@@ -330,7 +310,7 @@ export const TOKENS: TokenDefinition[] = [
     toughness: '1',
     typeLine: 'Creature — Human Soldier',
     abilities: [],
-    madeBy: ['New Prahv Guildmage', 'Dovin, Architect of Law'],
+    madeBy: ['Gather the Townsfolk', "Elspeth, Sun's Nemesis"],
   },
   {
     name: 'Warrior',
@@ -412,7 +392,7 @@ export const TOKENS: TokenDefinition[] = [
     toughness: '1',
     typeLine: 'Creature — Thopter Artifact',
     abilities: ['Flying'],
-    madeBy: ['Thopter Foundry', 'Master of Etherium', 'Padeem, Consul of Innovation'],
+    madeBy: ['Thopter Foundry', 'Sharding Sphinx', 'Efficient Construction'],
   },
 
   // ── Artifact Tokens ──────────────────────────────────────────────────
@@ -454,7 +434,7 @@ export const TOKENS: TokenDefinition[] = [
     type: 'artifact',
     typeLine: 'Artifact — Map',
     abilities: ['1, Tap, Sacrifice this artifact: Target creature you control explores.'],
-    madeBy: ["Abuelo's Awakening", 'Caparocti Sunborn', 'Oltec Cloud Guard'],
+    madeBy: ['Caparocti Sunborn', 'Oltec Cloud Guard', 'Ancient Imperiosaur'],
   },
   {
     name: 'Powerstone',
@@ -535,16 +515,6 @@ export const TOKENS: TokenDefinition[] = [
     typeLine: 'Creature — Zombie Knight',
     abilities: ['Menace'],
     madeBy: ['Josu Vess, Lich Knight (kicked)'],
-  },
-  {
-    name: 'Vampire (Red/White)',
-    colors: ['W', 'R'],
-    type: 'creature',
-    power: '1',
-    toughness: '1',
-    typeLine: 'Creature — Vampire',
-    abilities: ['Flying', 'First Strike', 'Haste'],
-    madeBy: ['Olivia, Crimson Bride'],
   },
   {
     name: 'Zombie (Embalm)',
