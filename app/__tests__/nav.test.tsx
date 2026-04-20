@@ -37,7 +37,7 @@ describe('BottomNavBar (redesigned)', () => {
     renderNav()
     // Home should not be a nav link (it's in the header logo)
     const nav = screen.getByTestId('bottom-nav')
-    expect(nav.textContent).not.toMatch(/^Home$/)
+    expect(nav.textContent).not.toMatch(/\bHome\b/)
   })
 
   it('More drawer contains Stack Reference', async () => {
