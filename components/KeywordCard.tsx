@@ -34,6 +34,7 @@ export function KeywordCard({ keyword }: KeywordCardProps) {
           <span
             className={`w-2 h-2 rounded-full flex-shrink-0 ${dot}`}
             title={label}
+            role="img"
             aria-label={`Tier: ${label}`}
             data-testid="tier-badge"
           />
