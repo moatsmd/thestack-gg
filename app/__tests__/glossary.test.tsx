@@ -178,4 +178,18 @@ describe('GlossaryPage', () => {
       { timeout: 500 }
     )
   })
+
+  it('has storm as a returning mechanic', () => {
+    const { KEYWORDS } = require('@/lib/keywords-data')
+    const storm = KEYWORDS.find((kw: any) => kw.keyword === 'Storm')
+    expect(storm).toBeDefined()
+    expect(storm.tier).toBe('returning')
+  })
+
+  it('has surveil as a returning mechanic', () => {
+    const { KEYWORDS } = require('@/lib/keywords-data')
+    const surveil = KEYWORDS.find((kw: any) => kw.keyword === 'Surveil')
+    expect(surveil).toBeDefined()
+    expect(surveil.tier).toBe('returning')
+  })
 })
