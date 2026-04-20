@@ -31,3 +31,27 @@ describe('token data', () => {
     expect(treasure.type).toBe('artifact')
   })
 })
+
+describe('searchTokens', () => {
+  it('returns all tokens for empty query', () => {
+    const { searchTokens, TOKENS } = require('@/lib/tokens-data')
+    expect(searchTokens('').length).toBe(TOKENS.length)
+  })
+
+  it('returns matching tokens for a name query', () => {
+    const { searchTokens } = require('@/lib/tokens-data')
+    const results = searchTokens('goblin')
+    expect(results.length).toBeGreaterThan(0)
+    expect(results.every((t: any) => t.name.toLowerCase().includes('goblin') || t.madeBy.some((m: any) => m.toLowerCase().includes('goblin')))).toBe(true)
+  })
+
+  it('returns empty array for non-matching query', () => {
+    const { searchTokens } = require('@/lib/tokens-data')
+    expect(searchTokens('zzznomatch').length).toBe(0)
+  })
+
+  it('trims whitespace in query', () => {
+    const { searchTokens, TOKENS } = require('@/lib/tokens-data')
+    expect(searchTokens('   ').length).toBe(TOKENS.length)
+  })
+})

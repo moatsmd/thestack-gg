@@ -20,7 +20,7 @@ export const TOKENS: TokenDefinition[] = [
     toughness: '4',
     typeLine: 'Creature — Angel',
     abilities: ['Flying', 'Vigilance'],
-    madeBy: ['Entreat the Angels', "Sigarda's Aid", 'Emeria, Shattered Skyclave'],
+    madeBy: ['Entreat the Angels', 'Emeria, Shattered Skyclave', 'Avacyn, Angel of Hope'],
   },
   {
     name: 'Bird',
@@ -82,7 +82,7 @@ export const TOKENS: TokenDefinition[] = [
     toughness: '2',
     typeLine: 'Creature — Drake',
     abilities: ['Flying'],
-    madeBy: ['Talrand, Sky Summoner', 'Young Pyromancer (blue variant)'],
+    madeBy: ['Talrand, Sky Summoner', 'Whirler Witch'],
   },
   {
     name: 'Merfolk (Blue)',
@@ -92,7 +92,7 @@ export const TOKENS: TokenDefinition[] = [
     toughness: '1',
     typeLine: 'Creature — Merfolk',
     abilities: [],
-    madeBy: ['Master of the Pearl Trident', 'Merrow Commerce'],
+    madeBy: ['Lullmage Mentor', 'Deepchannel Mentor', 'Stonybrook Schoolmaster'],
   },
   {
     name: 'Illusion',
@@ -102,7 +102,7 @@ export const TOKENS: TokenDefinition[] = [
     toughness: '1',
     typeLine: 'Creature — Illusion',
     abilities: ['Flying'],
-    madeBy: ["Mhault's Illusion", "Kefnet's Monument"],
+    madeBy: ['Meloku the Clouded Mirror', 'Vedalken Shackles'],
   },
   {
     name: 'Squid',
@@ -112,7 +112,7 @@ export const TOKENS: TokenDefinition[] = [
     toughness: '1',
     typeLine: 'Creature — Squid',
     abilities: ['Islandwalk'],
-    madeBy: ['Ior Ruin Expedition'],
+    madeBy: ['Kiora, the Crashing Wave'],
   },
   {
     name: 'Thopter (Blue)',
@@ -196,7 +196,7 @@ export const TOKENS: TokenDefinition[] = [
     toughness: '1',
     typeLine: 'Creature — Elemental',
     abilities: ['Trample', 'Haste'],
-    madeBy: ['Omnath, Locus of Rage', 'Young Pyromancer'],
+    madeBy: ['Omnath, Locus of Rage', 'Chandra, Torch of Defiance'],
   },
   {
     name: 'Devil',
@@ -228,7 +228,7 @@ export const TOKENS: TokenDefinition[] = [
     toughness: '3',
     typeLine: 'Creature — Beast',
     abilities: [],
-    madeBy: ['Garruk Wildspeaker', 'Primordial Sage', 'Call of the Herd'],
+    madeBy: ['Garruk Wildspeaker', 'Rampaging Baloths', 'Call of the Herd'],
   },
   {
     name: 'Insect (Green)',
@@ -268,7 +268,7 @@ export const TOKENS: TokenDefinition[] = [
     toughness: '3',
     typeLine: 'Creature — Wurm',
     abilities: ['Deathtouch'],
-    madeBy: ['Garruk, Primal Hunter', 'Snake Umbra'],
+    madeBy: ['Garruk, Primal Hunter', 'Advent of the Wurm'],
   },
   {
     name: 'Spider',
@@ -330,7 +330,7 @@ export const TOKENS: TokenDefinition[] = [
     toughness: '1',
     typeLine: 'Creature — Human Soldier',
     abilities: [],
-    madeBy: ["Elspeth, Sun's Champion", 'Field Marshal'],
+    madeBy: ["Elspeth, Sun's Champion", 'Secure the Wastes'],
   },
   {
     name: 'Warrior',
@@ -340,7 +340,7 @@ export const TOKENS: TokenDefinition[] = [
     toughness: '1',
     typeLine: 'Creature — Warrior',
     abilities: [],
-    madeBy: ['Mardu Shadowspear', 'Alesha, Who Smiles at Death'],
+    madeBy: ['Secure the Wastes', 'Warriors of the Pale'],
   },
 
   // ── Creature Tokens — Colorless ─────────────────────────────────────
@@ -372,7 +372,7 @@ export const TOKENS: TokenDefinition[] = [
     toughness: '1',
     typeLine: 'Creature — Eldrazi Scion',
     abilities: ['Sacrifice this creature: Add C.'],
-    madeBy: ['From Beyond', 'Blight Herder', 'Emrakul, the Promised End'],
+    madeBy: ['From Beyond', 'Blight Herder', 'Incubator Drone'],
   },
   {
     name: 'Eldrazi Spawn',
@@ -382,7 +382,7 @@ export const TOKENS: TokenDefinition[] = [
     toughness: '1',
     typeLine: 'Creature — Eldrazi Spawn',
     abilities: ['Sacrifice this creature: Add C.'],
-    madeBy: ['Emrakul, the Aeons Torn (trigger)', 'Nest Invader'],
+    madeBy: ["Kozilek's Predator", 'Nest Invader', 'Awakening Zone'],
   },
   {
     name: 'Myr',
