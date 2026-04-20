@@ -472,7 +472,7 @@ export function LifeTracker({ initialGameState, onReset }: LifeTrackerProps) {
 
             {/* City's Blessing */}
             <div>
-              <p className="text-xs uppercase tracking-widest text-[var(--muted)] mb-1">City's Blessing</p>
+              <p className="text-xs uppercase tracking-widest text-[var(--muted)] mb-1">City&apos;s Blessing</p>
               <div className="flex flex-wrap gap-2">
                 {gameState.players.map((p) => (
                   <button

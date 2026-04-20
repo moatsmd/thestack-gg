@@ -87,7 +87,7 @@ export default function StackPage() {
             <li className="flex gap-2">
               <span className="text-[var(--accent-2)] font-bold mt-0.5">•</span>
               <span>
-                <strong className="text-[var(--ink)]">Mana abilities</strong> don't use the stack — they resolve immediately with no response window.
+                <strong className="text-[var(--ink)]">Mana abilities</strong> don&apos;t use the stack — they resolve immediately with no response window.
               </span>
             </li>
             <li className="flex gap-2">
@@ -99,7 +99,7 @@ export default function StackPage() {
             <li className="flex gap-2">
               <span className="text-[var(--accent-2)] font-bold mt-0.5">•</span>
               <span>
-                Hexproof and shroud protect from targeted spells and abilities, but <em>not</em> from triggered abilities that don't target.
+                Hexproof and shroud protect from targeted spells and abilities, but <em>not</em> from triggered abilities that don&apos;t target.
               </span>
             </li>
             <li className="flex gap-2">
