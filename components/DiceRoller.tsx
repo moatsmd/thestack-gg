@@ -5,6 +5,7 @@ import { useState } from 'react'
 type DieType = 4 | 6 | 8 | 10 | 12 | 20 | 100
 
 interface RollEntry {
+  id: string
   die: DieType
   result: number
   timestamp: number
@@ -46,6 +47,7 @@ export function DiceRoller() {
 
   const commitRoll = (results: { die: DieType; result: number }[]) => {
     const entries: RollEntry[] = results.map(({ die, result }) => ({
+      id: crypto.randomUUID(),
       die,
       result,
       timestamp: Date.now(),
@@ -58,11 +60,7 @@ export function DiceRoller() {
   }
 
   const handleDieClick = (sides: DieType) => {
-    if (queue.length === 0) {
-      commitRoll([{ die: sides, result: rollDie(sides) }])
-    } else {
-      setQueue((prev) => [...prev, sides])
-    }
+    commitRoll([{ die: sides, result: rollDie(sides) }])
   }
 
   const handleQueueDie = (sides: DieType) => {
@@ -74,10 +72,10 @@ export function DiceRoller() {
     commitRoll(queue.map((die) => ({ die, result: rollDie(die) })))
   }
 
-  const queueCounts = queue.reduce<Record<DieType, number>>((acc, d) => {
+  const queueCounts = queue.reduce<Partial<Record<DieType, number>>>((acc, d) => {
     acc[d] = (acc[d] ?? 0) + 1
     return acc
-  }, {} as Record<DieType, number>)
+  }, {} as Partial<Record<DieType, number>>)
 
   return (
     <div className="min-h-screen arcane-shell text-[var(--ink)] transition-colors">
@@ -122,7 +120,7 @@ export function DiceRoller() {
             >
               <DieSvg sides={sides} />
               <span className="text-sm">d{sides}</span>
-              {queueCounts[sides] > 0 && (
+              {(queueCounts[sides] ?? 0) > 0 && (
                 <span className="absolute top-1 right-1 w-5 h-5 rounded-full bg-[var(--accent-1)] text-white text-xs flex items-center justify-center font-bold">
                   {queueCounts[sides]}
                 </span>
@@ -157,9 +155,9 @@ export function DiceRoller() {
         {history.length > 0 && (
           <section className="arcane-panel mana-border rounded-2xl p-4 space-y-2">
             <p className="text-xs uppercase tracking-widest text-[var(--muted)]">History</p>
-            {history.map((entry, i) => (
+            {history.map((entry) => (
               <div
-                key={`${entry.timestamp}-${i}`}
+                key={entry.id}
                 className="flex items-center justify-between text-sm"
                 data-testid="history-entry"
               >

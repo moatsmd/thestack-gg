@@ -21,19 +21,28 @@ describe('DiceRoller', () => {
     const user = userEvent.setup()
     renderDice()
     await user.click(screen.getByTestId('die-d6'))
-    expect(screen.getByTestId('roll-result')).toBeInTheDocument()
+    const resultEl = screen.getByTestId('roll-result')
+    expect(resultEl).toBeInTheDocument()
+    expect(resultEl.textContent).not.toBe('—')
+    const value = parseInt(resultEl.textContent ?? '', 10)
+    expect(isNaN(value)).toBe(false)
   })
 
   it('d6 result is between 1 and 6', async () => {
     const user = userEvent.setup()
+    // Mock Math.random to return 0 → result should be 1
+    const mockRandom = jest.spyOn(Math, 'random').mockReturnValue(0)
     renderDice()
-    for (let i = 0; i < 10; i++) {
-      await user.click(screen.getByTestId('die-d6'))
-    }
+    await user.click(screen.getByTestId('die-d6'))
     const resultEl = screen.getByTestId('roll-result')
-    const value = parseInt(resultEl.textContent ?? '0', 10)
-    expect(value).toBeGreaterThanOrEqual(1)
-    expect(value).toBeLessThanOrEqual(6)
+    expect(resultEl.textContent).toBe('1')
+    mockRandom.mockRestore()
+
+    // Also verify upper bound: 0.9999 → 5 (floor(0.9999 * 6) + 1 = 5+1 = 6)
+    const mockRandom2 = jest.spyOn(Math, 'random').mockReturnValue(0.9999)
+    await user.click(screen.getByTestId('die-d6'))
+    expect(screen.getByTestId('roll-result').textContent).toBe('6')
+    mockRandom2.mockRestore()
   })
 
   it('adds to roll history', async () => {
@@ -42,7 +51,7 @@ describe('DiceRoller', () => {
     await user.click(screen.getByTestId('die-d20'))
     await user.click(screen.getByTestId('die-d20'))
     const history = screen.getAllByTestId('history-entry')
-    expect(history.length).toBeGreaterThanOrEqual(1)
+    expect(history.length).toEqual(2)
   })
 
   it('multi-die mode: queue two dice then roll both', async () => {
