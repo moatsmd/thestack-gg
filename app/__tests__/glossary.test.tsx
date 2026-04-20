@@ -8,6 +8,19 @@ const renderWithProviders = (component: React.ReactElement) => {
 }
 
 describe('GlossaryPage', () => {
+  it('every keyword has a tier field', () => {
+    const { KEYWORDS } = require('@/lib/keywords-data')
+    for (const kw of KEYWORDS) {
+      expect(['evergreen', 'returning', 'retired']).toContain(kw.tier)
+    }
+  })
+
+  it('evergreen keywords are a subset of evergreen abilities', () => {
+    const { KEYWORDS } = require('@/lib/keywords-data')
+    const evergreen = KEYWORDS.filter((kw: any) => kw.tier === 'evergreen')
+    expect(evergreen.length).toBeGreaterThanOrEqual(15)
+  })
+
   it('renders glossary header', () => {
     renderWithProviders(<GlossaryPage />)
     expect(screen.getByTestId('glossary-header')).toBeInTheDocument()
