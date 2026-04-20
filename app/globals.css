@@ -19,6 +19,7 @@
     --ring: rgba(154, 110, 24, 0.4);
     --border-subtle: rgba(90, 60, 20, 0.15);
     --border-strong: rgba(90, 60, 20, 0.35);
+    --chamfer: 12px;
   }
 
   .dark {
@@ -78,9 +79,25 @@
   button {
     font-family: inherit;
   }
+
+  /* Flatten rounded Tailwind classes — square + chamfer replaces rounded edges */
+  .rounded-sm { border-radius: 1px; }
+  .rounded, .rounded-md { border-radius: 2px; }
+  .rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl { border-radius: 0; }
+  /* Keep .rounded-full for genuine circles (mana symbols, avatars, etc.) */
 }
 
 @layer utilities {
+  /* Reusable chamfer clip-path — all 8 corners cut diagonally */
+  .chamfered {
+    clip-path: polygon(
+      var(--chamfer) 0%, calc(100% - var(--chamfer)) 0%,
+      100% var(--chamfer), 100% calc(100% - var(--chamfer)),
+      calc(100% - var(--chamfer)) 100%, var(--chamfer) 100%,
+      0% calc(100% - var(--chamfer)), 0% var(--chamfer)
+    );
+  }
+
   /* Page background — stone or parchment with fractal grain texture */
   .arcane-shell {
     background-color: var(--canvas);
@@ -88,21 +105,32 @@
     background-size: 200px 200px;
   }
 
-  /* Content panels — stone slab or vellum sheet */
+  /* Content panels — chamfered armor-plate shape */
   .arcane-panel {
     background: var(--surface-1);
-    border: 2px solid var(--border-strong);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    clip-path: polygon(
+      var(--chamfer) 0%, calc(100% - var(--chamfer)) 0%,
+      100% var(--chamfer), 100% calc(100% - var(--chamfer)),
+      calc(100% - var(--chamfer)) 100%, var(--chamfer) 100%,
+      0% calc(100% - var(--chamfer)), 0% var(--chamfer)
+    );
+    box-shadow: inset 0 0 0 1.5px var(--border-strong);
   }
 
   .arcane-panel-soft {
     background: var(--surface-1);
-    border: 1px solid var(--border-subtle);
+    clip-path: polygon(
+      var(--chamfer) 0%, calc(100% - var(--chamfer)) 0%,
+      100% var(--chamfer), 100% calc(100% - var(--chamfer)),
+      calc(100% - var(--chamfer)) 100%, var(--chamfer) 100%,
+      0% calc(100% - var(--chamfer)), 0% var(--chamfer)
+    );
+    box-shadow: inset 0 0 0 1px var(--border-subtle);
   }
 
-  /* Gold-ring glow for focus / elevated states */
+  /* Drop-shadow uses filter so it follows the chamfer shape */
   .arcane-glow {
-    box-shadow: 0 0 0 1px var(--border-strong), 0 20px 50px rgba(0, 0, 0, 0.7);
+    filter: drop-shadow(0 0 2px rgba(196, 137, 31, 0.3)) drop-shadow(0 16px 36px rgba(0, 0, 0, 0.65));
   }
 
   /* Sigil icon backgrounds */
@@ -110,21 +138,33 @@
     background: var(--accent-1);
   }
 
-  /* Tool cards — double-bordered like a card frame */
+  /* Tool cards — chamfered frame with inner rule */
   .tool-card {
     background: var(--card-surface-1);
-    border: 2px solid var(--border-strong);
+    clip-path: polygon(
+      var(--chamfer) 0%, calc(100% - var(--chamfer)) 0%,
+      100% var(--chamfer), 100% calc(100% - var(--chamfer)),
+      calc(100% - var(--chamfer)) 100%, var(--chamfer) 100%,
+      0% calc(100% - var(--chamfer)), 0% var(--chamfer)
+    );
+    box-shadow: inset 0 0 0 1.5px var(--border-strong);
     position: relative;
     overflow: hidden;
   }
 
+  /* Inner frame rule — double-border card feel */
   .tool-card::before {
     content: "";
     position: absolute;
-    inset: 6px;
+    inset: 7px;
     border: 1px solid var(--border-subtle);
-    border-radius: inherit;
     pointer-events: none;
+    clip-path: polygon(
+      calc(var(--chamfer) - 6px) 0%, calc(100% - var(--chamfer) + 6px) 0%,
+      100% calc(var(--chamfer) - 6px), 100% calc(100% - var(--chamfer) + 6px),
+      calc(100% - var(--chamfer) + 6px) 100%, calc(var(--chamfer) - 6px) 100%,
+      0% calc(100% - var(--chamfer) + 6px), 0% calc(var(--chamfer) - 6px)
+    );
   }
 
   .tool-card::after {
@@ -145,7 +185,7 @@
     background: var(--accent, var(--accent-1));
   }
 
-  /* Panel inset — depth without gradients */
+  /* Panel depth inset — darkens interior, suggests stone thickness */
   .mana-border {
     box-shadow: inset 0 0 0 1px var(--border-subtle), inset 0 0 30px rgba(0, 0, 0, 0.35);
   }
