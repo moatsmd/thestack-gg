@@ -22,7 +22,7 @@ describe('ToolkitPage', () => {
     const { container } = render(<ToolkitPage />)
 
     const mainDiv = container.firstChild as HTMLElement
-    expect(mainDiv).toHaveClass('min-h-screen')
+    expect(mainDiv).toHaveClass('arcane-shell')
   })
 
   it('displays card search component', () => {
