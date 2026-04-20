@@ -369,7 +369,7 @@ export function LifeTracker({ initialGameState, onReset }: LifeTrackerProps) {
       {showBanner && isCommander && (
         <div className="arcane-panel-soft mana-border px-4 py-3 flex justify-between items-center" data-testid="commander-tip-banner">
           <div className="text-sm text-[var(--ink)]">
-            💡 Tip: Tap any player to track commander damage
+            💡 Tip: Tap the CMD badge on a player to track commander damage
           </div>
           <button
             type="button"

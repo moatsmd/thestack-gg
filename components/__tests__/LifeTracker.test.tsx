@@ -163,7 +163,7 @@ describe('LifeTracker', () => {
     renderWithProviders(<LifeTracker initialGameState={multiplayerGameState} onReset={mockOnReset} />)
 
     expect(screen.getByTestId('commander-tip-banner')).toBeInTheDocument()
-    expect(screen.getByText(/Tip: Tap any player to track commander damage/i)).toBeInTheDocument()
+    expect(screen.getByText(/Tip: Tap the CMD badge on a player to track commander damage/i)).toBeInTheDocument()
   })
 
   it('does not show banner in non-commander modes', () => {

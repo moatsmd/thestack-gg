@@ -90,7 +90,7 @@ describe('PlayerCounter', () => {
     ).toBeInTheDocument()
   })
 
-  it('opens commander damage when the card is clicked', async () => {
+  it('opens commander damage when the CMD badge is clicked', async () => {
     const user = userEvent.setup()
     const onOpenCommanderDamage = jest.fn()
 
@@ -102,7 +102,7 @@ describe('PlayerCounter', () => {
       />
     )
 
-    await user.click(screen.getByTestId('player-card'))
+    await user.click(screen.getByLabelText('Open commander damage'))
 
     expect(onOpenCommanderDamage).toHaveBeenCalledWith('player-1')
   })

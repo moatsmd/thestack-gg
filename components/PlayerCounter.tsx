@@ -67,18 +67,8 @@ export function PlayerCounter({
 
   return (
     <div
-      className="arcane-panel mana-border flex flex-col items-center justify-center h-full p-4 rounded-2xl hover:bg-white/5 transition"
+      className="arcane-panel mana-border flex flex-col items-center justify-center h-full p-4 rounded-2xl transition"
       data-testid="player-card"
-      onClick={() => isCommander && onOpenCommanderDamage(playerId)}
-      role={isCommander ? 'button' : undefined}
-      tabIndex={isCommander ? 0 : undefined}
-      onKeyDown={(event) => {
-        if (!isCommander) return
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault()
-          onOpenCommanderDamage(playerId)
-        }
-      }}
     >
       {/* Name row */}
       <div className="flex items-center gap-2 mb-4">
