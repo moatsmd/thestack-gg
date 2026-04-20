@@ -7,15 +7,16 @@ import { useDarkMode } from '@/contexts/DarkModeContext'
 import { useWakeLock } from '@/hooks/useWakeLock'
 
 const navItems = [
-  { href: '/', label: 'Home', icon: 'home' },
   { href: '/tracker', label: 'Tracker', icon: 'heart' },
   { href: '/toolkit', label: 'Cards', icon: 'search' },
-  { href: '/stack', label: 'Stack', icon: 'layers' },
+  { href: '/dice', label: 'Dice', icon: 'dice' },
+  { href: '/glossary', label: 'Glossary', icon: 'book' },
 ]
 
 const moreItems = [
-  { href: '/glossary', label: 'Keywords', icon: 'book' },
+  { href: '/stack', label: 'Stack Reference', icon: 'layers' },
   { href: '/rules', label: 'Rules', icon: 'document' },
+  { href: '/tokens', label: 'Tokens', icon: 'sparkles' },
   { href: '/new-players', label: 'New Players', icon: 'compass' },
 ]
 
@@ -63,6 +64,24 @@ function NavIcon({ icon, className }: { icon: string; className?: string }) {
       return (
         <svg className={iconClass} fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+        </svg>
+      )
+    case 'dice':
+      return (
+        <svg className={iconClass} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <rect x="3" y="3" width="18" height="18" rx="3" strokeWidth={2} />
+          <circle cx="8" cy="8" r="1.5" fill="currentColor" />
+          <circle cx="16" cy="8" r="1.5" fill="currentColor" />
+          <circle cx="8" cy="16" r="1.5" fill="currentColor" />
+          <circle cx="16" cy="16" r="1.5" fill="currentColor" />
+          <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+        </svg>
+      )
+    case 'sparkles':
+      return (
+        <svg className={iconClass} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3l1.5 4.5L11 9l-4.5 1.5L5 15l-1.5-4.5L-1 9l4.5-1.5L5 3z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 10l1 3 3 1-3 1-1 3-1-3-3-1 3-1 1-3z" />
         </svg>
       )
     case 'more':
