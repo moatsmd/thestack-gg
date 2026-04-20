@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Space_Grotesk } from "next/font/google";
+import { Cormorant_Garamond, Spectral } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 
@@ -9,7 +9,7 @@ const headingFont = Cormorant_Garamond({
   variable: "--font-heading",
 });
 
-const bodyFont = Space_Grotesk({
+const bodyFont = Spectral({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
   variable: "--font-body",

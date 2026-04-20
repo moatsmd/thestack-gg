@@ -4,52 +4,60 @@
 
 @layer base {
   :root {
-    --canvas: #f4efe5;
-    --surface-1: #ffffff;
-    --surface-2: #ede2cf;
-    --card-surface-1: rgba(255, 255, 255, 0.98);
-    --card-surface-2: rgba(237, 226, 207, 0.92);
-    --ink: #1b1a16;
-    --muted: #5f5b52;
-    --accent-1: #b8892b;
-    --accent-2: #0f6b6d;
-    --accent-3: #7b2d2a;
-    --accent-4: #6a56ff;
-    --ring: rgba(184, 137, 43, 0.35);
+    /* Light mode — aged parchment, scholar's study */
+    --canvas: #ede0c4;
+    --surface-1: #f6ecd6;
+    --surface-2: #e2d0ac;
+    --card-surface-1: rgba(246, 236, 214, 0.98);
+    --card-surface-2: rgba(226, 208, 172, 0.92);
+    --ink: #1a1008;
+    --muted: #5e4830;
+    --accent-1: #9a6e18;
+    --accent-2: #1a5c5c;
+    --accent-3: #6b1a1a;
+    --accent-4: #5040a0;
+    --ring: rgba(154, 110, 24, 0.4);
+    --border-subtle: rgba(90, 60, 20, 0.15);
+    --border-strong: rgba(90, 60, 20, 0.35);
   }
 
   .dark {
-    --canvas: #121212;
-    --surface-1: #1e1e1e;
-    --surface-2: #2a2a2a;
-    --card-surface-1: rgba(30, 30, 30, 0.96);
-    --card-surface-2: rgba(42, 42, 42, 0.98);
-    --ink: #e0e0e0;
-    --muted: #a0a0a0;
-    --accent-1: #6200ea;
-    --accent-2: #03dac6;
-    --accent-3: #cf6679;
-    --accent-4: #6200ea;
-    --ring: rgba(98, 0, 234, 0.35);
+    /* Dark mode — obsidian stone, candlegold torchlight */
+    --canvas: #0c0a07;
+    --surface-1: #16130e;
+    --surface-2: #1e1a12;
+    --card-surface-1: rgba(22, 19, 14, 0.98);
+    --card-surface-2: rgba(30, 26, 18, 0.98);
+    --ink: #e0cda0;
+    --muted: #8a7860;
+    --accent-1: #c4891f;
+    --accent-2: #1e7272;
+    --accent-3: #8b2020;
+    --accent-4: #7060c0;
+    --ring: rgba(196, 137, 31, 0.4);
+    --border-subtle: rgba(196, 137, 31, 0.15);
+    --border-strong: rgba(196, 137, 31, 0.35);
   }
 
   .light {
-    --canvas: #f4efe5;
-    --surface-1: #ffffff;
-    --surface-2: #ede2cf;
-    --card-surface-1: rgba(255, 255, 255, 0.98);
-    --card-surface-2: rgba(237, 226, 207, 0.92);
-    --ink: #1b1a16;
-    --muted: #5f5b52;
-    --accent-1: #b8892b;
-    --accent-2: #0f6b6d;
-    --accent-3: #7b2d2a;
-    --accent-4: #6a56ff;
-    --ring: rgba(184, 137, 43, 0.35);
+    --canvas: #ede0c4;
+    --surface-1: #f6ecd6;
+    --surface-2: #e2d0ac;
+    --card-surface-1: rgba(246, 236, 214, 0.98);
+    --card-surface-2: rgba(226, 208, 172, 0.92);
+    --ink: #1a1008;
+    --muted: #5e4830;
+    --accent-1: #9a6e18;
+    --accent-2: #1a5c5c;
+    --accent-3: #6b1a1a;
+    --accent-4: #5040a0;
+    --ring: rgba(154, 110, 24, 0.4);
+    --border-subtle: rgba(90, 60, 20, 0.15);
+    --border-strong: rgba(90, 60, 20, 0.35);
   }
 
   body {
-    font-family: var(--font-body), system-ui, sans-serif;
+    font-family: var(--font-body), Georgia, serif;
     background-color: var(--canvas);
     color: var(--ink);
   }
@@ -59,7 +67,7 @@
   h3,
   h4 {
     font-family: var(--font-heading), "Times New Roman", serif;
-    letter-spacing: 0.01em;
+    letter-spacing: 0.02em;
   }
 
   input,
@@ -71,37 +79,39 @@
 }
 
 @layer utilities {
+  /* Page background — stone or parchment with fractal grain texture */
   .arcane-shell {
-    background-image: radial-gradient(circle at 12% 12%, rgba(98, 0, 234, 0.15), transparent 45%),
-      radial-gradient(circle at 88% 15%, rgba(3, 218, 198, 0.18), transparent 52%),
-      radial-gradient(circle at 70% 82%, rgba(207, 102, 121, 0.18), transparent 55%),
-      radial-gradient(circle at 18% 78%, rgba(98, 0, 234, 0.12), transparent 50%),
-      linear-gradient(180deg, rgba(18, 18, 18, 0.95), rgba(18, 18, 18, 0.98));
+    background-color: var(--canvas);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
+    background-size: 200px 200px;
   }
 
+  /* Content panels — stone slab or vellum sheet */
   .arcane-panel {
     background: var(--surface-1);
-    border: 1px solid rgba(244, 241, 234, 0.12);
-    box-shadow: 0 18px 40px rgba(3, 2, 6, 0.5);
+    border: 1px solid var(--border-strong);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.04);
   }
 
   .arcane-panel-soft {
-    background: linear-gradient(140deg, var(--surface-1), var(--surface-2));
-    border: 1px solid rgba(244, 241, 234, 0.12);
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
   }
 
+  /* Gold-ring glow for focus / elevated states */
   .arcane-glow {
-    box-shadow: 0 0 0 1px rgba(98, 0, 234, 0.25), 0 22px 60px rgba(8, 6, 14, 0.6);
+    box-shadow: 0 0 0 1px var(--border-strong), 0 20px 50px rgba(0, 0, 0, 0.7);
   }
 
+  /* Sigil icon backgrounds */
   .arcane-sigil {
-    background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0)),
-      conic-gradient(from 120deg, rgba(98, 0, 234, 0.4), rgba(3, 218, 198, 0.35), rgba(207, 102, 121, 0.45), rgba(98, 0, 234, 0.4), rgba(98, 0, 234, 0.4));
+    background: var(--accent-1);
   }
 
+  /* Tool cards — double-bordered like a card frame */
   .tool-card {
-    background: linear-gradient(160deg, var(--card-surface-1), var(--card-surface-2));
-    border: 1px solid rgba(244, 241, 234, 0.14);
+    background: var(--card-surface-1);
+    border: 2px solid var(--border-strong);
     position: relative;
     overflow: hidden;
   }
@@ -109,9 +119,9 @@
   .tool-card::before {
     content: "";
     position: absolute;
-    inset: 10px;
-    border: 1px solid rgba(244, 241, 234, 0.16);
-    opacity: 0.7;
+    inset: 6px;
+    border: 1px solid var(--border-subtle);
+    border-radius: inherit;
     pointer-events: none;
   }
 
@@ -119,27 +129,29 @@
     content: "";
     position: absolute;
     inset: 0;
-    background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+    background: rgba(255, 255, 255, 0.03);
     opacity: 0;
     transition: opacity 0.3s ease;
     pointer-events: none;
   }
 
   .tool-card:hover::after {
-    opacity: 0.7;
+    opacity: 1;
   }
 
   .tool-accent {
     background: var(--accent, var(--accent-1));
   }
 
+  /* Panel inset — depth without gradients */
   .mana-border {
-    box-shadow: inset 0 0 0 1px rgba(244, 241, 234, 0.12), inset 0 0 40px rgba(8, 6, 14, 0.7);
+    box-shadow: inset 0 0 0 1px var(--border-subtle), inset 0 0 30px rgba(0, 0, 0, 0.35);
   }
 
+  /* Decorative horizontal rule — gold wire */
   .frame-divider {
-    height: 2px;
-    background: linear-gradient(90deg, transparent, rgba(98, 0, 234, 0.6), transparent);
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border-strong), transparent);
   }
 
   .stack-item-card {
@@ -147,7 +159,7 @@
   }
 
   .stack-item-top {
-    box-shadow: 0 0 0 1px rgba(98, 0, 234, 0.45), 0 14px 30px rgba(8, 6, 14, 0.6);
+    box-shadow: 0 0 0 1px var(--border-strong), 0 14px 30px rgba(0, 0, 0, 0.6);
   }
 
   .stack-item-resolving {
@@ -156,7 +168,7 @@
   }
 
   .stack-flow {
-    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 40%);
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 40%);
   }
 
   .float-slow {
