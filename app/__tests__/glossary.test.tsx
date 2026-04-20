@@ -132,14 +132,46 @@ describe('GlossaryPage', () => {
     const abilityButton = screen.getByTestId('filter-ability')
 
     // All button should be selected by default
-    expect(allButton).toHaveClass('bg-teal-600')
+    expect(allButton).toHaveClass('bg-[var(--accent-2)]')
 
     // Click ability button
     await user.click(abilityButton)
 
     // Ability button should now be selected
     expect(abilityButton).toHaveClass('bg-blue-600')
-    expect(allButton).not.toHaveClass('bg-teal-600')
+    expect(allButton).not.toHaveClass('bg-[var(--accent-2)]')
+  })
+
+  it('renders tier filter buttons', () => {
+    renderWithProviders(<GlossaryPage />)
+    expect(screen.getByTestId('filter-tier-evergreen')).toBeInTheDocument()
+    expect(screen.getByTestId('filter-tier-returning')).toBeInTheDocument()
+    expect(screen.getByTestId('filter-tier-retired')).toBeInTheDocument()
+  })
+
+  it('retired keywords are hidden by default', async () => {
+    const { KEYWORDS } = require('@/lib/keywords-data')
+    const retiredKeyword = KEYWORDS.find((kw: any) => kw.tier === 'retired')
+    renderWithProviders(<GlossaryPage />)
+    await waitFor(() => {
+      const cards = screen.getAllByTestId('keyword-card')
+      const names = cards.map((c) => c.querySelector('h3')?.textContent)
+      expect(names).not.toContain(retiredKeyword.keyword)
+    })
+  })
+
+  it('shows retired keywords when retired tier is enabled', async () => {
+    const user = userEvent.setup()
+    const { KEYWORDS } = require('@/lib/keywords-data')
+    const retiredKeyword = KEYWORDS.find((kw: any) => kw.tier === 'retired')
+    renderWithProviders(<GlossaryPage />)
+    const retiredButton = screen.getByTestId('filter-tier-retired')
+    await user.click(retiredButton)
+    await waitFor(() => {
+      const cards = screen.getAllByTestId('keyword-card')
+      const names = cards.map((c) => c.querySelector('h3')?.textContent)
+      expect(names).toContain(retiredKeyword.keyword)
+    })
   })
 
   it('has dredge as a returning keyword', () => {

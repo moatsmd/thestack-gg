@@ -5,26 +5,30 @@ import { GlossaryHeader } from '@/components/GlossaryHeader'
 import { KeywordCard } from '@/components/KeywordCard'
 import { useKeywords } from '@/hooks/useKeywords'
 import { KeywordDefinition } from '@/lib/keywords-data'
+import type { KeywordTier } from '@/hooks/useKeywords'
 
 export default function GlossaryPage() {
-  const { filteredKeywords, query, selectedType, setQuery, setType } = useKeywords()
+  const { filteredKeywords, query, selectedType, selectedTiers, setQuery, setType, toggleTier } = useKeywords()
   const [debouncedQuery, setDebouncedQuery] = useState(query)
 
-  // Debounce search query (300ms)
   useEffect(() => {
     const timer = setTimeout(() => {
       setQuery(debouncedQuery)
     }, 300)
-
     return () => clearTimeout(timer)
   }, [debouncedQuery, setQuery])
+
+  const tierConfig: { tier: KeywordTier; label: string; activeClass: string; testId: string }[] = [
+    { tier: 'evergreen', label: 'Evergreen', activeClass: 'bg-green-600 text-white', testId: 'filter-tier-evergreen' },
+    { tier: 'returning', label: 'Returning', activeClass: 'bg-blue-600 text-white', testId: 'filter-tier-returning' },
+    { tier: 'retired', label: 'Retired', activeClass: 'bg-[var(--muted)] text-white', testId: 'filter-tier-retired' },
+  ]
 
   return (
     <div className="min-h-screen arcane-shell text-[var(--ink)] transition-colors">
       <GlossaryHeader />
 
       <main className="container mx-auto px-4 py-8">
-        {/* Search and Filter Controls */}
         <div className="mb-6 space-y-4 arcane-panel mana-border rounded-2xl p-6">
           {/* Search Input */}
           <div>
@@ -42,7 +46,7 @@ export default function GlossaryPage() {
             />
           </div>
 
-          {/* Type Filter Buttons */}
+          {/* Type Filter Row */}
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setType('all')}
@@ -55,39 +59,42 @@ export default function GlossaryPage() {
             >
               All
             </button>
-            <button
-              onClick={() => setType('ability')}
-              className={`px-4 py-2 rounded-lg font-semibold transition ${
-                selectedType === 'ability'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-[var(--surface-2)] text-[var(--muted)] hover:bg-[var(--surface-1)]'
-              }`}
-              data-testid="filter-ability"
-            >
-              Abilities
-            </button>
-            <button
-              onClick={() => setType('action')}
-              className={`px-4 py-2 rounded-lg font-semibold transition ${
-                selectedType === 'action'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-[var(--surface-2)] text-[var(--muted)] hover:bg-[var(--surface-1)]'
-              }`}
-              data-testid="filter-action"
-            >
-              Actions
-            </button>
-            <button
-              onClick={() => setType('mechanic')}
-              className={`px-4 py-2 rounded-lg font-semibold transition ${
-                selectedType === 'mechanic'
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-[var(--surface-2)] text-[var(--muted)] hover:bg-[var(--surface-1)]'
-              }`}
-              data-testid="filter-mechanic"
-            >
-              Mechanics
-            </button>
+            {(['ability', 'action', 'mechanic'] as const).map((t) => {
+              const activeColors = { ability: 'bg-blue-600 text-white', action: 'bg-green-600 text-white', mechanic: 'bg-purple-600 text-white' }
+              return (
+                <button
+                  key={t}
+                  onClick={() => setType(t)}
+                  className={`px-4 py-2 rounded-lg font-semibold transition ${
+                    selectedType === t
+                      ? activeColors[t]
+                      : 'bg-[var(--surface-2)] text-[var(--muted)] hover:bg-[var(--surface-1)]'
+                  }`}
+                  data-testid={`filter-${t}`}
+                >
+                  {t === 'ability' ? 'Abilities' : t === 'action' ? 'Actions' : 'Mechanics'}
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Tier Filter Row */}
+          <div className="flex flex-wrap gap-2">
+            {tierConfig.map(({ tier, label, activeClass, testId }) => (
+              <button
+                key={tier}
+                onClick={() => toggleTier(tier)}
+                className={`px-4 py-2 rounded-lg font-semibold transition ${
+                  selectedTiers.includes(tier)
+                    ? activeClass
+                    : 'bg-[var(--surface-2)] text-[var(--muted)] hover:bg-[var(--surface-1)]'
+                }`}
+                data-testid={testId}
+                aria-pressed={selectedTiers.includes(tier)}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         </div>
 
