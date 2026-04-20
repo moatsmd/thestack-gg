@@ -142,6 +142,20 @@ describe('GlossaryPage', () => {
     expect(allButton).not.toHaveClass('bg-teal-600')
   })
 
+  it('has dredge as a returning keyword', () => {
+    const { KEYWORDS } = require('@/lib/keywords-data')
+    const dredge = KEYWORDS.find((kw: any) => kw.keyword === 'Dredge')
+    expect(dredge).toBeDefined()
+    expect(dredge.tier).toBe('returning')
+  })
+
+  it('has infect as a returning keyword', () => {
+    const { KEYWORDS } = require('@/lib/keywords-data')
+    const infect = KEYWORDS.find((kw: any) => kw.keyword === 'Infect')
+    expect(infect).toBeDefined()
+    expect(infect.tier).toBe('returning')
+  })
+
   it('combines search and type filters', async () => {
     const user = userEvent.setup()
     renderWithProviders(<GlossaryPage />)
