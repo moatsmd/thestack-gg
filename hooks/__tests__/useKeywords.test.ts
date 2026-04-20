@@ -2,12 +2,17 @@ import { renderHook, act } from '@testing-library/react'
 import { useKeywords } from '../useKeywords'
 import { KEYWORDS } from '@/lib/keywords-data'
 
+// The hook defaults to ['evergreen', 'returning'] tier filter
+const defaultKeywords = KEYWORDS.filter((kw) =>
+  ['evergreen', 'returning'].includes(kw.tier)
+)
+
 describe('useKeywords', () => {
   it('returns all keywords by default', () => {
     const { result } = renderHook(() => useKeywords())
 
     expect(result.current.allKeywords).toEqual(KEYWORDS)
-    expect(result.current.filteredKeywords).toEqual(KEYWORDS)
+    expect(result.current.filteredKeywords).toEqual(defaultKeywords)
     expect(result.current.query).toBe('')
     expect(result.current.selectedType).toBe('all')
   })
@@ -75,36 +80,36 @@ describe('useKeywords', () => {
     expect(result.current.filteredKeywords).toEqual([])
   })
 
-  it('resets to all keywords when query is cleared', () => {
+  it('resets to default keywords when query is cleared', () => {
     const { result } = renderHook(() => useKeywords())
 
     // Set a query
     act(() => {
       result.current.setQuery('flying')
     })
-    expect(result.current.filteredKeywords.length).toBeLessThan(KEYWORDS.length)
+    expect(result.current.filteredKeywords.length).toBeLessThan(defaultKeywords.length)
 
     // Clear the query
     act(() => {
       result.current.setQuery('')
     })
-    expect(result.current.filteredKeywords).toEqual(KEYWORDS)
+    expect(result.current.filteredKeywords).toEqual(defaultKeywords)
   })
 
-  it('returns all keywords when type is set to "all"', () => {
+  it('returns default keywords when type is set to "all"', () => {
     const { result } = renderHook(() => useKeywords())
 
     // Set a specific type
     act(() => {
       result.current.setType('action')
     })
-    expect(result.current.filteredKeywords.length).toBeLessThan(KEYWORDS.length)
+    expect(result.current.filteredKeywords.length).toBeLessThan(defaultKeywords.length)
 
     // Reset to all
     act(() => {
       result.current.setType('all')
     })
-    expect(result.current.filteredKeywords).toEqual(KEYWORDS)
+    expect(result.current.filteredKeywords).toEqual(defaultKeywords)
   })
 
   it('filters keywords by type "mechanic"', () => {
