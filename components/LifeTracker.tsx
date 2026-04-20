@@ -1,6 +1,6 @@
 'use client'
 
-import { GameState } from '@/types/game'
+import { GameState, ExtraCounterType } from '@/types/game'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 import { PlayerCounter } from './PlayerCounter'
 import { CommanderDamageModal } from './CommanderDamageModal'
@@ -36,6 +36,7 @@ export function LifeTracker({ initialGameState, onReset }: LifeTrackerProps) {
   const [shareSessionId, setShareSessionId] = useState<string | null>(null)
   const [shareUrl, setShareUrl] = useState('')
   const [isShareModalOpen, setIsShareModalOpen] = useState(false)
+  const [isStatusOpen, setIsStatusOpen] = useState(false)
 
   const handleLifeChange = (playerId: string, amount: number) => {
     setGameState((prev) => ({
@@ -57,6 +58,55 @@ export function LifeTracker({ initialGameState, onReset }: LifeTrackerProps) {
         return player
       }),
     }))
+  }
+
+  const handleExtraCounterChange = (playerId: string, counter: ExtraCounterType, delta: number) => {
+    setGameState((prev) => ({
+      ...prev,
+      players: prev.players.map((player) => {
+        if (player.id !== playerId) return player
+        const current = player.extraCounters?.[counter] ?? 0
+        const next = Math.max(0, current + delta)
+        return {
+          ...player,
+          extraCounters: {
+            ...(player.extraCounters ?? { energy: 0, experience: 0, rad: 0, ticket: 0 }),
+            [counter]: next,
+          } as Record<ExtraCounterType, number>,
+        }
+      }),
+    }))
+  }
+
+  const handleSetMonarch = (playerId: string | null) => {
+    setGameState((prev) => ({
+      ...prev,
+      tableStatus: { ...prev.tableStatus, monarchId: playerId },
+    }))
+  }
+
+  const handleSetInitiative = (playerId: string | null) => {
+    setGameState((prev) => ({
+      ...prev,
+      tableStatus: { ...prev.tableStatus, initiativeId: playerId },
+    }))
+  }
+
+  const handleToggleNight = () => {
+    setGameState((prev) => ({
+      ...prev,
+      tableStatus: { ...prev.tableStatus, isNight: !prev.tableStatus.isNight },
+    }))
+  }
+
+  const handleToggleCitysBlessing = (playerId: string) => {
+    setGameState((prev) => {
+      const ids = prev.tableStatus.citysBlessingIds
+      const next = ids.includes(playerId)
+        ? ids.filter((id) => id !== playerId)
+        : [...ids, playerId]
+      return { ...prev, tableStatus: { ...prev.tableStatus, citysBlessingIds: next } }
+    })
   }
 
   const handleReset = () => {
@@ -339,6 +389,112 @@ export function LifeTracker({ initialGameState, onReset }: LifeTrackerProps) {
         />
       )}
 
+      {/* Table Status Bar */}
+      <div className="mb-4 px-4 pt-4">
+        <button
+          type="button"
+          onClick={() => setIsStatusOpen((o) => !o)}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--surface-2)] text-[var(--muted)] hover:text-[var(--ink)] transition text-sm font-medium"
+          data-testid="table-status-toggle"
+        >
+          <span>Table Status</span>
+          <span>{isStatusOpen ? '▲' : '▼'}</span>
+          {(gameState.tableStatus.monarchId || gameState.tableStatus.initiativeId) && (
+            <span className="w-2 h-2 rounded-full bg-[var(--accent-1)]" />
+          )}
+        </button>
+
+        {isStatusOpen && (
+          <div
+            className="mt-2 p-4 arcane-panel mana-border rounded-2xl space-y-3"
+            data-testid="table-status-bar"
+          >
+            {/* Monarch */}
+            <div>
+              <p className="text-xs uppercase tracking-widest text-[var(--muted)] mb-1">👑 Monarch</p>
+              <div className="flex flex-wrap gap-2">
+                {gameState.players.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => handleSetMonarch(gameState.tableStatus.monarchId === p.id ? null : p.id)}
+                    className={`px-3 py-1 rounded-full text-sm font-medium transition ${
+                      gameState.tableStatus.monarchId === p.id
+                        ? 'bg-yellow-400 text-yellow-900'
+                        : 'bg-[var(--surface-2)] text-[var(--muted)] hover:text-[var(--ink)]'
+                    }`}
+                    data-testid={`monarch-${p.id}`}
+                  >
+                    {p.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Initiative */}
+            <div>
+              <p className="text-xs uppercase tracking-widest text-[var(--muted)] mb-1">⚔ Initiative</p>
+              <div className="flex flex-wrap gap-2">
+                {gameState.players.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => handleSetInitiative(gameState.tableStatus.initiativeId === p.id ? null : p.id)}
+                    className={`px-3 py-1 rounded-full text-sm font-medium transition ${
+                      gameState.tableStatus.initiativeId === p.id
+                        ? 'bg-blue-400 text-blue-900'
+                        : 'bg-[var(--surface-2)] text-[var(--muted)] hover:text-[var(--ink)]'
+                    }`}
+                    data-testid={`initiative-${p.id}`}
+                  >
+                    {p.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Day/Night */}
+            <div>
+              <p className="text-xs uppercase tracking-widest text-[var(--muted)] mb-1">🌙 Day / Night</p>
+              <button
+                type="button"
+                onClick={handleToggleNight}
+                className={`px-4 py-2 rounded-xl font-semibold text-sm transition ${
+                  gameState.tableStatus.isNight
+                    ? 'bg-indigo-700 text-white'
+                    : 'bg-yellow-300 text-yellow-900'
+                }`}
+                data-testid="day-night-toggle"
+              >
+                {gameState.tableStatus.isNight ? '🌙 Night' : '☀️ Day'}
+              </button>
+            </div>
+
+            {/* City's Blessing */}
+            <div>
+              <p className="text-xs uppercase tracking-widest text-[var(--muted)] mb-1">City's Blessing</p>
+              <div className="flex flex-wrap gap-2">
+                {gameState.players.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => handleToggleCitysBlessing(p.id)}
+                    className={`px-3 py-1 rounded-full text-sm font-medium transition ${
+                      gameState.tableStatus.citysBlessingIds.includes(p.id)
+                        ? 'bg-[var(--accent-2)] text-gray-900'
+                        : 'bg-[var(--surface-2)] text-[var(--muted)] hover:text-[var(--ink)]'
+                    }`}
+                    data-testid={`citys-blessing-${p.id}`}
+                  >
+                    {p.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className={`flex-1 ${isSolo ? '' : 'grid grid-cols-1 md:grid-cols-2'}`}>
         {gameState.players.map((player) => (
           <PlayerCounter
@@ -356,6 +512,9 @@ export function LifeTracker({ initialGameState, onReset }: LifeTrackerProps) {
             onOpenPoisonCounter={setSelectedPlayerIdForPoison}
             onOpenManaPool={setSelectedPlayerIdForMana}
             onNameChange={handlePlayerNameChange}
+            enabledCounters={gameState.enabledCounters ?? []}
+            extraCounters={player.extraCounters}
+            onExtraCounterChange={handleExtraCounterChange}
           />
         ))}
       </div>

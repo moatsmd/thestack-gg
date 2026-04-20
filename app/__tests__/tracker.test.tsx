@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { GameSetup } from '@/components/GameSetup'
 import { DarkModeProvider } from '@/contexts/DarkModeContext'
 import { GameState, Player, ExtraCounterType, TableStatus } from '@/types/game'
+import { PlayerCounter } from '@/components/PlayerCounter'
 
 const renderSetup = (onStart = jest.fn()) =>
   render(<DarkModeProvider><GameSetup onStartGame={onStart} /></DarkModeProvider>)
@@ -80,5 +81,34 @@ describe('GameSetup extra counters', () => {
     expect(onStart).toHaveBeenCalledTimes(1)
     const [gameState] = onStart.mock.calls[0]
     expect(gameState.enabledCounters).toContain('energy')
+  })
+})
+
+describe('PlayerCounter extra counters', () => {
+  const baseProps = {
+    playerId: 'p1',
+    playerName: 'Alice',
+    currentLife: 40,
+    isSolo: false,
+    isCommander: true,
+    enabledCounters: ['energy', 'experience'] as ExtraCounterType[],
+    extraCounters: { energy: 2, experience: 1, rad: 0, ticket: 0 } as Record<ExtraCounterType, number>,
+    onLifeChange: jest.fn(),
+    onOpenCommanderDamage: jest.fn(),
+    onOpenPoisonCounter: jest.fn(),
+    onOpenManaPool: jest.fn(),
+    onNameChange: jest.fn(),
+    onExtraCounterChange: jest.fn(),
+  }
+
+  it('shows energy counter row when enabled', () => {
+    render(<DarkModeProvider><PlayerCounter {...baseProps} /></DarkModeProvider>)
+    expect(screen.getByTestId('extra-counter-energy')).toBeInTheDocument()
+    expect(screen.getByText('2')).toBeInTheDocument()
+  })
+
+  it('does not show rad counter when not enabled', () => {
+    render(<DarkModeProvider><PlayerCounter {...baseProps} /></DarkModeProvider>)
+    expect(screen.queryByTestId('extra-counter-rad')).not.toBeInTheDocument()
   })
 })
