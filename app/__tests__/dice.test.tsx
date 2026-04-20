@@ -69,7 +69,7 @@ describe('DiceRoller', () => {
     // Result and history entries should appear
     expect(screen.getByTestId('roll-result')).toBeInTheDocument()
     const entries = screen.getAllByTestId('history-entry')
-    expect(entries.length).toBeGreaterThanOrEqual(2)
+    expect(entries.length).toEqual(2)
   })
 
   it('history is capped at 10 entries', async () => {
