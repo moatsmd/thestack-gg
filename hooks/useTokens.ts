@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { TokenDefinition, TokenColor, TokenType } from '@/types/tokens'
 import { TOKENS, searchTokens } from '@/lib/tokens-data'
 
@@ -16,11 +16,17 @@ export interface UseTokensResult {
 
 export function useTokens(): UseTokensResult {
   const [query, setQuery] = useState('')
+  const [debouncedQuery, setDebouncedQuery] = useState('')
   const [selectedColors, setSelectedColors] = useState<TokenColor[]>([])
   const [selectedTypes, setSelectedTypes] = useState<TokenType[]>([])
 
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(query), 300)
+    return () => clearTimeout(t)
+  }, [query])
+
   const filteredTokens = useMemo(() => {
-    let results = query.trim() ? searchTokens(query) : TOKENS
+    let results = debouncedQuery.trim() ? searchTokens(debouncedQuery) : TOKENS
 
     if (selectedColors.length > 0) {
       results = results.filter((t) =>
@@ -33,7 +39,7 @@ export function useTokens(): UseTokensResult {
     }
 
     return results
-  }, [query, selectedColors, selectedTypes])
+  }, [debouncedQuery, selectedColors, selectedTypes])
 
   const toggleColor = useCallback((color: TokenColor) =>
     setSelectedColors((prev) =>

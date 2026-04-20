@@ -1,6 +1,5 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { TokenCard } from '@/components/TokenCard'
 import { useTokens } from '@/hooks/useTokens'
 import type { TokenColor, TokenType } from '@/types/tokens'
@@ -23,12 +22,6 @@ const TYPES: { type: TokenType; label: string }[] = [
 
 export default function TokensPage() {
   const { filteredTokens, query, selectedColors, selectedTypes, setQuery, toggleColor, toggleType } = useTokens()
-  const [debouncedQuery, setDebouncedQuery] = useState(query)
-
-  useEffect(() => {
-    const t = setTimeout(() => setQuery(debouncedQuery), 300)
-    return () => clearTimeout(t)
-  }, [debouncedQuery, setQuery])
 
   return (
     <div className="min-h-screen arcane-shell text-[var(--ink)] transition-colors">
@@ -45,8 +38,8 @@ export default function TokensPage() {
           <input
             type="text"
             placeholder="Search tokens, abilities, or cards that make them..."
-            value={debouncedQuery}
-            onChange={(e) => setDebouncedQuery(e.target.value)}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
             className="w-full px-4 py-2 border border-white/10 rounded-lg bg-[var(--surface-1)] text-[var(--ink)] focus:ring-2 focus:ring-[var(--accent-2)] focus:border-transparent"
             data-testid="token-search"
           />
@@ -99,7 +92,7 @@ export default function TokensPage() {
         {filteredTokens.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredTokens.map((token) => (
-              <TokenCard key={`${token.name}-${token.colors.join('')}`} token={token} />
+              <TokenCard key={token.name} token={token} />
             ))}
           </div>
         ) : (

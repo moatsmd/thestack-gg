@@ -83,10 +83,12 @@ describe('TokensPage', () => {
   it('filters by search query', async () => {
     const user = userEvent.setup()
     renderTokens()
+    const { TOKENS } = require('@/lib/tokens-data')
     await user.type(screen.getByTestId('token-search'), 'goblin')
     await waitFor(() => {
       const cards = screen.getAllByTestId('token-card')
       expect(cards.some((c) => c.textContent?.toLowerCase().includes('goblin'))).toBe(true)
+      expect(cards.length).toBeLessThan(TOKENS.length)
     })
   })
 
