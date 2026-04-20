@@ -45,6 +45,24 @@ describe('DiceRoller', () => {
     expect(history.length).toBeGreaterThanOrEqual(1)
   })
 
+  it('multi-die mode: queue two dice then roll both', async () => {
+    const user = userEvent.setup()
+    renderDice()
+    // Right-click to queue two dice without immediately rolling
+    const d6 = screen.getByTestId('die-d6')
+    const d8 = screen.getByTestId('die-d8')
+    await user.pointer({ target: d6, keys: '[MouseRight]' })
+    await user.pointer({ target: d8, keys: '[MouseRight]' })
+    // Roll queue button should appear
+    const rollQueueBtn = screen.getByTestId('roll-queue')
+    expect(rollQueueBtn).toBeInTheDocument()
+    await user.click(rollQueueBtn)
+    // Result and history entries should appear
+    expect(screen.getByTestId('roll-result')).toBeInTheDocument()
+    const entries = screen.getAllByTestId('history-entry')
+    expect(entries.length).toBeGreaterThanOrEqual(2)
+  })
+
   it('history is capped at 10 entries', async () => {
     const user = userEvent.setup()
     renderDice()
