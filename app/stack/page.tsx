@@ -1,214 +1,145 @@
-'use client'
+import type { Metadata } from 'next'
 
-import { useState } from 'react'
-import { AddToStackModal } from '@/components/AddToStackModal'
-import { PriorityIndicator } from '@/components/PriorityIndicator'
-import { QuickAddButtons } from '@/components/QuickAddButtons'
-import { ResolutionHistory } from '@/components/ResolutionHistory'
-import { StackControls } from '@/components/StackControls'
-import { StackView } from '@/components/StackView'
-import { useStack } from '@/hooks/useStack'
-import { useLocalStorage } from '@/hooks/useLocalStorage'
+export const metadata: Metadata = {
+  title: 'The Stack — ManaDork',
+  description: 'How MTG stack and priority work, explained simply.',
+}
 
 export default function StackPage() {
-  const {
-    state,
-    addItem,
-    resolveTop,
-    passPriority,
-    clearStack,
-    resetStack,
-    addPlayer,
-    removePlayer,
-    updatePlayerName,
-  } = useStack()
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
-  const [isResolving, setIsResolving] = useState(false)
-  const [resolvingId, setResolvingId] = useState<string | null>(null)
-  const [newPlayerName, setNewPlayerName] = useState('')
-  const [hasDismissedHelp, setHasDismissedHelp] = useLocalStorage(
-    'manadork-stack-help-dismissed',
-    false
-  )
-
-  const defaultControllerId = state.priorityPlayerId || state.players[0]?.id || ''
-
-  const handleAddPlayer = () => {
-    if (!newPlayerName.trim()) {
-      return
-    }
-
-    addPlayer(newPlayerName)
-    setNewPlayerName('')
-  }
-
-  const handleRemovePlayer = (playerId: string) => {
-    if (state.players.length <= 1) {
-      return
-    }
-
-    if (window.confirm('Remove this player?')) {
-      removePlayer(playerId)
-    }
-  }
-
-  const handleResolve = () => {
-    if (isResolving || state.items.length === 0) {
-      return
-    }
-
-    const topItem = state.items[state.items.length - 1]
-    if (!topItem) {
-      return
-    }
-
-    setIsResolving(true)
-    setResolvingId(topItem.id)
-
-    window.setTimeout(() => {
-      resolveTop()
-      setResolvingId(null)
-      setIsResolving(false)
-    }, 420)
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-white to-slate-200 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800 text-gray-900 dark:text-white transition-colors">
-      <div className="max-w-6xl mx-auto px-4 py-10 space-y-6">
-        <header className="space-y-2">
-          <p className="text-sm uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">
-            The Stack
-          </p>
-          <h1 className="text-4xl md:text-5xl font-bold">Stack Visualizer</h1>
-          <p className="text-base text-gray-600 dark:text-gray-300 max-w-2xl">
-            Track spells and abilities in the order they resolve. Add effects, pass priority,
-            and clear the stack when the turn is over.
+    <div className="min-h-screen arcane-shell text-[var(--ink)] transition-colors">
+      <div className="max-w-2xl mx-auto px-4 py-10 space-y-8">
+
+        {/* Header */}
+        <header className="arcane-panel mana-border rounded-2xl p-6">
+          <p className="text-xs uppercase tracking-[0.5em] text-[var(--muted)]">Reference</p>
+          <h1 className="mt-2 text-3xl font-bold text-[var(--ink)]">The Stack</h1>
+          <p className="mt-2 text-[var(--muted)]">
+            Spells and abilities go on the stack. They resolve in reverse order —
+            <strong className="text-[var(--ink)]"> last in, first out</strong> (LIFO).
           </p>
         </header>
 
-        {!hasDismissedHelp && (
-          <div className="arcane-panel mana-border rounded-2xl p-6 space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)]">How to use</p>
-                <h2 className="text-2xl font-semibold text-[var(--ink)]">Run the stack</h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => setHasDismissedHelp(true)}
-                className="min-h-tap px-3 py-2 rounded-lg border border-white/10 text-[var(--muted)] hover:text-[var(--ink)]"
-              >
-                Got it
-              </button>
-            </div>
-            <ol className="space-y-2 text-sm text-[var(--muted)]">
-              <li>1. Add spells or abilities with quick buttons or full search.</li>
-              <li>2. Respond by stacking more effects on top.</li>
-              <li>3. Resolve the top item to move it into history.</li>
-            </ol>
-          </div>
-        )}
-
-        <PriorityIndicator
-          players={state.players}
-          priorityPlayerId={state.priorityPlayerId}
-          onPass={passPriority}
-        />
-
-        <div className="grid gap-6 lg:grid-cols-[1.3fr_0.7fr]">
-          <div className="space-y-6">
-            <StackView items={state.items} players={state.players} resolvingId={resolvingId} />
-
-            <StackControls
-              hasItems={state.items.length > 0}
-              isResolving={isResolving}
-              onResolve={handleResolve}
-              onClear={clearStack}
-              onNewStack={resetStack}
-            />
-
-            <ResolutionHistory items={state.resolved} players={state.players} />
-          </div>
-
-          <div className="space-y-6">
-            <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 space-y-4">
-              <div>
-                <p className="text-sm uppercase tracking-wide text-gray-500 dark:text-gray-400">Players</p>
-                <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Manage controllers
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                {state.players.map((player) => (
-                  <div key={player.id} className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={player.name}
-                      onChange={(event) => updatePlayerName(player.id, event.target.value)}
-                      className="flex-1 min-h-tap rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-gray-900 dark:text-white"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleRemovePlayer(player.id)}
-                      disabled={state.players.length <= 1}
-                      className="min-h-tap rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-2">
-                <input
-                  type="text"
-                  value={newPlayerName}
-                  onChange={(event) => setNewPlayerName(event.target.value)}
-                  className="flex-1 min-h-tap rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-gray-900 dark:text-white"
-                  placeholder="Add a player"
-                />
-                <button
-                  type="button"
-                  onClick={handleAddPlayer}
-                  className="min-h-tap rounded-lg bg-blue-600 px-4 py-2 text-white font-semibold hover:bg-blue-700 transition"
+        {/* LIFO Diagram */}
+        <section className="arcane-panel mana-border rounded-2xl p-6 space-y-4">
+          <h2 className="text-lg font-bold text-[var(--ink)]">How the Stack Works</h2>
+          <div className="flex flex-col items-center gap-1 py-4">
+            {[
+              { label: 'Spell C', note: '← resolves first', color: 'bg-[var(--accent-1)]' },
+              { label: 'Spell B', note: '', color: 'bg-[var(--accent-2)]/70' },
+              { label: 'Spell A', note: '← cast first', color: 'bg-[var(--surface-2)]' },
+            ].map(({ label, note, color }) => (
+              <div key={label} className="flex items-center gap-3 w-full max-w-xs">
+                <div
+                  className={`flex-1 px-4 py-3 rounded-lg ${color} text-[var(--ink)] font-semibold text-center`}
                 >
-                  Add
-                </button>
+                  {label}
+                </div>
+                {note && (
+                  <span className="text-xs text-[var(--muted)] whitespace-nowrap">{note}</span>
+                )}
               </div>
-            </div>
-
-            <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 space-y-4">
-              <div>
-                <p className="text-sm uppercase tracking-wide text-gray-500 dark:text-gray-400">Quick Add</p>
-                <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Common stack actions
-                </p>
-              </div>
-              <QuickAddButtons
-                players={state.players}
-                defaultControllerId={defaultControllerId}
-                onAdd={addItem}
-              />
-              <button
-                type="button"
-                onClick={() => setIsAddModalOpen(true)}
-                className="w-full min-h-tap rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 font-semibold hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-              >
-                Add Spell or Ability
-              </button>
+            ))}
+            <div className="mt-3 text-xs text-[var(--muted)] text-center">
+              ▲ New spells added on top · Resolved from the top down ▲
             </div>
           </div>
-        </div>
-      </div>
+        </section>
 
-      <AddToStackModal
-        isOpen={isAddModalOpen}
-        players={state.players}
-        defaultControllerId={defaultControllerId}
-        onAdd={addItem}
-        onClose={() => setIsAddModalOpen(false)}
-      />
+        {/* Priority Flow */}
+        <section
+          className="arcane-panel mana-border rounded-2xl p-6 space-y-4"
+          data-testid="priority-flow"
+        >
+          <h2 className="text-lg font-bold text-[var(--ink)]">Priority Flow</h2>
+          <p className="text-[var(--muted)] text-sm">
+            Before anything on the stack resolves, each player must pass priority in turn order.
+          </p>
+          <div className="flex flex-wrap items-center gap-2 text-sm font-medium">
+            <span className="px-3 py-2 rounded-lg bg-[var(--accent-1)] text-white">Active Player</span>
+            <span className="text-[var(--muted)]">→</span>
+            <span className="px-3 py-2 rounded-lg bg-[var(--surface-2)] text-[var(--ink)]">Each other player (in turn order)</span>
+            <span className="text-[var(--muted)]">→</span>
+            <span className="px-3 py-2 rounded-lg bg-[var(--accent-1)]/50 text-[var(--ink)]">Back to Active Player</span>
+          </div>
+          <p className="text-sm text-[var(--muted)]">
+            When all players pass priority in succession without adding to the stack, the top item resolves. Then priority restarts.
+          </p>
+        </section>
+
+        {/* Key Rules */}
+        <section
+          className="arcane-panel mana-border rounded-2xl p-6 space-y-3"
+          data-testid="key-rules"
+        >
+          <h2 className="text-lg font-bold text-[var(--ink)]">Key Rules</h2>
+          <ul className="space-y-2 text-sm text-[var(--muted)]">
+            <li className="flex gap-2">
+              <span className="text-[var(--accent-2)] font-bold mt-0.5">•</span>
+              <span>Both players receive priority before anything resolves — either can respond.</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-[var(--accent-2)] font-bold mt-0.5">•</span>
+              <span>
+                <strong className="text-[var(--ink)]">Split second</strong>: no spells or activated abilities can be added to the stack while a split-second spell is on it. Triggered abilities still trigger.
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-[var(--accent-2)] font-bold mt-0.5">•</span>
+              <span>
+                <strong className="text-[var(--ink)]">Mana abilities</strong> don't use the stack — they resolve immediately with no response window.
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-[var(--accent-2)] font-bold mt-0.5">•</span>
+              <span>
+                <strong className="text-[var(--ink)]">State-based actions</strong> (creature at 0 toughness, player at 0 life, etc.) are not stack items — they happen automatically before any player receives priority.
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-[var(--accent-2)] font-bold mt-0.5">•</span>
+              <span>
+                Hexproof and shroud protect from targeted spells and abilities, but <em>not</em> from triggered abilities that don't target.
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-[var(--accent-2)] font-bold mt-0.5">•</span>
+              <span>
+                You can respond to your own spells — add another spell or ability to the stack before the first one resolves.
+              </span>
+            </li>
+          </ul>
+        </section>
+
+        {/* Common Scenarios */}
+        <section
+          className="arcane-panel mana-border rounded-2xl p-6 space-y-4"
+          data-testid="scenarios"
+        >
+          <h2 className="text-lg font-bold text-[var(--ink)]">Common Scenarios</h2>
+          <div className="space-y-4 text-sm">
+            <div className="border-l-2 border-[var(--accent-1)] pl-4">
+              <p className="font-semibold text-[var(--ink)] mb-1">Opponent casts Counterspell on your spell</p>
+              <p className="text-[var(--muted)]">
+                Counterspell goes on top of your spell. You still have priority — you can cast another spell or ability before the Counterspell resolves. If you do nothing, Counterspell resolves first and counters your spell.
+              </p>
+            </div>
+            <div className="border-l-2 border-[var(--accent-2)] pl-4">
+              <p className="font-semibold text-[var(--ink)] mb-1">A triggered ability goes on the stack</p>
+              <p className="text-[var(--muted)]">
+                The trigger goes on the stack and both players receive priority before it resolves. Either player can add more spells or abilities in response.
+              </p>
+            </div>
+            <div className="border-l-2 border-[var(--surface-2)] pl-4">
+              <p className="font-semibold text-[var(--ink)] mb-1">You cast two spells in a row</p>
+              <p className="text-[var(--muted)]">
+                The second spell goes on top of the first. Your second spell resolves first, then your first spell resolves.
+              </p>
+            </div>
+          </div>
+        </section>
+
+      </div>
     </div>
   )
 }
