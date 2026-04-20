@@ -10,7 +10,7 @@ export const TOKENS: TokenDefinition[] = [
     toughness: '1',
     typeLine: 'Creature — Soldier',
     abilities: [],
-    madeBy: ['Raise the Alarm', 'Call the Conclave', 'Captain of the Watch'],
+    madeBy: ['Raise the Alarm', 'Captain of the Watch'],
   },
   {
     name: 'Angel',
@@ -20,7 +20,7 @@ export const TOKENS: TokenDefinition[] = [
     toughness: '4',
     typeLine: 'Creature — Angel',
     abilities: ['Flying', 'Vigilance'],
-    madeBy: ['Entreat the Angels', 'Emeria, Shattered Skyclave', 'Avacyn, Angel of Hope'],
+    madeBy: ['Entreat the Angels', "Emeria's Call", 'Emeria, Shattered Skyclave'],
   },
   {
     name: 'Bird',
@@ -30,7 +30,7 @@ export const TOKENS: TokenDefinition[] = [
     toughness: '1',
     typeLine: 'Creature — Bird',
     abilities: ['Flying'],
-    madeBy: ['Migratory Route', 'Aven Wind Guide'],
+    madeBy: ['Migratory Route', 'Battle Screech'],
   },
   {
     name: 'Spirit (White)',
@@ -82,7 +82,7 @@ export const TOKENS: TokenDefinition[] = [
     toughness: '2',
     typeLine: 'Creature — Drake',
     abilities: ['Flying'],
-    madeBy: ['Talrand, Sky Summoner', 'Whirler Witch'],
+    madeBy: ['Talrand, Sky Summoner'],
   },
   {
     name: 'Merfolk (Blue)',
@@ -92,7 +92,7 @@ export const TOKENS: TokenDefinition[] = [
     toughness: '1',
     typeLine: 'Creature — Merfolk',
     abilities: [],
-    madeBy: ['Lullmage Mentor', 'Deepchannel Mentor', 'Stonybrook Schoolmaster'],
+    madeBy: ['Lullmage Mentor', 'Stonybrook Schoolmaster'],
   },
   {
     name: 'Illusion',
@@ -102,7 +102,7 @@ export const TOKENS: TokenDefinition[] = [
     toughness: '1',
     typeLine: 'Creature — Illusion',
     abilities: ['Flying'],
-    madeBy: ['Meloku the Clouded Mirror', 'Vedalken Shackles'],
+    madeBy: ['Meloku the Clouded Mirror'],
   },
   {
     name: 'Squid',
@@ -228,7 +228,7 @@ export const TOKENS: TokenDefinition[] = [
     toughness: '3',
     typeLine: 'Creature — Beast',
     abilities: [],
-    madeBy: ['Garruk Wildspeaker', 'Rampaging Baloths', 'Call of the Herd'],
+    madeBy: ['Garruk Wildspeaker', 'Garruk, Primal Hunter'],
   },
   {
     name: 'Insect (Green)',
@@ -261,14 +261,14 @@ export const TOKENS: TokenDefinition[] = [
     madeBy: ['Garruk, Primal Hunter', 'Arlinn Kord', 'Howlpack Piper'],
   },
   {
-    name: 'Wurm (Green)',
+    name: 'Wurm',
     colors: ['G'],
     type: 'creature',
-    power: '3',
-    toughness: '3',
+    power: '6',
+    toughness: '6',
     typeLine: 'Creature — Wurm',
     abilities: ['Deathtouch'],
-    madeBy: ['Garruk, Primal Hunter', 'Advent of the Wurm'],
+    madeBy: ['Garruk, Primal Hunter'],
   },
   {
     name: 'Spider',
@@ -330,17 +330,17 @@ export const TOKENS: TokenDefinition[] = [
     toughness: '1',
     typeLine: 'Creature — Human Soldier',
     abilities: [],
-    madeBy: ["Elspeth, Sun's Champion", 'Secure the Wastes'],
+    madeBy: ['New Prahv Guildmage', 'Dovin, Architect of Law'],
   },
   {
     name: 'Warrior',
-    colors: ['W', 'B'],
+    colors: ['W'],
     type: 'creature',
     power: '1',
     toughness: '1',
     typeLine: 'Creature — Warrior',
     abilities: [],
-    madeBy: ['Secure the Wastes', 'Warriors of the Pale'],
+    madeBy: ['Secure the Wastes', 'Mardu Hordechief'],
   },
 
   // ── Creature Tokens — Colorless ─────────────────────────────────────
@@ -402,7 +402,7 @@ export const TOKENS: TokenDefinition[] = [
     toughness: '1',
     typeLine: 'Creature — Servo Artifact',
     abilities: [],
-    madeBy: ['Servo Exhibition', "Sram's Expertise", 'Toolcraft Exemplar'],
+    madeBy: ['Servo Exhibition', "Sram's Expertise"],
   },
   {
     name: 'Thopter (Colorless)',
@@ -430,7 +430,7 @@ export const TOKENS: TokenDefinition[] = [
     type: 'artifact',
     typeLine: 'Artifact — Clue',
     abilities: ['2, Sacrifice this artifact: Draw a card.'],
-    madeBy: ['Thraben Inspector', 'Graf Mole', "Tamiyo's Journal"],
+    madeBy: ['Thraben Inspector', "Tamiyo's Journal"],
   },
   {
     name: 'Food',
@@ -455,14 +455,6 @@ export const TOKENS: TokenDefinition[] = [
     typeLine: 'Artifact — Map',
     abilities: ['1, Tap, Sacrifice this artifact: Target creature you control explores.'],
     madeBy: ["Abuelo's Awakening", 'Caparocti Sunborn', 'Oltec Cloud Guard'],
-  },
-  {
-    name: 'Gold',
-    colors: ['C'],
-    type: 'artifact',
-    typeLine: 'Artifact — Gold',
-    abilities: ['Sacrifice this artifact: Add one mana of any color.'],
-    madeBy: ['Revel in Riches', 'Tempt with Immortality'],
   },
   {
     name: 'Powerstone',
