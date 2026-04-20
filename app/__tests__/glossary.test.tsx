@@ -15,7 +15,7 @@ describe('GlossaryPage', () => {
     }
   })
 
-  it('evergreen keywords are a subset of evergreen abilities', () => {
+  it('has at least 15 evergreen keywords', () => {
     const { KEYWORDS } = require('@/lib/keywords-data')
     const evergreen = KEYWORDS.filter((kw: any) => kw.tier === 'evergreen')
     expect(evergreen.length).toBeGreaterThanOrEqual(15)
