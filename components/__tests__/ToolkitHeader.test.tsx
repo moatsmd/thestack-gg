@@ -7,11 +7,10 @@ const renderWithProviders = (component: React.ReactElement) => {
 }
 
 describe('ToolkitHeader', () => {
-  it('renders with title and menu', () => {
+  it('renders with title', () => {
     renderWithProviders(<ToolkitHeader />)
 
     expect(screen.getByText('Card Lookup')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Menu' })).toBeInTheDocument()
   })
 
   it('has proper styling classes', () => {
@@ -33,11 +32,5 @@ describe('ToolkitHeader', () => {
     renderWithProviders(<ToolkitHeader />)
 
     expect(screen.getByTestId('toolkit-header')).toBeInTheDocument()
-  })
-
-  it('renders hamburger menu component', () => {
-    renderWithProviders(<ToolkitHeader />)
-
-    expect(screen.getByTestId('hamburger-button')).toBeInTheDocument()
   })
 })

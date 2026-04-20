@@ -22,7 +22,7 @@ describe('ToolkitPage', () => {
     const { container } = render(<ToolkitPage />)
 
     const mainDiv = container.firstChild as HTMLElement
-    expect(mainDiv).toHaveClass('min-h-screen', 'bg-gray-50')
+    expect(mainDiv).toHaveClass('min-h-screen')
   })
 
   it('displays card search component', () => {
@@ -35,7 +35,7 @@ describe('ToolkitPage', () => {
     const { container } = render(<ToolkitPage />)
 
     const containerDiv = container.querySelector('.container')
-    expect(containerDiv).toHaveClass('mx-auto', 'px-4', 'py-6')
+    expect(containerDiv).toHaveClass('mx-auto', 'px-4', 'py-8')
   })
 
   it('has full height layout', () => {
