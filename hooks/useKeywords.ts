@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { KeywordDefinition, KEYWORDS, searchKeywords } from '@/lib/keywords-data'
 
 export type KeywordTier = KeywordDefinition['tier']
@@ -33,11 +33,11 @@ export function useKeywords(): UseKeywordsResult {
     return results
   }, [query, selectedType, selectedTiers])
 
-  const toggleTier = (tier: KeywordTier) => {
+  const toggleTier = useCallback((tier: KeywordTier) => {
     setSelectedTiers((prev) =>
       prev.includes(tier) ? prev.filter((t) => t !== tier) : [...prev, tier]
     )
-  }
+  }, [])
 
   return {
     allKeywords: KEYWORDS,

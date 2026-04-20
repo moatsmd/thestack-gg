@@ -152,6 +152,7 @@ describe('GlossaryPage', () => {
   it('retired keywords are hidden by default', async () => {
     const { KEYWORDS } = require('@/lib/keywords-data')
     const retiredKeyword = KEYWORDS.find((kw: any) => kw.tier === 'retired')
+    expect(retiredKeyword).toBeDefined()
     renderWithProviders(<GlossaryPage />)
     await waitFor(() => {
       const cards = screen.getAllByTestId('keyword-card')
@@ -164,6 +165,7 @@ describe('GlossaryPage', () => {
     const user = userEvent.setup()
     const { KEYWORDS } = require('@/lib/keywords-data')
     const retiredKeyword = KEYWORDS.find((kw: any) => kw.tier === 'retired')
+    expect(retiredKeyword).toBeDefined()
     renderWithProviders(<GlossaryPage />)
     const retiredButton = screen.getByTestId('filter-tier-retired')
     await user.click(retiredButton)
