@@ -53,4 +53,32 @@ describe('GameSetup extra counters', () => {
     // Should now show counter selection
     expect(screen.getByTestId('extra-counters-step')).toBeInTheDocument()
   })
+
+  it('counter toggle changes aria-pressed state', async () => {
+    const user = userEvent.setup()
+    renderSetup()
+    await user.click(screen.getByText(/multiplayer/i))
+    const nextBtn = screen.queryByText(/next/i) ?? screen.queryByText(/continue/i)
+    if (nextBtn) await user.click(nextBtn)
+    await user.click(screen.getByText(/commander/i))
+    const energyBtn = screen.getByTestId('counter-option-energy')
+    expect(energyBtn).toHaveAttribute('aria-pressed', 'false')
+    await user.click(energyBtn)
+    expect(energyBtn).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('Start Game calls onStartGame with selected counters', async () => {
+    const onStart = jest.fn()
+    const user = userEvent.setup()
+    renderSetup(onStart)
+    await user.click(screen.getByText(/multiplayer/i))
+    const nextBtn = screen.queryByText(/next/i) ?? screen.queryByText(/continue/i)
+    if (nextBtn) await user.click(nextBtn)
+    await user.click(screen.getByText(/commander/i))
+    await user.click(screen.getByTestId('counter-option-energy'))
+    await user.click(screen.getByText(/start game/i))
+    expect(onStart).toHaveBeenCalledTimes(1)
+    const [gameState] = onStart.mock.calls[0]
+    expect(gameState.enabledCounters).toContain('energy')
+  })
 })

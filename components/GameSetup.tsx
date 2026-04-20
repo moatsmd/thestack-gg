@@ -281,6 +281,14 @@ export function GameSetup({ onStartGame }: GameSetupProps) {
             <p className="mt-4 text-[var(--muted)]">Select any optional counter types for this game.</p>
           </header>
 
+          <button
+            type="button"
+            onClick={() => setSetupStep('multi-type')}
+            className="text-sm text-[var(--muted)] hover:text-[var(--ink)] transition self-start"
+          >
+            ← Back
+          </button>
+
           <div
             className="arcane-panel mana-border rounded-2xl p-6 space-y-3"
             data-testid="extra-counters-step"
