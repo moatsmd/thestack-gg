@@ -111,4 +111,28 @@ describe('PlayerCounter extra counters', () => {
     render(<DarkModeProvider><PlayerCounter {...baseProps} /></DarkModeProvider>)
     expect(screen.queryByTestId('extra-counter-rad')).not.toBeInTheDocument()
   })
+
+  it('calls onExtraCounterChange with correct args when + is clicked', async () => {
+    const user = userEvent.setup()
+    const onExtraCounterChange = jest.fn()
+    render(
+      <DarkModeProvider>
+        <PlayerCounter {...baseProps} onExtraCounterChange={onExtraCounterChange} />
+      </DarkModeProvider>
+    )
+    await user.click(screen.getByLabelText('Increase Energy'))
+    expect(onExtraCounterChange).toHaveBeenCalledWith('p1', 'energy', 1)
+  })
+
+  it('calls onExtraCounterChange with -1 when - is clicked', async () => {
+    const user = userEvent.setup()
+    const onExtraCounterChange = jest.fn()
+    render(
+      <DarkModeProvider>
+        <PlayerCounter {...baseProps} onExtraCounterChange={onExtraCounterChange} />
+      </DarkModeProvider>
+    )
+    await user.click(screen.getByLabelText('Decrease Energy'))
+    expect(onExtraCounterChange).toHaveBeenCalledWith('p1', 'energy', -1)
+  })
 })

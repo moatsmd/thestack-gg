@@ -70,7 +70,7 @@ export function LifeTracker({ initialGameState, onReset }: LifeTrackerProps) {
         return {
           ...player,
           extraCounters: {
-            ...(player.extraCounters ?? { energy: 0, experience: 0, rad: 0, ticket: 0 }),
+            ...(player.extraCounters),
             [counter]: next,
           } as Record<ExtraCounterType, number>,
         }
