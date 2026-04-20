@@ -1,17 +1,18 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Spectral } from "next/font/google";
+import { Cinzel, IM_Fell_English } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 
-const headingFont = Cormorant_Garamond({
+const headingFont = Cinzel({
   subsets: ["latin"],
-  weight: ["600", "700"],
+  weight: ["400", "600", "700"],
   variable: "--font-heading",
 });
 
-const bodyFont = Spectral({
+const bodyFont = IM_Fell_English({
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: "400",
+  style: ["normal", "italic"],
   variable: "--font-body",
 });
 
