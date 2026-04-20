@@ -26,7 +26,7 @@ describe('useKeywords', () => {
 
     expect(result.current.query).toBe('fly')
     expect(result.current.filteredKeywords.length).toBeGreaterThan(0)
-    expect(result.current.filteredKeywords.length).toBeLessThan(KEYWORDS.length)
+    expect(result.current.filteredKeywords.length).toBeLessThan(defaultKeywords.length)
 
     // Should include "Flying" keyword
     const hasFlying = result.current.filteredKeywords.some(
