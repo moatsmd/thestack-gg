@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { GameState, GameType } from '@/types/game'
+import { GameState, GameType, ExtraCounterType } from '@/types/game'
 
 interface GameSetupProps {
   onStartGame: (gameState: GameState) => void
@@ -30,7 +30,7 @@ export function GameSetup({ onStartGame }: GameSetupProps) {
     </div>
   )
 
-  const createGameState = (mode: 'solo' | 'multiplayer', gameType: GameType, playerCount: number): GameState => {
+  const createGameState = (mode: 'solo' | 'multiplayer', gameType: GameType, playerCount: number, counters: ExtraCounterType[] = []): GameState => {
     const startingLife = gameType === 'standard' ? 20 : gameType === 'commander' ? 40 : 20
 
     const players = Array.from({ length: playerCount }, (_, i) => ({
@@ -38,12 +38,22 @@ export function GameSetup({ onStartGame }: GameSetupProps) {
       name: mode === 'solo' ? 'You' : `Player ${i + 1}`,
       currentLife: startingLife,
       lifeHistory: [],
+      extraCounters: counters.length > 0
+        ? Object.fromEntries(counters.map((c) => [c, 0])) as Record<ExtraCounterType, number>
+        : undefined,
     }))
 
     return {
       mode,
       gameType,
       startingLife,
+      enabledCounters: counters,
+      tableStatus: {
+        monarchId: null,
+        initiativeId: null,
+        isNight: false,
+        citysBlessingIds: [],
+      },
       players,
       createdAt: new Date(),
     }
