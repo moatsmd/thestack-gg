@@ -15,6 +15,8 @@ describe('LifeTracker', () => {
     mode: 'solo',
     gameType: 'standard',
     startingLife: 20,
+    enabledCounters: [],
+    tableStatus: { monarchId: null, initiativeId: null, isNight: false, citysBlessingIds: [] },
     players: [
       {
         id: 'player-1',
@@ -30,6 +32,8 @@ describe('LifeTracker', () => {
     mode: 'multiplayer',
     gameType: 'commander',
     startingLife: 40,
+    enabledCounters: [],
+    tableStatus: { monarchId: null, initiativeId: null, isNight: false, citysBlessingIds: [] },
     players: [
       {
         id: 'player-1',

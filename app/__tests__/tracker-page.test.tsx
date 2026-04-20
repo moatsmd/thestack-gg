@@ -34,6 +34,8 @@ describe('Tracker Page', () => {
       mode: 'solo',
       gameType: 'commander',
       startingLife: 40,
+      enabledCounters: [],
+      tableStatus: { monarchId: null, initiativeId: null, isNight: false, citysBlessingIds: [] },
       players: [
         {
           id: 'player-1',
