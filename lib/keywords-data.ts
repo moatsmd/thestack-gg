@@ -1143,7 +1143,7 @@ export const KEYWORDS: KeywordDefinition[] = [
     type: 'ability',
     tier: 'retired',
     definition: "This creature can't be blocked except by artifact creatures and/or creatures that share a color with it. Retired in favor of menace.",
-    example: 'Goblin War Paint',
+    example: 'Barony Vampire',
     introduced: 'Magic 2011',
   },
   {
@@ -1151,7 +1151,7 @@ export const KEYWORDS: KeywordDefinition[] = [
     type: 'ability',
     tier: 'retired',
     definition: "This creature can't be blocked except by artifact creatures and/or black creatures. Retired in favor of intimidate, then menace.",
-    example: 'Unholy Strength',
+    example: 'Severed Legion',
     introduced: 'Limited Edition Alpha',
   },
   {
@@ -1204,7 +1204,7 @@ export const KEYWORDS: KeywordDefinition[] = [
     tier: 'retired',
     definition: 'At the beginning of your upkeep, if this permanent came under your control since the beginning of your last upkeep, sacrifice it unless you pay its echo cost.',
     reminder: 'At the beginning of your upkeep, if this came under your control since the beginning of your last upkeep, sacrifice it unless you pay its echo cost.',
-    example: 'Survival of the Fittest',
+    example: 'Avalanche Riders',
     introduced: "Urza's Saga",
   },
   {
@@ -1231,7 +1231,7 @@ export const KEYWORDS: KeywordDefinition[] = [
     tier: 'retired',
     definition: 'Whenever this creature blocks or becomes blocked, it gets +N/+N until end of turn.',
     reminder: 'Whenever this creature blocks or becomes blocked, it gets +N/+N until end of turn.',
-    example: 'Isamaru, Hound of Konda',
+    example: 'Samurai of the Pale Curtain',
     introduced: 'Champions of Kamigawa',
   },
   {
@@ -1292,7 +1292,7 @@ export const KEYWORDS: KeywordDefinition[] = [
     tier: 'retired',
     definition: "When a creature dies, you may pay this card's recover cost. If you do, return it from your graveyard to your hand. Otherwise, exile it.",
     reminder: "When a creature dies, you may pay this card's recover cost. If you do, return this card from your graveyard to your hand. Otherwise, exile this card.",
-    example: 'Phyrexian Etchings',
+    example: 'Martyr of Bones',
     introduced: 'Coldsnap',
   },
   {
@@ -1336,7 +1336,7 @@ export const KEYWORDS: KeywordDefinition[] = [
     tier: 'retired',
     definition: 'If this creature would be dealt damage, prevent N of that damage.',
     reminder: 'If this creature would be dealt damage, prevent N of that damage.',
-    example: 'Deftblade Elite',
+    example: 'Soulgorger Orgg',
     introduced: 'Onslaught',
   },
   {
@@ -1386,7 +1386,7 @@ export const KEYWORDS: KeywordDefinition[] = [
     type: 'ability',
     tier: 'retired',
     definition: 'A variant of banding: this creature can form a band with any number of creatures that share the specified quality.',
-    example: 'Aysen Highway',
+    example: 'Aysen Crusader',
     introduced: 'Homelands',
   },
 ]
