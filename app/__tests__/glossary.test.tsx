@@ -239,4 +239,19 @@ describe('GlossaryPage', () => {
     const retired = KEYWORDS.filter((kw: any) => kw.tier === 'retired')
     expect(retired.length).toBeGreaterThanOrEqual(20)
   })
+
+  it('keyword cards show a tier badge', () => {
+    renderWithProviders(<GlossaryPage />)
+    const badges = screen.getAllByTestId('tier-badge')
+    expect(badges.length).toBeGreaterThan(0)
+  })
+
+  it('scryfall link appears on keywords with scryfallQuery', () => {
+    const { KEYWORDS } = require('@/lib/keywords-data')
+    const withQuery = KEYWORDS.find((kw: any) => kw.scryfallQuery)
+    if (!withQuery) return // skip if data not yet loaded
+    renderWithProviders(<GlossaryPage />)
+    const links = screen.queryAllByTestId('scryfall-link')
+    expect(links.length).toBeGreaterThan(0)
+  })
 })
