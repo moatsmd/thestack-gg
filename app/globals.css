@@ -64,6 +64,16 @@
     line-height: 1.65;
   }
 
+  /* In dark mode, replace the canvas with the codex parchment-grain backdrop. */
+  .dark body {
+    background-color: hsl(220 15% 7%);
+    background-image:
+      radial-gradient(ellipse at top, hsl(40 30% 20% / 0.10), transparent 60%),
+      radial-gradient(ellipse at bottom, hsl(270 40% 25% / 0.06), transparent 70%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.83  0 0 0 0 0.66  0 0 0 0 0.23  0 0 0 0.025 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    min-height: 100dvh;
+  }
+
   h1,
   h2,
   h3,
@@ -328,4 +338,151 @@ body {
 /* Content padding to account for bottom nav */
 .pb-nav {
   padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* =====================================================================
+ * PREVIEW UTILITY LAYER
+ * Ported from /home/user/workspace/thestack-redesign/client/src/index.css
+ * The illuminated codex aesthetic: gold rules, fleurons, panels, drop caps.
+ * ===================================================================== */
+
+@layer components {
+  /* Display + prose font helpers. Cinzel = display, Cormorant = prose. */
+  .font-display {
+    font-family: var(--font-heading), Georgia, serif;
+    letter-spacing: 0.01em;
+  }
+  .font-prose {
+    font-family: var(--font-prose), "Cormorant Garamond", Georgia, serif;
+  }
+
+  /* Gold gradient text (used on display titles). */
+  .text-gold-gradient {
+    background: linear-gradient(180deg, hsl(48 85% 80%) 0%, hsl(42 80% 62%) 55%, hsl(38 70% 52%) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Ornamental gold rule above section headings. */
+  .gold-rule {
+    width: 56px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, hsl(42 75% 55% / 0.7), transparent);
+  }
+
+  /* Diamond fleuron divider (✦ inside <span class="fleuron">). */
+  .fleuron {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: hsl(42 75% 55% / 0.6);
+    font-size: 0.75rem;
+    line-height: 1;
+  }
+  .fleuron::before,
+  .fleuron::after {
+    content: "";
+    height: 1px;
+    width: 56px;
+    background: linear-gradient(90deg, transparent, hsl(40 30% 30%), transparent);
+  }
+
+  /* Codex panels — three tiers. These are the staple surface of the preview. */
+  .panel {
+    background: linear-gradient(180deg, hsl(220 15% 11%) 0%, hsl(220 15% 9%) 100%);
+    border: 1px solid hsl(40 30% 18%);
+    border-radius: 0.625rem;
+  }
+  .panel-elevated {
+    background: linear-gradient(180deg, hsl(220 15% 13%) 0%, hsl(220 15% 10%) 100%);
+    border: 1px solid hsl(40 30% 22%);
+    border-radius: 0.625rem;
+  }
+  .panel-gilded {
+    position: relative;
+  }
+  .panel-gilded::before {
+    content: "";
+    position: absolute;
+    left: 12%;
+    right: 12%;
+    top: -1px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, hsl(42 75% 55% / 0.5), transparent);
+    pointer-events: none;
+  }
+
+  /* Glow recipes for focused panels. Box-shadow, not filter — additive to panel borders. */
+  .codex-glow {
+    box-shadow:
+      0 0 0 1px hsl(40 30% 22% / 0.8),
+      0 1px 0 0 hsl(40 30% 30% / 0.3) inset,
+      0 20px 50px -20px hsl(0 0% 0% / 0.7),
+      0 0 60px -30px hsl(42 75% 55% / 0.25);
+  }
+  .codex-glow-strong {
+    box-shadow:
+      0 0 0 1px hsl(42 75% 55% / 0.3),
+      0 1px 0 0 hsl(42 75% 55% / 0.15) inset,
+      0 20px 50px -20px hsl(0 0% 0% / 0.7),
+      0 0 80px -20px hsl(42 75% 55% / 0.35);
+  }
+
+  /* Illuminated drop cap (first letter on prose blocks). */
+  .drop-cap::first-letter {
+    font-family: var(--font-heading), Georgia, serif;
+    font-size: 4.5rem;
+    line-height: 0.9;
+    float: left;
+    padding: 0.25rem 0.75rem 0 0;
+    color: hsl(42 75% 55%);
+    text-shadow: 0 1px 0 hsl(38 65% 45%);
+    font-weight: 700;
+  }
+
+  /* Parchment grain backdrop — applied to <body> in dark mode. */
+  .codex-bg {
+    background-color: hsl(220 15% 7%);
+    background-image:
+      radial-gradient(ellipse at top, hsl(40 30% 20% / 0.10), transparent 60%),
+      radial-gradient(ellipse at bottom, hsl(270 40% 25% / 0.06), transparent 70%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.83  0 0 0 0 0.66  0 0 0 0 0.23  0 0 0 0.025 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    min-height: 100dvh;
+  }
+}
+
+@layer utilities {
+  /* hover-elevate: subtle gold tint overlay on hover, no layout shift. */
+  .hover-elevate {
+    position: relative;
+    z-index: 0;
+    transition: transform 0.2s ease;
+  }
+  .hover-elevate::after {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background-color: transparent;
+    transition: background-color 0.2s ease;
+    z-index: 1;
+  }
+  .hover-elevate:hover::after {
+    background-color: rgba(212, 169, 58, 0.06);
+  }
+  .hover-elevate:active::after {
+    background-color: rgba(212, 169, 58, 0.10);
+  }
+  .border.hover-elevate::after {
+    inset: -1px;
+  }
+
+  /* Selection highlight in candlegold. */
+  ::selection {
+    background: hsl(42 75% 55% / 0.3);
+    color: hsl(38 30% 95%);
+  }
 }
