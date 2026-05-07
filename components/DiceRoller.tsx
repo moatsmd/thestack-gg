@@ -5,11 +5,12 @@ import { useEffect, useRef, useState } from 'react'
 type DieType = 4 | 6 | 8 | 10 | 12 | 20 | 100
 
 /**
- * Time the dice silhouette wobbles/spins before the rolled number fades in.
- * Kept short so play feels snappy — half the fun is anticipation, but only a
- * little. Reduced-motion users skip the animation (see CSS class below).
+ * Time the dice silhouette tumbles before the rolled number bounces in.
+ * ~1.1s gives ~2 full spins at the 0.55s spin keyframe duration, which feels
+ * punchy without dragging. Reduced-motion users skip the animation entirely
+ * (see CSS class below).
  */
-const ROLL_MS = 850
+const ROLL_MS = 1100
 
 interface RollEntry {
   id: string

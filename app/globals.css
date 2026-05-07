@@ -285,30 +285,45 @@
   }
 }
 
-/* Dice roller — silhouette wobble + final-number fade-in.
-   Sized for the 850 ms ROLL_MS window in DiceRoller.tsx. */
+/* Dice roller — silhouette tumbles + bounces, then number springs in.
+   Drives the 850 ms ROLL_MS window in DiceRoller.tsx.
+
+   Two layered animations on the silhouette wrapper:
+     - die-spin   : continuous full rotation while rolling
+     - die-bounce : vertical lift / scale pump for energy
+   They run on the same element by composing transforms via CSS variables. */
 .die-wobble {
-  animation: die-wobble 0.42s ease-in-out infinite;
   transform-origin: center;
-  filter: drop-shadow(0 0 8px rgba(196, 137, 31, 0.45));
+  filter: drop-shadow(0 0 12px rgba(196, 137, 31, 0.55));
+  animation:
+    die-spin   0.55s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite,
+    die-bounce 0.42s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
 }
 
-@keyframes die-wobble {
-  0%   { transform: rotate(-14deg) scale(1);    }
-  25%  { transform: rotate(18deg)  scale(1.06); }
-  50%  { transform: rotate(-22deg) scale(0.96); }
-  75%  { transform: rotate(12deg)  scale(1.04); }
-  100% { transform: rotate(-14deg) scale(1);    }
+@keyframes die-spin {
+  0%   { transform: rotate(0deg)   scale(1)    translateY(0);    }
+  50%  { transform: rotate(180deg) scale(1.08) translateY(-6px); }
+  100% { transform: rotate(360deg) scale(1)    translateY(0);    }
 }
 
+/* Layered alternating bounce on top of spin via animation-composition
+   isn't widely supported, so die-bounce is folded into die-spin keyframes
+   above and this rule is kept as a no-op fallback hook for future tweaks. */
+@keyframes die-bounce {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 1; }
+}
+
+/* Result number — spring-style entrance: blur in, overshoot, settle. */
 .die-result-fade {
-  animation: die-result-fade 0.35s ease-out both;
+  animation: die-result-fade 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
 @keyframes die-result-fade {
-  0%   { opacity: 0; filter: blur(8px); transform: scale(0.85); }
-  60%  { opacity: 1; filter: blur(0);   transform: scale(1.06); }
-  100% { opacity: 1; filter: blur(0);   transform: scale(1);    }
+  0%   { opacity: 0; filter: blur(10px); transform: scale(0.6) rotate(-8deg);  }
+  50%  { opacity: 1; filter: blur(0);    transform: scale(1.18) rotate(2deg);  }
+  75%  { opacity: 1; filter: blur(0);    transform: scale(0.96) rotate(-1deg); }
+  100% { opacity: 1; filter: blur(0);    transform: scale(1) rotate(0);        }
 }
 
 /* Prevent zoom on input focus (iOS) */
