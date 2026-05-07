@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { decodeHtml, extractExcerpt } from '@/lib/rss-excerpt'
 
 const CARD_KINGDOM_RSS_URL = 'https://blog.cardkingdom.com/feed/'
 const CACHE_DURATION = 60 * 60 // 1 hour in seconds
@@ -119,7 +120,7 @@ function parseRSS(xmlText: string): NewsItem[] {
           title: decodeHtml(title.trim()),
           link: link.trim(),
           pubDate: pubDate.trim(),
-          description: description ? decodeHtml(description.trim()) : undefined,
+          description: description ? extractExcerpt(description) : undefined,
           category: category ? decodeHtml(category.trim()) : undefined,
           imageUrl,
         })
@@ -169,16 +170,4 @@ function extractImageUrl(html: string): string | undefined {
   return undefined
 }
 
-/**
- * Decode HTML entities
- */
-function decodeHtml(html: string): string {
-  return html
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#039;/g, "'")
-    .replace(/&apos;/g, "'")
-    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
-}
+
