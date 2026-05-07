@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { ScryfallCard } from '@/types/scryfall'
 import { CardLegalityDisplay } from './CardLegalityDisplay'
 import { OracleTextWithKeywords } from './OracleTextWithKeywords'
+import { ManaCost } from './ManaSymbol'
 
 interface CardDisplayProps {
   card: ScryfallCard
@@ -88,9 +89,12 @@ export function CardDisplay({ card }: CardDisplayProps) {
                 {name}
               </h2>
               {manaCost && (
-                <span className="text-[var(--muted)] font-mono text-sm whitespace-nowrap" data-testid="card-mana-cost">
-                  {manaCost}
-                </span>
+                <ManaCost
+                  cost={manaCost}
+                  size="1.1em"
+                  className="whitespace-nowrap"
+                  data-testid="card-mana-cost"
+                />
               )}
             </div>
             <div className="text-[var(--muted)] text-sm" data-testid="card-type-line">

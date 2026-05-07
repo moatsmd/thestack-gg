@@ -36,7 +36,9 @@ describe('CompactCard', () => {
   it('displays mana cost', () => {
     render(<CompactCard card={mockCard} onClick={() => {}} />)
 
-    expect(screen.getByText('{R}')).toBeInTheDocument()
+    // Mana cost is rendered as a Scryfall icon — look for the symbol image,
+    // not the raw curly-brace token.
+    expect(screen.getByAltText('{R}')).toBeInTheDocument()
   })
 
   it('displays type line', () => {
@@ -122,7 +124,9 @@ describe('CompactCard', () => {
 
     // Should display first face data
     expect(screen.getByText('Front Face')).toBeInTheDocument()
-    expect(screen.getByText('{1}{U}')).toBeInTheDocument()
+    // {1}{U} renders as two icon images.
+    expect(screen.getByAltText('{1}')).toBeInTheDocument()
+    expect(screen.getByAltText('{U}')).toBeInTheDocument()
     expect(screen.getByText('Creature — Human')).toBeInTheDocument()
 
     // Should use first face image

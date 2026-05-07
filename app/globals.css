@@ -278,9 +278,37 @@
   .reveal,
   .reveal-delay-1,
   .reveal-delay-2,
-  .reveal-delay-3 {
+  .reveal-delay-3,
+  .die-wobble,
+  .die-result-fade {
     animation: none;
   }
+}
+
+/* Dice roller — silhouette wobble + final-number fade-in.
+   Sized for the 850 ms ROLL_MS window in DiceRoller.tsx. */
+.die-wobble {
+  animation: die-wobble 0.42s ease-in-out infinite;
+  transform-origin: center;
+  filter: drop-shadow(0 0 8px rgba(196, 137, 31, 0.45));
+}
+
+@keyframes die-wobble {
+  0%   { transform: rotate(-14deg) scale(1);    }
+  25%  { transform: rotate(18deg)  scale(1.06); }
+  50%  { transform: rotate(-22deg) scale(0.96); }
+  75%  { transform: rotate(12deg)  scale(1.04); }
+  100% { transform: rotate(-14deg) scale(1);    }
+}
+
+.die-result-fade {
+  animation: die-result-fade 0.35s ease-out both;
+}
+
+@keyframes die-result-fade {
+  0%   { opacity: 0; filter: blur(8px); transform: scale(0.85); }
+  60%  { opacity: 1; filter: blur(0);   transform: scale(1.06); }
+  100% { opacity: 1; filter: blur(0);   transform: scale(1);    }
 }
 
 /* Prevent zoom on input focus (iOS) */

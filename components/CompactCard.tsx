@@ -1,6 +1,7 @@
 'use client'
 
 import { ScryfallCard } from '@/types/scryfall'
+import { ManaCost } from './ManaSymbol'
 
 interface CompactCardProps {
   card: ScryfallCard
@@ -65,9 +66,11 @@ export function CompactCard({ card, onClick }: CompactCardProps) {
             {name}
           </h3>
           {manaCost && (
-            <span className="text-xs text-[var(--muted)] font-mono whitespace-nowrap">
-              {manaCost}
-            </span>
+            <ManaCost
+              cost={manaCost}
+              size="0.9em"
+              className="whitespace-nowrap"
+            />
           )}
         </div>
         <p className="text-xs text-[var(--muted)] text-left line-clamp-1">

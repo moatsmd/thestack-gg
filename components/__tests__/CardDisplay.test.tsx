@@ -82,14 +82,27 @@ describe('CardDisplay', () => {
     render(<CardDisplay card={mockCard} />)
 
     expect(screen.getByTestId('card-name')).toHaveTextContent('Sol Ring')
-    expect(screen.getByTestId('card-mana-cost')).toHaveTextContent('{1}')
+    // Mana cost is now rendered as Scryfall SVG icons; assert the symbol
+    // images appear with the right alt text rather than as raw text.
+    const cost = screen.getByTestId('card-mana-cost')
+    const costSymbols = cost.querySelectorAll('img')
+    expect(costSymbols.length).toBe(1)
+    expect(costSymbols[0]).toHaveAttribute('alt', '{1}')
     expect(screen.getByTestId('card-type-line')).toHaveTextContent('Artifact')
   })
 
   it('renders oracle text', () => {
     render(<CardDisplay card={mockCard} />)
 
-    expect(screen.getByTestId('card-oracle-text')).toHaveTextContent('{T}: Add {C}{C}.')
+    // Oracle text now substitutes {T}/{C}/{C} with Scryfall icons; the text
+    // content reduces to punctuation/words around the symbols.
+    const oracle = screen.getByTestId('card-oracle-text')
+    expect(oracle).toHaveTextContent(': Add .')
+    const oracleSymbols = oracle.querySelectorAll('img')
+    expect(oracleSymbols.length).toBe(3)
+    expect(oracleSymbols[0]).toHaveAttribute('alt', '{T}')
+    expect(oracleSymbols[1]).toHaveAttribute('alt', '{C}')
+    expect(oracleSymbols[2]).toHaveAttribute('alt', '{C}')
   })
 
   it('renders card metadata', () => {
