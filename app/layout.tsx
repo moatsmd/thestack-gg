@@ -107,6 +107,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        {/* Impact (TCGplayer / Card Kingdom affiliate network) site verification */}
+        <meta
+          name="impact-site-verification"
+          content="200b2947-5c79-4756-962c-5e57a09aa69f"
+        />
         <script
           type="application/ld+json"
           // eslint-disable-next-line react/no-danger
