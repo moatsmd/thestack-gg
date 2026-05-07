@@ -1,16 +1,17 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { Die3D } from './Die3D'
 
 type DieType = 4 | 6 | 8 | 10 | 12 | 20 | 100
 
 /**
- * Time the dice silhouette tumbles before the rolled number bounces in.
- * ~1.1s gives ~2 full spins at the 0.55s spin keyframe duration, which feels
- * punchy without dragging. Reduced-motion users skip the animation entirely
- * (see CSS class below).
+ * Time the dice silhouette tumbles before the rolled number fades in.
+ * Matches the 0.85s framer-motion spin transition in <Die3D />, with a small
+ * buffer so the number's blur-fade-in starts after the spin clearly settles.
+ * Reduced-motion users skip the animation entirely.
  */
-const ROLL_MS = 1100
+const ROLL_MS = 900
 
 interface RollEntry {
   id: string
@@ -25,21 +26,20 @@ function rollDie(sides: DieType): number {
   return Math.floor(Math.random() * sides) + 1
 }
 
-function DieSvg({ sides, large = false }: { sides: DieType; large?: boolean }) {
-  // Stroke width is fatter on the large display die so the silhouette reads
-  // clearly at 96px while the small button icons stay crisp at 32px.
-  const sw = large ? 1.25 : 1.5
+/** Small button-grid icon for each die type. The big animated die in the
+    result panel is <Die3D /> in components/Die3D.tsx. */
+function DieSvg({ sides }: { sides: DieType }) {
   const shapes: Record<DieType, React.ReactNode> = {
-    4: <polygon points="12,2 22,20 2,20" fill="none" stroke="currentColor" strokeWidth={sw} />,
-    6: <rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" strokeWidth={sw} />,
-    8: <polygon points="12,2 22,12 12,22 2,12" fill="none" stroke="currentColor" strokeWidth={sw} />,
-    10: <polygon points="12,2 21,8 18,19 6,19 3,8" fill="none" stroke="currentColor" strokeWidth={sw} />,
-    12: <polygon points="12,2 19,5 22,12 19,19 12,22 5,19 2,12 5,5" fill="none" stroke="currentColor" strokeWidth={sw} />,
-    20: <polygon points="12,2 22,8 22,16 12,22 2,16 2,8" fill="none" stroke="currentColor" strokeWidth={sw} />,
-    100: <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth={sw} />,
+    4: <polygon points="12,2 22,20 2,20" fill="none" stroke="currentColor" strokeWidth={1.5} />,
+    6: <rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" strokeWidth={1.5} />,
+    8: <polygon points="12,2 22,12 12,22 2,12" fill="none" stroke="currentColor" strokeWidth={1.5} />,
+    10: <polygon points="12,2 21,8 18,19 6,19 3,8" fill="none" stroke="currentColor" strokeWidth={1.5} />,
+    12: <polygon points="12,2 19,5 22,12 19,19 12,22 5,19 2,12 5,5" fill="none" stroke="currentColor" strokeWidth={1.5} />,
+    20: <polygon points="12,2 22,8 22,16 12,22 2,16 2,8" fill="none" stroke="currentColor" strokeWidth={1.5} />,
+    100: <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth={1.5} />,
   }
   return (
-    <svg viewBox="0 0 24 24" className={large ? 'w-full h-full' : 'w-8 h-8 mb-1'}>
+    <svg viewBox="0 0 24 24" className="w-8 h-8 mb-1">
       {shapes[sides]}
     </svg>
   )
@@ -129,47 +129,36 @@ export function DiceRoller() {
           <h1 className="mt-2 text-3xl font-bold text-[var(--ink)]">Dice Roller</h1>
         </header>
 
-        <div className="arcane-panel mana-border rounded-2xl p-8 text-center min-h-[230px] flex flex-col items-center justify-center">
-          {lastDie !== null && (
-            <p className="text-sm text-[var(--muted)] mb-3 tracking-[0.3em] uppercase">
-              d{lastDie}
-            </p>
-          )}
-
-          {lastDie !== null && (
-            <div
-              className={`relative flex items-center justify-center text-[var(--accent-1)] ${
-                isRolling ? 'die-wobble' : ''
-              }`}
-              aria-hidden="true"
-              style={{ width: 96, height: 96 }}
-            >
-              <DieSvg sides={lastDie} large />
-            </div>
-          )}
-
-          {lastResult !== null ? (
-            <p
-              className="mt-3 text-7xl font-bold text-[var(--ink)] die-result-fade"
-              data-testid="roll-result"
-              key={lastResult /* re-trigger fade on new value */}
-            >
-              {lastResult}
-            </p>
-          ) : isRolling ? (
-            <p
-              className="mt-3 text-7xl font-bold text-[var(--muted)] opacity-30"
-              data-testid="roll-result"
-            >
-              ?
-            </p>
+        <div
+          className="arcane-panel mana-border rounded-2xl p-8 text-center flex flex-col items-center justify-center"
+          style={{ minHeight: 280 }}
+          aria-live="polite"
+        >
+          {lastDie !== null && (lastResult !== null || isRolling) ? (
+            <Die3D
+              value={lastResult ?? 0}
+              rolling={isRolling}
+              size={200}
+              faces={lastDie}
+            />
           ) : (
-            <p
-              className="mt-3 text-6xl font-bold text-[var(--muted)]"
+            <span
               data-testid="roll-result"
+              className="text-6xl font-bold text-[var(--muted)]"
             >
               —
-            </p>
+            </span>
+          )}
+          {/* Off-screen authoritative result — carries data-testid so tests
+              and screen readers always read "<number>" exactly when settled,
+              independent of <Die3D>'s visual markup. Hidden during rolls. */}
+          {lastResult !== null && (
+            <span
+              data-testid="roll-result"
+              className="sr-only"
+            >
+              {lastResult}
+            </span>
           )}
         </div>
 
