@@ -1,5 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Cinzel, IM_Fell_English, Cormorant_Garamond } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 
@@ -23,22 +25,62 @@ const proseFont = Cormorant_Garamond({
   variable: "--font-prose",
 });
 
+const siteUrl = "https://www.thestack.gg";
+const siteTitle = "TheStack.gg — The MTG Companion";
+const siteDescription =
+  "A beautiful, dark-mode Magic: The Gathering companion: life tracker, stack visualizer, card lookup, glossary, and rules \u2014 fast, focused, and right at hand.";
+
 export const metadata: Metadata = {
-  title: "TheStack.gg - MTG Life Tracker",
-  description: "Mobile-friendly Magic: The Gathering life tracker and toolkit",
-  manifest: "/manifest.webmanifest",
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: siteTitle,
+    template: "%s · TheStack.gg",
   },
-  themeColor: '#1f2937',
+  description: siteDescription,
+  applicationName: "TheStack.gg",
+  keywords: [
+    "Magic the Gathering",
+    "MTG",
+    "life tracker",
+    "commander life tracker",
+    "the stack",
+    "MTG glossary",
+    "MTG keywords",
+    "comprehensive rules",
+    "card search",
+  ],
+  manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'black-translucent',
-    title: 'TheStack.gg',
+    statusBarStyle: "black-translucent",
+    title: "TheStack.gg",
   },
+  alternates: { canonical: siteUrl },
+  openGraph: {
+    type: "website",
+    url: siteUrl,
+    siteName: "TheStack.gg",
+    title: siteTitle,
+    description: siteDescription,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: siteTitle,
+    description: siteDescription,
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-image-preview": "large" },
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: "#1f2937",
 };
 
 export default function RootLayout({
@@ -46,10 +88,35 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // JSON-LD describing the site as a WebApplication. Helps search engines
+  // surface the tool with a richer snippet (rating, app category, etc.).
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: 'TheStack.gg',
+    url: siteUrl,
+    description: siteDescription,
+    applicationCategory: 'GameApplication',
+    operatingSystem: 'Web',
+    browserRequirements: 'Requires JavaScript and a modern browser',
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    inLanguage: 'en',
+    audience: { '@type': 'Audience', audienceType: 'Magic: The Gathering players' },
+  };
+
   return (
     <html lang="en">
+      <head>
+        <script
+          type="application/ld+json"
+          // eslint-disable-next-line react/no-danger
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
       <body className={`antialiased ${headingFont.variable} ${bodyFont.variable} ${proseFont.variable}`}>
         <Providers>{children}</Providers>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

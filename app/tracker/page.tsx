@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import QRCode from 'qrcode'
 import { GoldRule } from '@/components/Fleuron'
+import { track } from '@/lib/analytics'
 
 /* ────────────────────────────────────────────────────────────
  * Inline SVG icons (lucide-react is not installed in prod).
@@ -189,6 +190,13 @@ export default function TrackerPage() {
         experience: 0,
       }))
     )
+    track('tracker_started', {
+      mode,
+      players: n,
+      format: gameMode.name,
+      starting_life: startLife,
+      counters: enabledCounters.join(','),
+    })
     setStep('play')
   }
 
@@ -481,6 +489,7 @@ function ActiveTracker({
     setPlayers((prev) =>
       prev.map((p) => ({ ...p, life: startLife, cmd: 0, poison: 0, mana: 0, energy: 0, experience: 0 }))
     )
+    track('tracker_reset', { players: players.length, format: gameMode.name })
   }
 
   async function openShare() {
@@ -495,6 +504,7 @@ function ActiveTracker({
     const dataUrl = await QRCode.toDataURL(url, { color: { dark: '#d4a93a', light: '#0f1115' }, width: 320, margin: 1 })
     setQrUrl(dataUrl)
     setShareOpen(true)
+    track('tracker_share_opened', { players: players.length })
   }
 
   const cols =

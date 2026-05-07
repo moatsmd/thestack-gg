@@ -10,6 +10,7 @@ import { CardGrid } from './CardGrid'
 import { ViewModeToggle, ViewMode } from './ViewModeToggle'
 import { CardModal } from './CardModal'
 import { ScryfallCard } from '@/types/scryfall'
+import { track } from '@/lib/analytics'
 
 export function CardSearch() {
   const {
@@ -35,6 +36,7 @@ export function CardSearch() {
   }
 
   const handleCardClick = (card: ScryfallCard) => {
+    track('card_modal_opened', { card: card.name, view: viewMode })
     if (viewMode === 'grid') {
       // In grid view, open modal
       setModalCard(card)
@@ -42,6 +44,11 @@ export function CardSearch() {
       // In single view, select card normally (shouldn't happen, but defensive)
       selectCard(card)
     }
+  }
+
+  const handleSearch = () => {
+    track('card_lookup', { query, length: query.length })
+    search()
   }
 
   const handleCloseModal = () => {
@@ -59,7 +66,7 @@ export function CardSearch() {
         onChange={setQuery}
         suggestions={suggestions}
         onSelectSuggestion={handleSelectSuggestion}
-        onSearch={search}
+        onSearch={handleSearch}
         isLoading={isLoading}
       />
 
@@ -86,7 +93,7 @@ export function CardSearch() {
       )}
 
       {/* Single Card View */}
-      {showSingleCard && <CardDisplay card={selectedCard} />}
+      {showSingleCard && <CardDisplay card={selectedCard} source="toolkit-search" />}
 
       {/* Card Modal */}
       {modalCard && (
