@@ -1,8 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 type DieType = 4 | 6 | 8 | 10 | 12 | 20 | 100
+
+/**
+ * Time the dice silhouette wobbles/spins before the rolled number fades in.
+ * Kept short so play feels snappy — half the fun is anticipation, but only a
+ * little. Reduced-motion users skip the animation (see CSS class below).
+ */
+const ROLL_MS = 850
 
 interface RollEntry {
   id: string
@@ -17,18 +24,21 @@ function rollDie(sides: DieType): number {
   return Math.floor(Math.random() * sides) + 1
 }
 
-function DieSvg({ sides }: { sides: DieType }) {
+function DieSvg({ sides, large = false }: { sides: DieType; large?: boolean }) {
+  // Stroke width is fatter on the large display die so the silhouette reads
+  // clearly at 96px while the small button icons stay crisp at 32px.
+  const sw = large ? 1.25 : 1.5
   const shapes: Record<DieType, React.ReactNode> = {
-    4: <polygon points="12,2 22,20 2,20" fill="none" stroke="currentColor" strokeWidth="1.5" />,
-    6: <rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" strokeWidth="1.5" />,
-    8: <polygon points="12,2 22,12 12,22 2,12" fill="none" stroke="currentColor" strokeWidth="1.5" />,
-    10: <polygon points="12,2 21,8 18,19 6,19 3,8" fill="none" stroke="currentColor" strokeWidth="1.5" />,
-    12: <polygon points="12,2 19,5 22,12 19,19 12,22 5,19 2,12 5,5" fill="none" stroke="currentColor" strokeWidth="1.5" />,
-    20: <polygon points="12,2 22,8 22,16 12,22 2,16 2,8" fill="none" stroke="currentColor" strokeWidth="1.5" />,
-    100: <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.5" />,
+    4: <polygon points="12,2 22,20 2,20" fill="none" stroke="currentColor" strokeWidth={sw} />,
+    6: <rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" strokeWidth={sw} />,
+    8: <polygon points="12,2 22,12 12,22 2,12" fill="none" stroke="currentColor" strokeWidth={sw} />,
+    10: <polygon points="12,2 21,8 18,19 6,19 3,8" fill="none" stroke="currentColor" strokeWidth={sw} />,
+    12: <polygon points="12,2 19,5 22,12 19,19 12,22 5,19 2,12 5,5" fill="none" stroke="currentColor" strokeWidth={sw} />,
+    20: <polygon points="12,2 22,8 22,16 12,22 2,16 2,8" fill="none" stroke="currentColor" strokeWidth={sw} />,
+    100: <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth={sw} />,
   }
   return (
-    <svg viewBox="0 0 24 24" className="w-8 h-8 mb-1">
+    <svg viewBox="0 0 24 24" className={large ? 'w-full h-full' : 'w-8 h-8 mb-1'}>
       {shapes[sides]}
     </svg>
   )
@@ -39,6 +49,14 @@ export function DiceRoller() {
   const [lastDie, setLastDie] = useState<DieType | null>(null)
   const [history, setHistory] = useState<RollEntry[]>([])
   const [queue, setQueue] = useState<DieType[]>([])
+  const [isRolling, setIsRolling] = useState(false)
+  const rollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (rollTimerRef.current) clearTimeout(rollTimerRef.current)
+    }
+  }, [])
 
   const formatTime = (ts: number) => {
     const d = new Date(ts)
@@ -53,10 +71,34 @@ export function DiceRoller() {
       timestamp: Date.now(),
     }))
     const total = results.reduce((sum, r) => sum + r.result, 0)
-    setLastResult(total)
-    setLastDie(results[results.length - 1].die)
-    setHistory((prev) => [...entries, ...prev].slice(0, 10))
+    const lastDieType = results[results.length - 1].die
+
+    // Skip animation in jsdom / SSR / prefers-reduced-motion → settle immediately.
+    const shouldAnimate =
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    if (!shouldAnimate) {
+      setLastDie(lastDieType)
+      setLastResult(total)
+      setHistory((prev) => [...entries, ...prev].slice(0, 10))
+      setQueue([])
+      return
+    }
+
+    // Show the wobble + hide the number, then fade the final value in.
+    setLastDie(lastDieType)
+    setLastResult(null)
+    setIsRolling(true)
     setQueue([])
+
+    if (rollTimerRef.current) clearTimeout(rollTimerRef.current)
+    rollTimerRef.current = setTimeout(() => {
+      setLastResult(total)
+      setIsRolling(false)
+      setHistory((prev) => [...entries, ...prev].slice(0, 10))
+    }, ROLL_MS)
   }
 
   const handleDieClick = (sides: DieType) => {
@@ -86,20 +128,43 @@ export function DiceRoller() {
           <h1 className="mt-2 text-3xl font-bold text-[var(--ink)]">Dice Roller</h1>
         </header>
 
-        <div className="arcane-panel mana-border rounded-2xl p-8 text-center">
+        <div className="arcane-panel mana-border rounded-2xl p-8 text-center min-h-[230px] flex flex-col items-center justify-center">
+          {lastDie !== null && (
+            <p className="text-sm text-[var(--muted)] mb-3 tracking-[0.3em] uppercase">
+              d{lastDie}
+            </p>
+          )}
+
+          {lastDie !== null && (
+            <div
+              className={`relative flex items-center justify-center text-[var(--accent-1)] ${
+                isRolling ? 'die-wobble' : ''
+              }`}
+              aria-hidden="true"
+              style={{ width: 96, height: 96 }}
+            >
+              <DieSvg sides={lastDie} large />
+            </div>
+          )}
+
           {lastResult !== null ? (
-            <>
-              <p className="text-sm text-[var(--muted)] mb-2">d{lastDie}</p>
-              <p
-                className="text-8xl font-bold text-[var(--ink)]"
-                data-testid="roll-result"
-              >
-                {lastResult}
-              </p>
-            </>
+            <p
+              className="mt-3 text-7xl font-bold text-[var(--ink)] die-result-fade"
+              data-testid="roll-result"
+              key={lastResult /* re-trigger fade on new value */}
+            >
+              {lastResult}
+            </p>
+          ) : isRolling ? (
+            <p
+              className="mt-3 text-7xl font-bold text-[var(--muted)] opacity-30"
+              data-testid="roll-result"
+            >
+              ?
+            </p>
           ) : (
             <p
-              className="text-6xl font-bold text-[var(--muted)]"
+              className="mt-3 text-6xl font-bold text-[var(--muted)]"
               data-testid="roll-result"
             >
               —
