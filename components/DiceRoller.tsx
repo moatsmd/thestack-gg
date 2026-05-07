@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Die3D } from './Die3D'
+import { GoldRule } from './Fleuron'
 
 type DieType = 4 | 6 | 8 | 10 | 12 | 20 | 100
 
@@ -121,16 +122,18 @@ export function DiceRoller() {
   }, {} as Partial<Record<DieType, number>>)
 
   return (
-    <div className="min-h-screen arcane-shell text-[var(--ink)] transition-colors">
-      <div className="max-w-lg mx-auto px-4 py-10 space-y-8">
+    <div className="min-h-screen text-[hsl(38_30%_88%)]">
+      <div className="max-w-lg mx-auto px-4 pt-6 md:pt-12 pb-8 space-y-6">
 
-        <header className="arcane-panel mana-border rounded-2xl p-6 text-center">
-          <p className="text-xs uppercase tracking-[0.5em] text-[var(--muted)]">Dice</p>
-          <h1 className="mt-2 text-3xl font-bold text-[var(--ink)]">Dice Roller</h1>
+        <header className="text-center">
+          <div className="flex items-center justify-center"><GoldRule /></div>
+          <p className="font-display tracking-[0.16em] uppercase text-xs text-[hsl(38_15%_60%)] mt-3">Cast the Bones</p>
+          <h1 className="font-display text-gold-gradient text-3xl md:text-5xl mt-3 tracking-wide">Dice</h1>
+          <p className="font-prose italic text-[hsl(38_30%_88%)]/80 mt-1">Tap a face. Read your fate.</p>
         </header>
 
         <div
-          className="arcane-panel mana-border rounded-2xl p-8 text-center flex flex-col items-center justify-center"
+          className="panel codex-glow panel-gilded p-8 text-center flex flex-col items-center justify-center"
           style={{ minHeight: 280 }}
           aria-live="polite"
         >
@@ -144,7 +147,7 @@ export function DiceRoller() {
           ) : (
             <span
               data-testid="roll-result"
-              className="text-6xl font-bold text-[var(--muted)]"
+              className="font-display text-6xl text-[hsl(38_15%_60%)]/60"
             >
               —
             </span>
@@ -169,14 +172,14 @@ export function DiceRoller() {
               type="button"
               onClick={() => handleDieClick(sides)}
               onContextMenu={(e) => { e.preventDefault(); handleQueueDie(sides) }}
-              className="relative flex flex-col items-center justify-center py-4 rounded-2xl arcane-panel mana-border hover:bg-white/5 active:scale-95 transition font-bold text-[var(--ink)]"
+              className="relative flex flex-col items-center justify-center py-4 panel-elevated hover-elevate active-elevate-2 transition font-display tracking-wider text-[hsl(38_30%_88%)]"
               data-testid={`die-d${sides}`}
               title={`Roll d${sides}`}
             >
-              <DieSvg sides={sides} />
-              <span className="text-sm">d{sides}</span>
+              <span className="text-primary"><DieSvg sides={sides} /></span>
+              <span className="text-xs text-[hsl(38_15%_60%)]">d{sides}</span>
               {(queueCounts[sides] ?? 0) > 0 && (
-                <span className="absolute top-1 right-1 w-5 h-5 rounded-full bg-[var(--accent-1)] text-white text-xs flex items-center justify-center font-bold">
+                <span className="absolute top-1 right-1 w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-bold">
                   {queueCounts[sides]}
                 </span>
               )}
@@ -186,13 +189,13 @@ export function DiceRoller() {
 
         {queue.length > 0 && (
           <div className="space-y-2">
-            <p className="text-sm text-[var(--muted)] text-center">
+            <p className="text-sm text-[hsl(38_15%_60%)] text-center font-prose italic">
               Queued: {queue.map((d) => `d${d}`).join(', ')}
             </p>
             <button
               type="button"
               onClick={handleRollQueue}
-              className="w-full py-4 rounded-2xl bg-[var(--accent-1)] text-white font-bold text-lg hover:bg-[var(--accent-1)]/90 transition"
+              className="w-full py-4 rounded-md bg-primary text-primary-foreground font-display tracking-wide text-lg hover-elevate active-elevate-2 transition"
               data-testid="roll-queue"
             >
               Roll {queue.length} {queue.length === 1 ? 'die' : 'dice'}
@@ -200,7 +203,7 @@ export function DiceRoller() {
             <button
               type="button"
               onClick={() => setQueue([])}
-              className="w-full py-2 rounded-xl text-sm text-[var(--muted)] hover:text-[var(--ink)] transition"
+              className="w-full py-2 text-sm text-[hsl(38_15%_60%)] hover:text-[hsl(38_30%_88%)] transition font-display tracking-wide"
             >
               Clear queue
             </button>
@@ -208,19 +211,23 @@ export function DiceRoller() {
         )}
 
         {history.length > 0 && (
-          <section className="arcane-panel mana-border rounded-2xl p-4 space-y-2">
-            <p className="text-xs uppercase tracking-widest text-[var(--muted)]">History</p>
-            {history.map((entry) => (
-              <div
-                key={entry.id}
-                className="flex items-center justify-between text-sm"
-                data-testid="history-entry"
-              >
-                <span className="text-[var(--muted)]">d{entry.die}</span>
-                <span className="font-bold text-[var(--ink)]">{entry.result}</span>
-                <span className="text-[var(--muted)] text-xs">{formatTime(entry.timestamp)}</span>
-              </div>
-            ))}
+          <section className="panel p-5 space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="font-display tracking-[0.18em] uppercase text-[10px] text-[hsl(38_15%_60%)]">Roll history</p>
+            </div>
+            <ul className="divide-y divide-[hsl(40_30%_18%)]">
+              {history.map((entry) => (
+                <li
+                  key={entry.id}
+                  className="py-2 flex items-center justify-between text-sm"
+                  data-testid="history-entry"
+                >
+                  <span className="text-[hsl(38_15%_60%)] font-display tracking-wider">d{entry.die}</span>
+                  <span className="font-display text-lg text-[hsl(38_30%_88%)] tabular-nums">{entry.result}</span>
+                  <span className="text-[hsl(38_15%_60%)] text-xs font-prose">{formatTime(entry.timestamp)}</span>
+                </li>
+              ))}
+            </ul>
           </section>
         )}
 

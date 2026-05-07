@@ -9,6 +9,7 @@ const customJestConfig = {
   testEnvironment: 'jest-environment-jsdom',
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
+    '^framer-motion$': '<rootDir>/__mocks__/framer-motion.tsx',
   },
 }
 

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Cinzel, IM_Fell_English } from "next/font/google";
+import { Cinzel, IM_Fell_English, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 
@@ -14,6 +14,13 @@ const bodyFont = IM_Fell_English({
   weight: "400",
   style: ["normal", "italic"],
   variable: "--font-body",
+});
+
+const proseFont = Cormorant_Garamond({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-prose",
 });
 
 export const metadata: Metadata = {
@@ -41,7 +48,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`antialiased ${headingFont.variable} ${bodyFont.variable}`}>
+      <body className={`antialiased ${headingFont.variable} ${bodyFont.variable} ${proseFont.variable}`}>
         <Providers>{children}</Providers>
       </body>
     </html>

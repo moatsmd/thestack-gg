@@ -2,47 +2,55 @@ import { render, screen } from '@testing-library/react'
 import StackPage from '../stack/page'
 import { DarkModeProvider } from '@/contexts/DarkModeContext'
 
-const renderStack = () => render(<DarkModeProvider><StackPage /></DarkModeProvider>)
+const renderStack = () =>
+  render(
+    <DarkModeProvider>
+      <StackPage />
+    </DarkModeProvider>,
+  )
 
-describe('StackPage (static reference)', () => {
-  it('renders the page heading', () => {
+describe('StackPage (animated demo)', () => {
+  it('renders the display heading', () => {
     renderStack()
-    expect(screen.getByRole('heading', { name: /^the stack$/i, level: 1 })).toBeInTheDocument()
+    // Display heading is a <p> in the new layout, but eyebrow + tagline include "Stack"
+    expect(screen.getAllByText(/^the stack$/i).length).toBeGreaterThan(0)
   })
 
   it('explains LIFO order', () => {
     renderStack()
-    expect(screen.getByText(/last in, first out/i)).toBeInTheDocument()
+    expect(screen.getAllByText(/last in, first out/i).length).toBeGreaterThan(0)
   })
 
-  it('shows priority flow section', () => {
+  it('shows the sequence panel', () => {
     renderStack()
     expect(screen.getByTestId('priority-flow')).toBeInTheDocument()
   })
 
-  it('shows key rules section', () => {
+  it('shows the key rules grid', () => {
     renderStack()
     expect(screen.getByTestId('key-rules')).toBeInTheDocument()
   })
 
-  it('shows common scenarios section', () => {
+  it('shows the scenarios grid', () => {
     renderStack()
     expect(screen.getByTestId('scenarios')).toBeInTheDocument()
   })
 
-  it('mentions split second', () => {
+  it('exposes play/pause and reset controls', () => {
     renderStack()
-    expect(screen.getByText(/split second/i)).toBeInTheDocument()
+    expect(screen.getByTestId('button-play')).toBeInTheDocument()
+    expect(screen.getByTestId('button-reset-stack')).toBeInTheDocument()
   })
 
-  it('mentions mana abilities', () => {
+  it('lists the demo scenario steps', () => {
     renderStack()
-    expect(screen.getByText(/mana abilit/i)).toBeInTheDocument()
+    expect(screen.getAllByText(/lightning bolt/i).length).toBeGreaterThan(0)
+    expect(screen.getByText(/counterspell targeting lightning bolt/i)).toBeInTheDocument()
+    expect(screen.getAllByText(/red elemental blast/i).length).toBeGreaterThan(0)
   })
 
-  it('has no interactive buttons (it is static)', () => {
+  it('shows the priority rule card', () => {
     renderStack()
-    expect(screen.queryByRole('button', { name: /resolve/i })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /add spell/i })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /^priority$/i, level: 4 })).toBeInTheDocument()
   })
 })

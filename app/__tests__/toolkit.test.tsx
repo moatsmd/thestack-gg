@@ -22,7 +22,7 @@ describe('ToolkitPage', () => {
     const { container } = render(<ToolkitPage />)
 
     const mainDiv = container.firstChild as HTMLElement
-    expect(mainDiv).toHaveClass('arcane-shell')
+    expect(mainDiv).toHaveClass('min-h-screen')
   })
 
   it('displays card search component', () => {
@@ -34,7 +34,7 @@ describe('ToolkitPage', () => {
   it('has container with proper spacing', () => {
     const { container } = render(<ToolkitPage />)
 
-    const containerDiv = container.querySelector('.container')
+    const containerDiv = container.querySelector('.max-w-6xl')
     expect(containerDiv).toHaveClass('mx-auto', 'px-4', 'py-8')
   })
 

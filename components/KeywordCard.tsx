@@ -7,79 +7,74 @@ interface KeywordCardProps {
   keyword: KeywordDefinition
 }
 
-const typeBadgeColor: Record<KeywordDefinition['type'], string> = {
-  ability: 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200',
-  action: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200',
-  mechanic: 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200',
+const typeBadge: Record<KeywordDefinition['type'], string> = {
+  ability: 'text-[hsl(220_50%_72%)] border-[hsl(220_50%_60%/0.3)] bg-[hsl(220_50%_60%/0.10)]',
+  action: 'text-[hsl(150_45%_65%)] border-[hsl(150_45%_45%/0.3)] bg-[hsl(150_45%_45%/0.10)]',
+  mechanic: 'text-[hsl(280_45%_72%)] border-[hsl(280_45%_55%/0.3)] bg-[hsl(280_45%_55%/0.10)]',
 }
 
-const tierDot: Record<KeywordDefinition['tier'], { dot: string; label: string }> = {
-  evergreen: { dot: 'bg-green-500', label: 'Evergreen' },
-  returning: { dot: 'bg-blue-500', label: 'Returning' },
-  retired: { dot: 'bg-gray-400', label: 'Retired' },
+const tierStyle: Record<KeywordDefinition['tier'], string> = {
+  evergreen: 'text-primary border-primary/40 bg-primary/5',
+  returning: 'text-[hsl(170_50%_60%)] border-[hsl(170_50%_45%/0.3)]',
+  retired: 'text-[hsl(38_15%_60%)] border-[hsl(40_30%_18%)]',
+}
+
+const tierLabel: Record<KeywordDefinition['tier'], string> = {
+  evergreen: 'Evergreen',
+  returning: 'Returning',
+  retired: 'Retired',
 }
 
 export function KeywordCard({ keyword }: KeywordCardProps) {
-  const { dot, label } = tierDot[keyword.tier]
-
   return (
-    <div
-      className="bg-white dark:bg-[var(--surface-1)] border border-white/10 rounded-lg p-4 shadow-sm hover:shadow-md transition"
-      data-testid="keyword-card"
-    >
-      {/* Name, type badge, tier dot */}
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <div className="flex items-center gap-2">
-          <h3 className="text-lg font-bold text-[var(--ink)]">{keyword.keyword}</h3>
-          <span
-            className={`w-2 h-2 rounded-full flex-shrink-0 ${dot}`}
-            title={label}
-            role="img"
-            aria-label={`Tier: ${label}`}
-            data-testid="tier-badge"
-          />
-        </div>
+    <article className="panel codex-glow p-5" data-testid="keyword-card">
+      <div className="flex items-start justify-between gap-2">
+        <h3 className="font-display text-xl tracking-wide text-[hsl(38_30%_88%)]">{keyword.keyword}</h3>
         <span
-          className={`px-2 py-1 rounded text-xs font-semibold uppercase ${typeBadgeColor[keyword.type]}`}
+          className={`text-[10px] uppercase tracking-wider font-display px-2 py-0.5 rounded border ${tierStyle[keyword.tier]}`}
+          data-testid="tier-badge"
         >
+          {tierLabel[keyword.tier]}
+        </span>
+      </div>
+      <div className="flex items-center gap-2 mt-1">
+        <span className={`text-[10px] uppercase tracking-wider font-display px-2 py-0.5 rounded border ${typeBadge[keyword.type]}`}>
           {keyword.type}
         </span>
       </div>
 
-      {/* Definition */}
-      <p className="text-[var(--muted)] mb-2">{keyword.definition}</p>
+      <p className="text-sm mt-3 text-[hsl(38_30%_88%)]/90 leading-snug">{keyword.definition}</p>
 
-      {/* Reminder Text */}
       {keyword.reminder && (
-        <p className="text-sm text-[var(--muted)] italic mb-2">({keyword.reminder})</p>
+        <p className="font-prose italic text-[hsl(38_30%_88%)]/70 text-sm mt-2">“{keyword.reminder}”</p>
       )}
 
-      {/* Example and Introduced */}
-      <div className="flex flex-wrap gap-4 text-sm text-[var(--muted)] mb-2">
-        {keyword.example && (
-          <div>
-            <span className="font-semibold">Example: </span>
-            <span>{keyword.example}</span>
-          </div>
-        )}
-        {keyword.introduced && (
-          <div>
-            <span className="font-semibold">Introduced: </span>
-            <span>{keyword.introduced}</span>
-          </div>
-        )}
-      </div>
+      {(keyword.example || keyword.introduced) && (
+        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[hsl(38_15%_60%)]">
+          {keyword.example && (
+            <div>
+              <span className="font-display tracking-[0.18em] uppercase text-[10px]">e.g.</span>{' '}
+              <span className="text-[hsl(42_75%_65%)]">{keyword.example}</span>
+            </div>
+          )}
+          {keyword.introduced && (
+            <div>
+              <span className="font-display tracking-[0.18em] uppercase text-[10px]">Since</span>{' '}
+              <span className="text-[hsl(38_30%_88%)]/80">{keyword.introduced}</span>
+            </div>
+          )}
+        </div>
+      )}
 
-      {/* Scryfall link */}
       {keyword.scryfallQuery && (
         <Link
           href={`/toolkit?q=${encodeURIComponent(keyword.scryfallQuery)}`}
-          className="text-xs text-[var(--accent-2)] hover:underline"
+          className="inline-block mt-3 text-xs text-[hsl(42_75%_65%)] hover:text-[hsl(42_75%_55%)] hover:underline"
           data-testid="scryfall-link"
         >
           See cards →
         </Link>
       )}
-    </div>
+    </article>
   )
 }

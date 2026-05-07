@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import TrackerPage from '../tracker/page'
 import { DarkModeProvider } from '@/contexts/DarkModeContext'
@@ -7,69 +7,112 @@ const renderWithProviders = (component: React.ReactElement) => {
   return render(<DarkModeProvider>{component}</DarkModeProvider>)
 }
 
+// AnimatePresence with mode="wait" briefly keeps both old and new step in
+// the DOM. Wait for the transition to settle (single match) and then click.
+async function clickWhenSettled(user: ReturnType<typeof userEvent.setup>, testId: string) {
+  await waitFor(() => {
+    expect(screen.getAllByTestId(testId)).toHaveLength(1)
+  })
+  await user.click(screen.getByTestId(testId))
+}
+
 describe('Tracker Page', () => {
-  beforeEach(() => {
-    localStorage.clear()
-  })
-
-  it('should show game setup when no active game exists', () => {
+  it('renders the wizard at the mode step on load', () => {
     renderWithProviders(<TrackerPage />)
-
-    expect(screen.getByText(/Track My Life/i)).toBeInTheDocument()
+    expect(screen.getByText(/Life Tracker/i)).toBeInTheDocument()
+    expect(screen.getByTestId('mode-solo')).toBeInTheDocument()
+    expect(screen.getByTestId('mode-multi')).toBeInTheDocument()
   })
 
-  it('should start a solo game when setup is completed', async () => {
+  it('multi mode wizard advances through Players → Rules → Counters → Begin', async () => {
     const user = userEvent.setup()
     renderWithProviders(<TrackerPage />)
 
-    await user.click(screen.getByText(/Track My Life/i))
-    await user.click(screen.getByText(/Standard/i))
+    // Mode: multi (default), continue
+    await user.click(screen.getByTestId('mode-multi'))
+    await user.click(screen.getByTestId('button-wizard-next'))
 
-    expect(screen.getByText('20')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /\+/i })).toBeInTheDocument()
+    // Players step
+    await user.click(await screen.findByTestId('players-3'))
+    await user.click(screen.getByTestId('button-wizard-next'))
+
+    // Rules step — pick Standard 20
+    await user.click(await screen.findByTestId('format-standard-20'))
+    await user.click(screen.getByTestId('button-wizard-next'))
+
+    // Counters step → Begin
+    expect(await screen.findByTestId('counter-cmd')).toBeInTheDocument()
+    await user.click(screen.getByTestId('button-wizard-next'))
+
+    // Game started: 3 player panels at 20 life each
+    expect(await screen.findByTestId('life-1')).toHaveTextContent('20')
+    expect(screen.getByTestId('life-2')).toHaveTextContent('20')
+    expect(screen.getByTestId('life-3')).toHaveTextContent('20')
   })
 
-  it('should resume game from localStorage if exists', () => {
-    const existingGame = {
-      mode: 'solo',
-      gameType: 'commander',
-      startingLife: 40,
-      enabledCounters: [],
-      tableStatus: { monarchId: null, initiativeId: null, isNight: false, citysBlessingIds: [] },
-      players: [
-        {
-          id: 'player-1',
-          name: 'You',
-          currentLife: 35,
-          lifeHistory: [{ amount: -5, timestamp: new Date().toISOString() }],
-        },
-      ],
-      createdAt: new Date().toISOString(),
-    }
-
-    localStorage.setItem('manadork-game-state', JSON.stringify(existingGame))
-
-    renderWithProviders(<TrackerPage />)
-
-    expect(screen.getByText('35')).toBeInTheDocument()
-  })
-
-  it('should return to setup when game is reset', async () => {
+  it('solo mode skips the players step', async () => {
     const user = userEvent.setup()
-
-    // Mock window.confirm
-    jest.spyOn(window, 'confirm').mockReturnValue(true)
-
     renderWithProviders(<TrackerPage />)
 
-    // Start game
-    await user.click(screen.getByText(/Track My Life/i))
-    await user.click(screen.getByText(/Standard/i))
+    await user.click(screen.getByTestId('mode-solo'))
+    await user.click(screen.getByTestId('button-wizard-next'))
 
-    // Reset game
-    await user.click(screen.getByText(/Reset Game/i))
+    // Should land on Rules, not Players
+    expect(await screen.findByTestId('format-commander-40')).toBeInTheDocument()
+    expect(screen.queryByTestId('players-2')).not.toBeInTheDocument()
+  })
 
-    // Should be back at setup
-    expect(screen.getByText(/Track My Life/i)).toBeInTheDocument()
+  it('decrement and increment buttons change life total', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<TrackerPage />)
+
+    // Solo → Standard 20 → Begin
+    await clickWhenSettled(user, 'mode-solo')
+    await clickWhenSettled(user, 'button-wizard-next')
+    await clickWhenSettled(user, 'format-standard-20')
+    await clickWhenSettled(user, 'button-wizard-next')
+    await clickWhenSettled(user, 'button-wizard-next')
+
+    await waitFor(() => expect(screen.getByTestId('life-1')).toHaveTextContent('20'))
+
+    await user.click(screen.getByTestId('life-minus-1'))
+    await waitFor(() => expect(screen.getByTestId('life-1')).toHaveTextContent('19'))
+
+    await user.click(screen.getByTestId('life-plus5-1'))
+    await waitFor(() => expect(screen.getByTestId('life-1')).toHaveTextContent('24'))
+  })
+
+  it('Reset returns life totals to the starting value', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<TrackerPage />)
+
+    await clickWhenSettled(user, 'mode-solo')
+    await clickWhenSettled(user, 'button-wizard-next')
+    await clickWhenSettled(user, 'format-standard-20')
+    await clickWhenSettled(user, 'button-wizard-next')
+    await clickWhenSettled(user, 'button-wizard-next')
+
+    await waitFor(() => expect(screen.getByTestId('life-1')).toBeInTheDocument())
+    await user.click(screen.getByTestId('life-minus-1'))
+    await user.click(screen.getByTestId('life-minus-1'))
+    await waitFor(() => expect(screen.getByTestId('life-1')).toHaveTextContent('18'))
+
+    await user.click(screen.getByTestId('button-reset'))
+    await waitFor(() => expect(screen.getByTestId('life-1')).toHaveTextContent('20'))
+  })
+
+  it('Exit returns to the wizard', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<TrackerPage />)
+
+    await clickWhenSettled(user, 'mode-solo')
+    await clickWhenSettled(user, 'button-wizard-next')
+    await clickWhenSettled(user, 'format-standard-20')
+    await clickWhenSettled(user, 'button-wizard-next')
+    await clickWhenSettled(user, 'button-wizard-next')
+
+    await waitFor(() => expect(screen.getByTestId('button-exit-game')).toBeInTheDocument())
+    await user.click(screen.getByTestId('button-exit-game'))
+    expect(await screen.findByTestId('mode-solo')).toBeInTheDocument()
   })
 })
