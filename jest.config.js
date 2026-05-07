@@ -10,6 +10,8 @@ const customJestConfig = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
     '^framer-motion$': '<rootDir>/__mocks__/framer-motion.tsx',
+    '^@vercel/analytics(/.*)?$': '<rootDir>/__mocks__/vercel-analytics.ts',
+    '^@vercel/speed-insights(/.*)?$': '<rootDir>/__mocks__/vercel-analytics.ts',
   },
 }
 

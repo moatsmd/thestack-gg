@@ -5,12 +5,15 @@ import { ScryfallCard } from '@/types/scryfall'
 import { CardLegalityDisplay } from './CardLegalityDisplay'
 import { OracleTextWithKeywords } from './OracleTextWithKeywords'
 import { ManaCost } from './ManaSymbol'
+import { BuyLinks } from './BuyLinks'
 
 interface CardDisplayProps {
   card: ScryfallCard
+  /** Surface (used for affiliate-click attribution). */
+  source?: string
 }
 
-export function CardDisplay({ card }: CardDisplayProps) {
+export function CardDisplay({ card, source = 'card-display' }: CardDisplayProps) {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [currentFaceIndex, setCurrentFaceIndex] = useState(0)
 
@@ -134,6 +137,9 @@ export function CardDisplay({ card }: CardDisplayProps) {
               </div>
             )}
           </div>
+
+          {/* Buy links — affiliate-tagged when env vars are set, clean otherwise */}
+          <BuyLinks card={card} from={source} />
         </div>
       </div>
 
