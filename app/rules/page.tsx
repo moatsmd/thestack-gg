@@ -22,18 +22,18 @@ export default function RulesPage() {
   }
 
   return (
-    <div className="min-h-screen arcane-shell text-[var(--ink)]">
+    <div className="min-h-screen text-[hsl(38_30%_88%)]">
       <RulesHeader />
 
-      <div className="container mx-auto px-4 py-6 space-y-6">
+      <div className="max-w-6xl mx-auto px-4 md:px-8 py-6 space-y-6">
         <div className="flex gap-2 md:hidden">
           <button
             type="button"
             onClick={() => setActiveTab('card')}
-            className={`flex-1 rounded-md px-4 py-2 text-sm font-semibold transition-colors ${
+            className={`flex-1 rounded-md px-4 py-2 text-sm font-display tracking-wide transition-colors ${
               activeTab === 'card'
-                ? 'bg-[var(--accent-4)] text-white'
-                : 'bg-[var(--surface-1)] text-[var(--muted)] border border-white/10'
+                ? 'bg-primary text-primary-foreground'
+                : 'panel hover-elevate text-[hsl(38_15%_60%)]'
             }`}
           >
             Card
@@ -41,10 +41,10 @@ export default function RulesPage() {
           <button
             type="button"
             onClick={() => setActiveTab('rules')}
-            className={`flex-1 rounded-md px-4 py-2 text-sm font-semibold transition-colors ${
+            className={`flex-1 rounded-md px-4 py-2 text-sm font-display tracking-wide transition-colors ${
               activeTab === 'rules'
-                ? 'bg-[var(--accent-4)] text-white'
-                : 'bg-[var(--surface-1)] text-[var(--muted)] border border-white/10'
+                ? 'bg-primary text-primary-foreground'
+                : 'panel hover-elevate text-[hsl(38_15%_60%)]'
             }`}
           >
             Rules
@@ -52,9 +52,10 @@ export default function RulesPage() {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
-          <section className={activeTab === 'card' ? 'space-y-4' : 'hidden md:block'}>
-            <div className="arcane-panel mana-border rounded-2xl p-4 shadow-sm space-y-4">
-              <h2 className="text-lg font-semibold text-[var(--ink)]">Card Search</h2>
+          <section className={activeTab === 'card' ? 'space-y-4' : 'hidden md:block space-y-4'}>
+            <div className="panel codex-glow p-5 space-y-4">
+              <h2 className="font-display tracking-wide text-lg text-[hsl(38_30%_88%)]">Card Search</h2>
+              <span className="block w-7 h-px bg-primary/40" />
               <CardSearchInput
                 value={cardSearch.query}
                 onChange={cardSearch.setQuery}
@@ -79,9 +80,10 @@ export default function RulesPage() {
             )}
           </section>
 
-          <section className={activeTab === 'rules' ? 'space-y-4' : 'hidden md:block'}>
-            <div className="arcane-panel mana-border rounded-2xl p-4 shadow-sm space-y-4">
-              <h2 className="text-lg font-semibold text-[var(--ink)]">Comprehensive Rules</h2>
+          <section className={activeTab === 'rules' ? 'space-y-4' : 'hidden md:block space-y-4'}>
+            <div className="panel codex-glow p-5 space-y-4">
+              <h2 className="font-display tracking-wide text-lg text-[hsl(38_30%_88%)]">Comprehensive Rules</h2>
+              <span className="block w-7 h-px bg-primary/40" />
 
               <form
                 className="flex gap-2"
@@ -95,11 +97,11 @@ export default function RulesPage() {
                   value={rules.query}
                   onChange={(event) => rules.setQuery(event.target.value)}
                   placeholder="Search Comprehensive Rules (e.g., 'priority', 'stack')"
-                  className="flex-1 rounded-md border border-white/10 bg-[var(--surface-1)] px-3 py-2 text-sm text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-4)]"
+                  className="flex-1 rounded-md border border-[hsl(40_30%_18%)] bg-transparent px-3 py-2 text-sm text-[hsl(38_30%_88%)] focus:outline-none focus:ring-2 focus:ring-primary"
                 />
                 <button
                   type="submit"
-                  className="rounded-md bg-[var(--accent-4)] hover:bg-[var(--accent-4)]/90 px-4 py-2 text-sm font-semibold text-white transition"
+                  className="rounded-md bg-primary text-primary-foreground hover-elevate px-4 py-2 text-sm font-display tracking-wide transition"
                 >
                   Search
                 </button>
@@ -107,16 +109,16 @@ export default function RulesPage() {
 
               {rules.error && <ErrorBanner message={rules.error} />}
               {rules.isLoading && (
-                <div className="text-sm text-[var(--muted)]">Loading rules...</div>
+                <div className="text-sm text-[hsl(38_15%_60%)] font-prose italic">Loading rules…</div>
               )}
             </div>
 
             {!rules.isLoading && (
               <div className="grid gap-4 lg:grid-cols-[1fr_2fr]">
-                <div className="arcane-panel mana-border rounded-2xl p-4 shadow-sm space-y-3">
-                  <h3 className="text-sm font-semibold text-[var(--ink)]">Results</h3>
+                <div className="panel p-5 space-y-3">
+                  <h3 className="font-display tracking-[0.18em] uppercase text-[10px] text-[hsl(38_15%_60%)]">Results</h3>
                   {rules.results.length === 0 ? (
-                    <div className="text-sm text-[var(--muted)]">
+                    <div className="text-sm text-[hsl(38_15%_60%)] font-prose italic">
                       Search to see matching rule sections.
                     </div>
                   ) : (
@@ -126,12 +128,12 @@ export default function RulesPage() {
                           <button
                             type="button"
                             onClick={() => rules.selectSection(section)}
-                            className="w-full text-left rounded-md border border-white/10 px-3 py-2 hover:bg-white/5"
+                            className="w-full text-left panel-elevated px-3 py-2 hover-elevate"
                           >
-                            <div className="text-xs font-semibold text-[var(--muted)]">
+                            <div className="text-xs font-display tracking-wider text-primary">
                               {section.id}
                             </div>
-                            <div className="text-sm text-[var(--ink)]">
+                            <div className="text-sm text-[hsl(38_30%_88%)]">
                               {section.title}
                             </div>
                           </button>
@@ -141,22 +143,22 @@ export default function RulesPage() {
                   )}
                 </div>
 
-                <div className="arcane-panel mana-border rounded-2xl p-4 shadow-sm space-y-3">
-                  <h3 className="text-sm font-semibold text-[var(--ink)]">Rule Detail</h3>
+                <div className="panel p-5 space-y-3">
+                  <h3 className="font-display tracking-[0.18em] uppercase text-[10px] text-[hsl(38_15%_60%)]">Rule Detail</h3>
                   {rules.selected ? (
                     <>
-                      <div className="text-xs font-semibold text-[var(--muted)]">
+                      <div className="text-xs font-display tracking-wider text-primary">
                         {rules.selected.id}
                       </div>
-                      <div className="text-sm font-semibold text-[var(--ink)]">
+                      <div className="font-display text-base tracking-wide text-[hsl(38_30%_88%)]">
                         {rules.selected.title}
                       </div>
-                      <div className="text-sm text-[var(--muted)] whitespace-pre-wrap">
+                      <div className="text-sm text-[hsl(38_30%_88%)]/85 whitespace-pre-wrap font-prose leading-relaxed">
                         {rules.selected.body}
                       </div>
                     </>
                   ) : (
-                    <div className="text-sm text-[var(--muted)]">
+                    <div className="text-sm text-[hsl(38_15%_60%)] font-prose italic">
                       Select a rule to view details.
                     </div>
                   )}

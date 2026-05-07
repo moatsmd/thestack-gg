@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { GlossaryHeader } from '@/components/GlossaryHeader'
+import { motion } from 'framer-motion'
+import { GoldRule } from '@/components/Fleuron'
 import { KeywordCard } from '@/components/KeywordCard'
 import { useKeywords } from '@/hooks/useKeywords'
-import { KeywordDefinition } from '@/lib/keywords-data'
 import type { KeywordTier } from '@/hooks/useKeywords'
 
 export default function GlossaryPage() {
@@ -18,111 +18,94 @@ export default function GlossaryPage() {
     return () => clearTimeout(timer)
   }, [debouncedQuery, setQuery])
 
-  const tierConfig: { tier: KeywordTier; label: string; activeClass: string; testId: string }[] = [
-    { tier: 'evergreen', label: 'Evergreen', activeClass: 'bg-green-600 text-white', testId: 'filter-tier-evergreen' },
-    { tier: 'returning', label: 'Returning', activeClass: 'bg-blue-600 text-white', testId: 'filter-tier-returning' },
-    { tier: 'retired', label: 'Retired', activeClass: 'bg-[var(--muted)] text-white', testId: 'filter-tier-retired' },
+  const tierConfig: { tier: KeywordTier; label: string; testId: string }[] = [
+    { tier: 'evergreen', label: 'Evergreen', testId: 'filter-tier-evergreen' },
+    { tier: 'returning', label: 'Returning', testId: 'filter-tier-returning' },
+    { tier: 'retired', label: 'Retired', testId: 'filter-tier-retired' },
   ]
 
   return (
-    <div className="min-h-screen arcane-shell text-[var(--ink)] transition-colors">
-      <GlossaryHeader />
+    <div className="max-w-6xl mx-auto px-4 md:px-8 pt-6 md:pt-12">
+      <header className="text-center mb-8" data-testid="glossary-header">
+        <div className="flex items-center justify-center"><GoldRule /></div>
+        <p className="font-display tracking-[0.16em] uppercase text-xs text-[hsl(38_15%_60%)] mt-3">Codex of Keywords</p>
+        <h1 className="font-display text-gold-gradient text-3xl md:text-5xl mt-3 tracking-wide">Glossary</h1>
+        <p className="font-prose italic text-[hsl(38_30%_88%)]/80 mt-1">Reminder text, rules text, and a name to remember.</p>
+      </header>
 
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-6 space-y-4 arcane-panel mana-border rounded-2xl p-6">
-          {/* Search Input */}
-          <div>
-            <label htmlFor="keyword-search" className="sr-only">
-              Search keywords
-            </label>
-            <input
-              id="keyword-search"
-              type="text"
-              placeholder="Search keywords..."
-              value={debouncedQuery}
-              onChange={(e) => setDebouncedQuery(e.target.value)}
-              className="w-full px-4 py-2 border border-white/10 rounded-lg bg-[var(--surface-1)] text-[var(--ink)] focus:ring-2 focus:ring-[var(--accent-2)] focus:border-transparent"
-              data-testid="keyword-search"
-            />
-          </div>
+      <div className="panel p-4 space-y-4">
+        <input
+          id="keyword-search"
+          type="text"
+          placeholder="Search keywords..."
+          value={debouncedQuery}
+          onChange={(e) => setDebouncedQuery(e.target.value)}
+          className="w-full px-4 py-2 rounded-md bg-transparent border border-[hsl(40_30%_18%)] text-[hsl(38_30%_88%)] focus:outline-none focus:ring-2 focus:ring-[hsl(42_75%_55%)]"
+          data-testid="keyword-search"
+          aria-label="Search keywords"
+        />
 
-          {/* Type Filter Row */}
-          <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setType('all')}
+            className={`px-3 py-1 rounded-full text-xs font-display tracking-wider border transition ${selectedType === 'all' ? 'bg-primary text-primary-foreground border-primary' : 'panel hover-elevate text-[hsl(38_15%_60%)]'}`}
+            data-testid="filter-all"
+          >
+            All
+          </button>
+          {(['ability', 'action', 'mechanic'] as const).map((t) => (
             <button
-              onClick={() => setType('all')}
-              className={`px-4 py-2 rounded-lg font-semibold transition ${
-                selectedType === 'all'
-                  ? 'bg-[var(--accent-2)] text-gray-900'
-                  : 'bg-[var(--surface-2)] text-[var(--muted)] hover:bg-[var(--surface-1)]'
-              }`}
-              data-testid="filter-all"
+              key={t}
+              onClick={() => setType(t)}
+              className={`px-3 py-1 rounded-full text-xs font-display tracking-wider border transition ${selectedType === t ? 'bg-primary text-primary-foreground border-primary' : 'panel hover-elevate text-[hsl(38_15%_60%)]'}`}
+              data-testid={`filter-${t}`}
             >
-              All
+              {t === 'ability' ? 'Abilities' : t === 'action' ? 'Actions' : 'Mechanics'}
             </button>
-            {(['ability', 'action', 'mechanic'] as const).map((t) => {
-              const activeColors = { ability: 'bg-blue-600 text-white', action: 'bg-green-600 text-white', mechanic: 'bg-purple-600 text-white' }
-              return (
-                <button
-                  key={t}
-                  onClick={() => setType(t)}
-                  className={`px-4 py-2 rounded-lg font-semibold transition ${
-                    selectedType === t
-                      ? activeColors[t]
-                      : 'bg-[var(--surface-2)] text-[var(--muted)] hover:bg-[var(--surface-1)]'
-                  }`}
-                  data-testid={`filter-${t}`}
-                >
-                  {t === 'ability' ? 'Abilities' : t === 'action' ? 'Actions' : 'Mechanics'}
-                </button>
-              )
-            })}
-          </div>
+          ))}
+        </div>
 
-          {/* Tier Filter Row */}
-          <div className="flex flex-wrap gap-2">
-            {tierConfig.map(({ tier, label, activeClass, testId }) => (
+        <div className="flex flex-wrap gap-2">
+          {tierConfig.map(({ tier, label, testId }) => {
+            const active = selectedTiers.includes(tier)
+            return (
               <button
                 key={tier}
                 onClick={() => toggleTier(tier)}
-                className={`px-4 py-2 rounded-lg font-semibold transition ${
-                  selectedTiers.includes(tier)
-                    ? activeClass
-                    : 'bg-[var(--surface-2)] text-[var(--muted)] hover:bg-[var(--surface-1)]'
-                }`}
+                className={`px-3 py-1 rounded-full text-xs font-display tracking-wider border transition ${active ? 'bg-primary text-primary-foreground border-primary' : 'panel hover-elevate text-[hsl(38_15%_60%)]'}`}
                 data-testid={testId}
-                aria-pressed={selectedTiers.includes(tier)}
+                aria-pressed={active}
               >
                 {label}
               </button>
-            ))}
-          </div>
+            )
+          })}
         </div>
+      </div>
 
-        {/* Results Count */}
-        <p className="text-sm text-[var(--muted)] mb-4">
-          Showing {filteredKeywords.length} keyword{filteredKeywords.length !== 1 ? 's' : ''}
-        </p>
+      <p className="text-sm text-[hsl(38_15%_60%)] mt-4 mb-4">
+        Showing {filteredKeywords.length} keyword{filteredKeywords.length !== 1 ? 's' : ''}
+      </p>
 
-        {/* Keywords Grid */}
-        {filteredKeywords.length > 0 ? (
-          <div
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-            data-testid="keywords-grid"
-          >
-            {filteredKeywords.map((keyword) => (
-              <KeywordCard key={keyword.keyword} keyword={keyword} />
-            ))}
-          </div>
-        ) : (
-          <div
-            className="text-center py-12 text-[var(--muted)]"
-            data-testid="empty-state"
-          >
-            <p className="text-lg font-semibold mb-2">No keywords found</p>
-            <p>Try adjusting your search or filter</p>
-          </div>
-        )}
-      </main>
+      {filteredKeywords.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3" data-testid="keywords-grid">
+          {filteredKeywords.map((keyword, i) => (
+            <motion.div
+              key={keyword.keyword}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: Math.min(i * 0.015, 0.3) }}
+            >
+              <KeywordCard keyword={keyword} />
+            </motion.div>
+          ))}
+        </div>
+      ) : (
+        <div className="panel p-8 text-center text-[hsl(38_15%_60%)] mt-2" data-testid="empty-state">
+          <p className="font-display text-lg mb-1">No keywords found</p>
+          <p className="font-prose">Try adjusting your search or filter.</p>
+        </div>
+      )}
     </div>
   )
 }

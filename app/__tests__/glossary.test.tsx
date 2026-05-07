@@ -132,14 +132,14 @@ describe('GlossaryPage', () => {
     const abilityButton = screen.getByTestId('filter-ability')
 
     // All button should be selected by default
-    expect(allButton).toHaveClass('bg-[var(--accent-2)]')
+    expect(allButton).toHaveClass('bg-primary')
 
     // Click ability button
     await user.click(abilityButton)
 
     // Ability button should now be selected
-    expect(abilityButton).toHaveClass('bg-blue-600')
-    expect(allButton).not.toHaveClass('bg-[var(--accent-2)]')
+    expect(abilityButton).toHaveClass('bg-primary')
+    expect(allButton).not.toHaveClass('bg-primary')
   })
 
   it('renders tier filter buttons', () => {

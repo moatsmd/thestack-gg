@@ -20,6 +20,23 @@
     --border-subtle: rgba(90, 60, 20, 0.15);
     --border-strong: rgba(90, 60, 20, 0.35);
     --chamfer: 12px;
+
+    /* Codex shadcn-style tokens (HSL triplet only — for use as `hsl(var(--name))`). */
+    --background: 38 35% 92%;
+    --foreground: 30 60% 6%;
+    --primary: 42 75% 45%;
+    --primary-foreground: 38 35% 96%;
+    --secondary: 38 25% 80%;
+    --secondary-foreground: 30 60% 12%;
+    --destructive: 0 65% 45%;
+    --destructive-foreground: 0 0% 98%;
+    --muted-token: 38 25% 88%;
+    --muted-foreground: 30 20% 35%;
+    --accent: 42 75% 80%;
+    --accent-foreground: 30 60% 10%;
+    --border: 30 30% 70%;
+    --input: 38 25% 90%;
+    --ring-token: 42 75% 55%;
   }
 
   .dark {
@@ -38,6 +55,23 @@
     --ring: rgba(196, 137, 31, 0.4);
     --border-subtle: rgba(196, 137, 31, 0.15);
     --border-strong: rgba(196, 137, 31, 0.35);
+
+    /* Codex shadcn-style tokens — dark codex aesthetic. */
+    --background: 220 15% 7%;
+    --foreground: 38 30% 88%;
+    --primary: 42 75% 55%;
+    --primary-foreground: 220 25% 8%;
+    --secondary: 220 15% 16%;
+    --secondary-foreground: 38 30% 88%;
+    --destructive: 0 65% 50%;
+    --destructive-foreground: 0 0% 98%;
+    --muted-token: 220 15% 14%;
+    --muted-foreground: 38 15% 60%;
+    --accent: 42 60% 25%;
+    --accent-foreground: 38 30% 88%;
+    --border: 40 30% 18%;
+    --input: 220 15% 16%;
+    --ring-token: 42 75% 55%;
   }
 
   .light {
@@ -55,6 +89,22 @@
     --ring: rgba(154, 110, 24, 0.4);
     --border-subtle: rgba(90, 60, 20, 0.15);
     --border-strong: rgba(90, 60, 20, 0.35);
+
+    --background: 38 35% 92%;
+    --foreground: 30 60% 6%;
+    --primary: 42 75% 45%;
+    --primary-foreground: 38 35% 96%;
+    --secondary: 38 25% 80%;
+    --secondary-foreground: 30 60% 12%;
+    --destructive: 0 65% 45%;
+    --destructive-foreground: 0 0% 98%;
+    --muted-token: 38 25% 88%;
+    --muted-foreground: 30 20% 35%;
+    --accent: 42 75% 80%;
+    --accent-foreground: 30 60% 10%;
+    --border: 30 30% 70%;
+    --input: 38 25% 90%;
+    --ring-token: 42 75% 55%;
   }
 
   body {
@@ -141,6 +191,22 @@
   /* Drop-shadow uses filter so it follows the chamfer shape */
   .arcane-glow {
     filter: drop-shadow(0 0 2px rgba(196, 137, 31, 0.3)) drop-shadow(0 16px 36px rgba(0, 0, 0, 0.65));
+  }
+
+  /* Stronger gold ambient glow for focused/selected panels and modals. */
+  .arcane-glow-strong {
+    box-shadow:
+      0 0 0 1px hsl(42 75% 55% / 0.55),
+      0 0 28px hsl(42 75% 55% / 0.25),
+      0 18px 60px hsl(0 0% 0% / 0.55);
+  }
+
+  /* Press feedback: a slightly stronger overlay than hover, used on tap. */
+  .active-elevate-2:active {
+    transform: translateY(1px);
+  }
+  .active-elevate-2:active::after {
+    background: hsl(42 75% 55% / 0.18);
   }
 
   /* Sigil icon backgrounds */

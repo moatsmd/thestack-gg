@@ -47,13 +47,13 @@ describe('KeywordCard', () => {
   it('renders example when provided', () => {
     renderWithProviders(<KeywordCard keyword={mockKeyword} />)
     expect(screen.getByText('Serra Angel')).toBeInTheDocument()
-    expect(screen.getByText('Example:')).toBeInTheDocument()
+    expect(screen.getByText(/e\.g\./i)).toBeInTheDocument()
   })
 
   it('renders introduced when provided', () => {
     renderWithProviders(<KeywordCard keyword={mockKeyword} />)
     expect(screen.getByText('Limited Edition Alpha')).toBeInTheDocument()
-    expect(screen.getByText('Introduced:')).toBeInTheDocument()
+    expect(screen.getByText(/since/i)).toBeInTheDocument()
   })
 
   it('does not render reminder text when not provided', () => {
@@ -75,7 +75,7 @@ describe('KeywordCard', () => {
       definition: 'Test definition',
     }
     renderWithProviders(<KeywordCard keyword={keywordWithoutExample} />)
-    expect(screen.queryByText('Example:')).not.toBeInTheDocument()
+    expect(screen.queryByText(/^e\.g\.$/i)).not.toBeInTheDocument()
   })
 
   it('does not render introduced when not provided', () => {
@@ -86,16 +86,17 @@ describe('KeywordCard', () => {
       definition: 'Test definition',
     }
     renderWithProviders(<KeywordCard keyword={keywordWithoutIntroduced} />)
-    expect(screen.queryByText('Introduced:')).not.toBeInTheDocument()
+    expect(screen.queryByText(/^since$/i)).not.toBeInTheDocument()
   })
 
-  it('applies correct badge color for ability type', () => {
+  it('applies a distinct badge style for ability type', () => {
     renderWithProviders(<KeywordCard keyword={mockKeyword} />)
     const badge = screen.getByText('ability')
-    expect(badge).toHaveClass('bg-blue-100', 'text-blue-800')
+    // ability uses a blue-tinted HSL token in the new codex palette
+    expect(badge.className).toMatch(/220/)
   })
 
-  it('applies correct badge color for action type', () => {
+  it('applies a distinct badge style for action type', () => {
     const actionKeyword: KeywordDefinition = {
       keyword: 'Destroy',
       type: 'action',
@@ -104,10 +105,11 @@ describe('KeywordCard', () => {
     }
     renderWithProviders(<KeywordCard keyword={actionKeyword} />)
     const badge = screen.getByText('action')
-    expect(badge).toHaveClass('bg-green-100', 'text-green-800')
+    // action uses a green-tinted HSL token in the new codex palette
+    expect(badge.className).toMatch(/150/)
   })
 
-  it('applies correct badge color for mechanic type', () => {
+  it('applies a distinct badge style for mechanic type', () => {
     const mechanicKeyword: KeywordDefinition = {
       keyword: 'Flashback',
       type: 'mechanic',
@@ -116,6 +118,7 @@ describe('KeywordCard', () => {
     }
     renderWithProviders(<KeywordCard keyword={mechanicKeyword} />)
     const badge = screen.getByText('mechanic')
-    expect(badge).toHaveClass('bg-purple-100', 'text-purple-800')
+    // mechanic uses a purple-tinted HSL token in the new codex palette
+    expect(badge.className).toMatch(/280/)
   })
 })

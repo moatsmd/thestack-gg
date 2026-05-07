@@ -7,74 +7,72 @@ interface TokenCardProps {
   token: TokenDefinition
 }
 
-const colorPip: Record<TokenColor, { bg: string; label: string }> = {
-  W: { bg: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-200', label: 'W' },
-  U: { bg: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200', label: 'U' },
-  B: { bg: 'bg-gray-800 text-gray-100 dark:bg-gray-900 dark:text-gray-100', label: 'B' },
-  R: { bg: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200', label: 'R' },
-  G: { bg: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200', label: 'G' },
-  C: { bg: 'bg-[var(--surface-2)] text-[var(--muted)]', label: 'C' },
+const colorSwatch: Record<TokenColor, string> = {
+  W: 'bg-[hsl(45_60%_85%)]',
+  U: 'bg-[hsl(220_60%_60%)]',
+  B: 'bg-[hsl(0_0%_15%)]',
+  R: 'bg-[hsl(0_60%_50%)]',
+  G: 'bg-[hsl(140_50%_35%)]',
+  C: 'bg-[hsl(40_15%_70%)]',
 }
 
 export function TokenCard({ token }: TokenCardProps) {
   return (
-    <div
-      className="bg-white dark:bg-[var(--surface-1)] border border-white/10 rounded-lg p-4 shadow-sm hover:shadow-md transition"
-      data-testid="token-card"
-    >
-      {/* Name + color pips */}
-      <div className="flex items-start justify-between gap-2 mb-1">
-        <h3 className="text-lg font-bold text-[var(--ink)]">{token.name}</h3>
-        <div className="flex gap-1">
+    <article className="panel codex-glow p-5" data-testid="token-card">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="font-display text-xl tracking-wide text-[hsl(38_30%_88%)] truncate">{token.name}</h3>
+          <div className="font-prose italic text-[hsl(38_30%_88%)]/80 text-sm mt-0.5">{token.typeLine}</div>
+        </div>
+        <div className="flex gap-1 flex-shrink-0">
           {token.colors.map((c) => (
             <span
               key={c}
-              className={`w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center ${colorPip[c].bg}`}
-            >
-              {colorPip[c].label}
-            </span>
+              className={`w-4 h-4 rounded-full ${colorSwatch[c]} border border-[hsl(40_30%_18%)]`}
+              title={c}
+            />
           ))}
         </div>
       </div>
 
-      {/* Type line and P/T */}
-      <div className="flex items-center justify-between mb-2">
-        <p className="text-sm text-[var(--muted)]">{token.typeLine}</p>
-        {token.power !== undefined && token.toughness !== undefined && (
-          <span className="text-sm font-bold text-[var(--ink)] ml-2">
+      {token.power !== undefined && token.toughness !== undefined && (
+        <div className="mt-3 flex items-center gap-3">
+          <span className="panel-elevated px-2 py-0.5 font-display text-base tracking-wider text-[hsl(42_75%_65%)]">
             {token.power}/{token.toughness}
           </span>
-        )}
-      </div>
+          <span className="text-[10px] uppercase tracking-[0.18em] text-[hsl(38_15%_60%)]">{token.type}</span>
+        </div>
+      )}
 
-      {/* Abilities */}
       {token.abilities.length > 0 && (
-        <div className="mb-3">
+        <div className="mt-3 flex flex-wrap gap-1.5">
           {token.abilities.map((ability, i) => (
-            <p key={i} className="text-sm text-[var(--muted)] italic">
+            <span
+              key={i}
+              className="text-[10px] px-2 py-0.5 rounded-full bg-[hsl(42_75%_55%/0.10)] text-[hsl(42_75%_65%)] border border-[hsl(42_75%_55%/0.25)]"
+            >
               {ability}
-            </p>
+            </span>
           ))}
         </div>
       )}
 
-      {/* Made by */}
-      <div>
-        <p className="text-xs text-[var(--muted)] font-semibold uppercase tracking-wider mb-1">
-          Made by
-        </p>
-        <div className="flex flex-wrap gap-1">
-          {token.madeBy.slice(0, 3).map((card) => (
-            <Link
-              key={card}
-              href={`/toolkit?q=${encodeURIComponent(card)}`}
-              className="text-xs text-[var(--accent-2)] hover:underline"
-            >
-              {card}
-            </Link>
-          ))}
+      {token.madeBy.length > 0 && (
+        <div className="mt-4 text-xs">
+          <span className="font-display tracking-[0.18em] uppercase text-[10px] text-[hsl(38_15%_60%)]">Made by</span>
+          <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
+            {token.madeBy.slice(0, 3).map((card) => (
+              <Link
+                key={card}
+                href={`/toolkit?q=${encodeURIComponent(card)}`}
+                className="text-[hsl(42_75%_65%)] hover:text-[hsl(42_75%_55%)] hover:underline"
+              >
+                {card}
+              </Link>
+            ))}
+          </div>
         </div>
-      </div>
-    </div>
+      )}
+    </article>
   )
 }
