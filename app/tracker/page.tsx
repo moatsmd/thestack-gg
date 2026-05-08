@@ -1,10 +1,13 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import QRCode from 'qrcode'
 import { GoldRule } from '@/components/Fleuron'
 import { track } from '@/lib/analytics'
+import { useGameLog, type UseGameLog } from '@/hooks/useGameLog'
+import type { RecapPlayer } from '@/types/replay'
 
 /* ────────────────────────────────────────────────────────────
  * Inline SVG icons (lucide-react is not installed in prod).
@@ -101,6 +104,15 @@ const Sun = (p: IconProps) => (
 const ArrowLeft = (p: IconProps) => (
   <Icon {...p}><path d="M19 12H5M12 19l-7-7 7-7" /></Icon>
 )
+const Trophy = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M6 9H4a2 2 0 0 1-2-2V5h4" />
+    <path d="M18 9h2a2 2 0 0 0 2-2V5h-4" />
+    <path d="M6 5h12v6a6 6 0 0 1-12 0V5z" />
+    <path d="M9 21h6" />
+    <path d="M12 17v4" />
+  </Icon>
+)
 
 /* ────────────────────────────────────────────────────────────
  * Types
@@ -152,6 +164,7 @@ export default function TrackerPage() {
   const [players, setPlayers] = useState<Player[]>([])
   const [keepScreenOn, setKeepScreenOn] = useState(true)
   const wakeLockRef = useRef<any>(null)
+  const log = useGameLog()
 
   // Default keep-screen-on ON when entering tracker — request wake lock if available
   useEffect(() => {
@@ -178,18 +191,22 @@ export default function TrackerPage() {
   function startGame() {
     const n = mode === 'solo' ? 1 : playerCount
     const startLife = gameMode.name === 'Custom' ? customLife : gameMode.life
-    setPlayers(
-      Array.from({ length: n }, (_, i) => ({
-        id: i + 1,
-        name: mode === 'solo' ? 'You' : `Player ${i + 1}`,
-        life: startLife,
-        cmd: 0,
-        poison: 0,
-        mana: 0,
-        energy: 0,
-        experience: 0,
-      }))
-    )
+    const newPlayers: Player[] = Array.from({ length: n }, (_, i) => ({
+      id: i + 1,
+      name: mode === 'solo' ? 'You' : `Player ${i + 1}`,
+      life: startLife,
+      cmd: 0,
+      poison: 0,
+      mana: 0,
+      energy: 0,
+      experience: 0,
+    }))
+    setPlayers(newPlayers)
+    log.start({
+      format: gameMode.name === 'Custom' ? `Custom (${customLife})` : gameMode.name,
+      startingLife: startLife,
+      players: newPlayers.map<RecapPlayer>((p) => ({ id: p.id, name: p.name })),
+    })
     track('tracker_started', {
       mode,
       players: n,
@@ -228,7 +245,11 @@ export default function TrackerPage() {
           enabledCounters={enabledCounters}
           keepScreenOn={keepScreenOn}
           setKeepScreenOn={setKeepScreenOn}
-          onExit={() => setStep('mode')}
+          onExit={() => {
+            log.reset()
+            setStep('mode')
+          }}
+          log={log}
         />
       )}
     </div>
@@ -464,6 +485,7 @@ type ActiveProps = {
   keepScreenOn: boolean
   setKeepScreenOn: (b: boolean) => void
   onExit: () => void
+  log: UseGameLog
 }
 
 function ActiveTracker({
@@ -475,12 +497,41 @@ function ActiveTracker({
   keepScreenOn,
   setKeepScreenOn,
   onExit,
+  log,
 }: ActiveProps) {
+  const router = useRouter()
   const [shareOpen, setShareOpen] = useState(false)
   const [qrUrl, setQrUrl] = useState<string>('')
+  const [endOpen, setEndOpen] = useState(false)
+  const [endingGame, setEndingGame] = useState(false)
+  const [endError, setEndError] = useState<string | null>(null)
+  const [winnerId, setWinnerId] = useState<number | undefined>(undefined)
+  const [podName, setPodName] = useState('')
+  const [commanders, setCommanders] = useState<Record<number, string>>({})
 
+  /**
+   * Centralized update — every player mutation routes through here so the
+   * game log captures life / cmd / poison deltas. Other counters (mana,
+   * energy, experience) are not part of the recap v1.
+   */
   function update(id: number, patch: Partial<Player>) {
-    setPlayers((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)))
+    setPlayers((prev) => {
+      const next = prev.map((p) => (p.id === id ? { ...p, ...patch } : p))
+      const before = prev.find((p) => p.id === id)
+      const after = next.find((p) => p.id === id)
+      if (before && after) {
+        if (typeof patch.life === 'number' && after.life !== before.life) {
+          log.life(id, after.life - before.life, after.life)
+        }
+        if (typeof patch.cmd === 'number' && after.cmd !== before.cmd) {
+          log.cmd(id, after.cmd - before.cmd, after.cmd)
+        }
+        if (typeof patch.poison === 'number' && after.poison !== before.poison) {
+          log.poison(id, after.poison - before.poison, after.poison)
+        }
+      }
+      return next
+    })
   }
 
   const startLife = gameMode.name === 'Custom' ? customLife : gameMode.life
@@ -489,7 +540,65 @@ function ActiveTracker({
     setPlayers((prev) =>
       prev.map((p) => ({ ...p, life: startLife, cmd: 0, poison: 0, mana: 0, energy: 0, experience: 0 }))
     )
+    // Restart the log so the next game gets a clean recap.
+    log.start({
+      format: gameMode.name === 'Custom' ? `Custom (${customLife})` : gameMode.name,
+      startingLife: startLife,
+      players: players.map<RecapPlayer>((p) => ({ id: p.id, name: p.name })),
+    })
     track('tracker_reset', { players: players.length, format: gameMode.name })
+  }
+
+  // Only show End Game once at least one log entry beyond game_start exists.
+  const canEndGame = log.events.length > 1
+
+  async function submitRecap() {
+    setEndingGame(true)
+    setEndError(null)
+    try {
+      log.end(winnerId)
+      // Build the events array including the end event we just appended.
+      // Since setEvents is async, build the end event ourselves for the POST.
+      const events = [...log.events]
+      const endEvent = {
+        type: 'game_end' as const,
+        seq: events[events.length - 1]?.seq != null ? (events[events.length - 1]!.seq + 1) : events.length,
+        timestamp: Date.now(),
+        winnerId,
+      }
+      const finalPlayers: RecapPlayer[] = players.map((p) => ({
+        id: p.id,
+        name: p.name,
+        commander: commanders[p.id]?.trim() || undefined,
+      }))
+      const res = await fetch('/api/recap', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          podName: podName.trim() || undefined,
+          format: gameMode.name === 'Custom' ? `Custom (${customLife})` : gameMode.name,
+          startingLife: startLife,
+          players: finalPlayers,
+          winnerId,
+          events: [...events, endEvent],
+        }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body?.error || `Server returned ${res.status}`)
+      }
+      const data = (await res.json()) as { id: string; url: string }
+      track('recap_created', {
+        players: players.length,
+        format: gameMode.name,
+        events: events.length + 1,
+        had_winner: winnerId != null,
+      })
+      router.push(`/recap/${data.id}`)
+    } catch (err) {
+      setEndError(err instanceof Error ? err.message : 'Could not save recap')
+      setEndingGame(false)
+    }
   }
 
   async function openShare() {
@@ -556,6 +665,15 @@ function ActiveTracker({
           >
             <Share2 className="w-4 h-4" /> Share
           </button>
+          {canEndGame && (
+            <button
+              onClick={() => setEndOpen(true)}
+              className="px-3 py-1.5 bg-[hsl(42_75%_55%)] text-[hsl(220_15%_7%)] rounded-md hover-elevate text-sm inline-flex items-center gap-2 font-medium"
+              data-testid="button-end-game"
+            >
+              <Trophy className="w-4 h-4" /> End game
+            </button>
+          )}
           <button
             onClick={reset}
             className="px-3 py-1.5 bg-destructive text-destructive-foreground rounded-md hover-elevate text-sm inline-flex items-center gap-2"
@@ -607,6 +725,144 @@ function ActiveTracker({
               {qrUrl && <img src={qrUrl} alt="QR code" className="mx-auto mt-4 rounded-md border border-border" />}
               <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mt-3">
                 Snapshot only — read-only on the receiving device.
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* End Game / Recap modal */}
+      <AnimatePresence>
+        {endOpen && (
+          <motion.div
+            className="fixed inset-0 z-50 grid place-items-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <div
+              className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+              onClick={() => !endingGame && setEndOpen(false)}
+            />
+            <motion.div
+              className="relative panel-elevated arcane-glow-strong p-6 max-w-md w-full max-h-[90vh] overflow-y-auto"
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.95 }}
+            >
+              <button
+                onClick={() => !endingGame && setEndOpen(false)}
+                className="absolute right-3 top-3 p-1.5 rounded-md hover:bg-accent/40"
+                aria-label="Close"
+                data-testid="button-close-end-game"
+              >
+                <X className="w-4 h-4 text-muted-foreground" />
+              </button>
+              <h3 className="font-display tracking-wide text-xl text-center">End the game?</h3>
+              <p className="font-prose italic text-foreground/70 text-sm mt-1 text-center">
+                We&rsquo;ll save a shareable recap with the full life history. All fields below are optional.
+              </p>
+
+              <div className="mt-5 space-y-4">
+                <div>
+                  <label
+                    htmlFor="recap-pod-name"
+                    className="font-display tracking-[0.16em] uppercase text-[10px] text-muted-foreground block mb-1.5"
+                  >
+                    Pod name
+                  </label>
+                  <input
+                    id="recap-pod-name"
+                    value={podName}
+                    onChange={(e) => setPodName(e.target.value)}
+                    placeholder="Friday Night Crew"
+                    className="w-full panel px-3 py-2 text-sm bg-transparent outline-none focus:ring-1 focus:ring-primary/40 rounded-md"
+                    data-testid="input-pod-name"
+                    maxLength={60}
+                  />
+                </div>
+
+                <div>
+                  <div className="font-display tracking-[0.16em] uppercase text-[10px] text-muted-foreground mb-1.5">
+                    Winner
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => setWinnerId(undefined)}
+                      className={`panel hover-elevate text-sm py-2 ${
+                        winnerId === undefined ? 'border-primary/60 text-primary' : 'text-muted-foreground'
+                      }`}
+                      data-testid="button-winner-none"
+                    >
+                      Skip
+                    </button>
+                    {players.map((p) => (
+                      <button
+                        key={p.id}
+                        onClick={() => setWinnerId(p.id)}
+                        className={`panel hover-elevate text-sm py-2 truncate ${
+                          winnerId === p.id ? 'border-primary/60 text-primary' : ''
+                        }`}
+                        data-testid={`button-winner-${p.id}`}
+                      >
+                        {p.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="font-display tracking-[0.16em] uppercase text-[10px] text-muted-foreground mb-1.5">
+                    Commanders (optional)
+                  </div>
+                  <div className="space-y-1.5">
+                    {players.map((p) => (
+                      <div key={p.id} className="flex items-center gap-2">
+                        <span className="font-display tracking-wide text-xs w-20 truncate text-muted-foreground">
+                          {p.name}
+                        </span>
+                        <input
+                          value={commanders[p.id] || ''}
+                          onChange={(e) =>
+                            setCommanders((prev) => ({ ...prev, [p.id]: e.target.value }))
+                          }
+                          placeholder="e.g. Atraxa, Praetors' Voice"
+                          className="flex-1 panel px-3 py-1.5 text-xs bg-transparent outline-none rounded-md"
+                          data-testid={`input-commander-${p.id}`}
+                          maxLength={80}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {endError && (
+                <p className="mt-4 text-sm text-destructive" role="alert" data-testid="text-recap-error">
+                  {endError}
+                </p>
+              )}
+
+              <div className="mt-6 grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setEndOpen(false)}
+                  disabled={endingGame}
+                  className="panel hover-elevate text-sm py-2.5 text-muted-foreground disabled:opacity-50"
+                  data-testid="button-cancel-end-game"
+                >
+                  Keep playing
+                </button>
+                <button
+                  onClick={submitRecap}
+                  disabled={endingGame}
+                  className="bg-[hsl(42_75%_55%)] text-[hsl(220_15%_7%)] rounded-md hover-elevate text-sm py-2.5 font-medium disabled:opacity-60"
+                  data-testid="button-confirm-end-game"
+                >
+                  {endingGame ? 'Saving recap…' : 'End & save recap'}
+                </button>
+              </div>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mt-3 text-center">
+                Recaps are public to anyone with the link, kept for 30 days.
               </p>
             </motion.div>
           </motion.div>
