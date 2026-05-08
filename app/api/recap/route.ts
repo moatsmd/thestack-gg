@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createRecap, getRecapTtlMs } from '@/lib/recap-store'
+import { checkNames, type LabeledName } from '@/lib/name-moderation'
 import type { GameEvent, RecapPlayer } from '@/types/replay'
 
 const isString = (v: unknown): v is string => typeof v === 'string' && v.length > 0
@@ -67,6 +68,25 @@ export async function POST(request: Request) {
   const events = b.events as GameEvent[]
   if (events.length > 5000) {
     return NextResponse.json({ error: 'Too many events' }, { status: 413 })
+  }
+
+  // Reject pod / player / commander names that contain slurs or hard
+  // offensive content. Pages are public-by-link, so this runs before any
+  // recap is persisted.
+  const players = b.players as RecapPlayer[]
+  const moderation: LabeledName[] = [
+    { label: 'Pod name', value: b.podName as string | undefined },
+    ...players.flatMap((p): LabeledName[] => [
+      { label: `Player "${p.name}"`, value: p.name },
+      { label: `Commander for ${p.name}`, value: p.commander },
+    ]),
+  ]
+  const moderationResult = checkNames(moderation)
+  if (!moderationResult.ok) {
+    return NextResponse.json(
+      { error: moderationResult.error, field: moderationResult.field },
+      { status: 422 },
+    )
   }
 
   const recap = await createRecap({

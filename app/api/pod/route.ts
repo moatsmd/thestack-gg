@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createPod, getPod, listViewerPods, getPodTtlMs } from '@/lib/pod-store'
 import { getRecap } from '@/lib/recap-store'
+import { checkName } from '@/lib/name-moderation'
 import type { Pod } from '@/types/pod'
 
 const isString = (v: unknown): v is string => typeof v === 'string' && v.length > 0
@@ -37,6 +38,19 @@ export async function POST(request: Request) {
     (typeof b.name === 'string' && b.name.trim()) ||
     recap.podName ||
     `Pod of ${recap.players.length}`
+
+  // The pod name may have been overridden in the request body. The recap's
+  // own podName + players already passed moderation when /api/recap created
+  // the recap, but a fresh override needs its own check.
+  if (typeof b.name === 'string' && b.name.trim()) {
+    const result = checkName(name)
+    if (!result.ok) {
+      return NextResponse.json(
+        { error: `Pod name: ${result.reason}`, field: 'Pod name' },
+        { status: 422 },
+      )
+    }
+  }
 
   const pod = await createPod({
     name,
