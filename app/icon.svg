@@ -1,14 +1,59 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!--
+    TheStack.gg favicon.
+
+    Designed to read at 16px in a browser tab. Uses the same cascading-cards
+    motif as the brand mark, but compressed onto a rounded-square obsidian
+    plate so it survives anti-aliasing at favicon sizes. The inner-border
+    detail on the top card is dropped (illegible at 16px) and stroke widths
+    are bumped up slightly. The ember is enlarged and pulled inward so it
+    doesn't get clipped by the plate corner.
+  -->
   <defs>
-    <linearGradient id="sigilGlow" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#f2d183"/>
-      <stop offset="1" stop-color="#b8892b"/>
+    <linearGradient id="fav-gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="hsl(45 85% 78%)"/>
+      <stop offset="55%" stop-color="hsl(42 75% 58%)"/>
+      <stop offset="100%" stop-color="hsl(38 65% 38%)"/>
     </linearGradient>
+    <linearGradient id="fav-gold-soft" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="hsl(45 75% 70%)" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="hsl(38 60% 40%)" stop-opacity="0.85"/>
+    </linearGradient>
+    <linearGradient id="fav-card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="hsl(220 18% 13%)"/>
+      <stop offset="100%" stop-color="hsl(220 22% 8%)"/>
+    </linearGradient>
+    <linearGradient id="fav-plate" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="hsl(220 24% 11%)"/>
+      <stop offset="100%" stop-color="hsl(220 30% 6%)"/>
+    </linearGradient>
+    <radialGradient id="fav-ember" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="hsl(45 95% 80%)"/>
+      <stop offset="55%" stop-color="hsl(42 80% 58%)"/>
+      <stop offset="100%" stop-color="hsl(38 70% 40%)" stop-opacity="0"/>
+    </radialGradient>
   </defs>
-  <rect width="512" height="512" rx="120" fill="#121015"/>
-  <circle cx="256" cy="256" r="180" fill="none" stroke="url(#sigilGlow)" stroke-width="18"/>
-  <rect x="152" y="152" width="208" height="208" fill="none" stroke="url(#sigilGlow)" stroke-width="14" transform="rotate(45 256 256)"/>
-  <circle cx="256" cy="256" r="72" fill="none" stroke="url(#sigilGlow)" stroke-width="10"/>
-  <path d="M256 104 L292 180 L368 216 L292 252 L256 328 L220 252 L144 216 L220 180 Z" fill="none" stroke="url(#sigilGlow)" stroke-width="12" stroke-linejoin="round"/>
-  <circle cx="256" cy="256" r="18" fill="url(#sigilGlow)"/>
+
+  <!-- Rounded obsidian plate -->
+  <rect x="0" y="0" width="64" height="64" rx="13" fill="url(#fav-plate)"/>
+
+  <!-- Bottom card — laid back, leaning left -->
+  <g transform="rotate(-13 32 44)">
+    <rect x="14" y="30" width="36" height="24" rx="3"
+          fill="url(#fav-card)" stroke="url(#fav-gold-soft)" stroke-width="2"/>
+  </g>
+
+  <!-- Middle card — square -->
+  <rect x="15" y="22" width="34" height="26" rx="3"
+        fill="url(#fav-card)" stroke="url(#fav-gold)" stroke-width="2.2"/>
+
+  <!-- Top card — leaning right, freshest spell -->
+  <g transform="rotate(11 32 22)">
+    <rect x="19" y="11" width="26" height="26" rx="3"
+          fill="url(#fav-card)" stroke="url(#fav-gold)" stroke-width="2.6"/>
+  </g>
+
+  <!-- Ember — priority pip -->
+  <circle cx="48" cy="13" r="6" fill="url(#fav-ember)"/>
+  <circle cx="48" cy="13" r="2.2" fill="hsl(48 95% 88%)"/>
 </svg>
