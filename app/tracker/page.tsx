@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import QRCode from 'qrcode'
 import { GoldRule } from '@/components/Fleuron'
 import { track } from '@/lib/analytics'
+import { YourPods } from '@/components/YourPods'
 import { useGameLog, type UseGameLog } from '@/hooks/useGameLog'
 import type { RecapPlayer } from '@/types/replay'
 
@@ -219,6 +220,7 @@ export default function TrackerPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 md:px-8 pt-6 md:pt-12 pb-12">
+      {step !== 'play' && <YourPods />}
       {step !== 'play' && (
         <Wizard
           step={step}
