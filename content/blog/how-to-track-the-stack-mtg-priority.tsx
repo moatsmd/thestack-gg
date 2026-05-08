@@ -79,9 +79,9 @@ const post: BlogPost = {
 
       <ToolCTA
         href="/stack"
-        title="Visualize the stack"
-        body="Add spells and triggers, see priority pass, and step through resolution. Useful for explaining a tricky interaction to a tablemate without rebuilding the board."
-        cta="Open visualizer"
+        title="See the stack in motion"
+        body="An animated walkthrough of a Lightning Bolt / Counterspell / Red Elemental Blast exchange that shows the LIFO order, priority passes, and the moment each spell resolves. Useful for explaining the rule to a new player without rebuilding the board."
+        cta="Open the explainer"
       />
 
       <H2>Replacement effects don't use the stack</H2>
@@ -150,19 +150,21 @@ const post: BlogPost = {
 
       <H2>When to actually open a tool</H2>
       <P>
-        Most stack interactions resolve fine with a verbal protocol. Open a
-        visualizer when there are three or more objects on the stack, when
-        someone is unsure of trigger order, or when a Strionic Resonator copy
-        of a copy of a triggered ability is in the air. TheStack.gg's{' '}
-        <A href="/stack">stack page</A> is built for that — it lets you add
-        spells and triggers, mark which player is the source, and step through
-        resolution one object at a time. For the rules text behind any
-        keyword, the <A href="/glossary">glossary</A> is a tap away.
+        Most stack interactions resolve fine with a verbal protocol. When a
+        new player at the table needs to see how priority and LIFO actually
+        play out, TheStack.gg's <A href="/stack">stack page</A> walks through
+        a Counterspell-on-Counterspell-on-Lightning-Bolt sequence step by
+        step — you can play, pause, and reset the animation. It's an
+        explainer, not an interactive board, but it makes the rule click
+        faster than any paragraph of rules text. For the keywords behind any
+        spell or ability, the <A href="/glossary">glossary</A> is a tap away.
       </P>
       <P>
-        If you find yourself opening the visualizer often, that is a sign your
-        deck is well-built, not that you are slow. The decks that demand the
-        most stack tracking are the ones that reward it most.
+        For an actual messy in-game stack — three triggers, a Strionic
+        Resonator copy, two counterspells in the air — the right tool is
+        still pen and paper. Name what's happening out loud, write the order
+        down if you have to, and let nobody pass priority until everyone
+        agrees on what's on the stack.
       </P>
     </>
   ),

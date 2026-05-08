@@ -89,7 +89,7 @@ const post: BlogPost = {
       <ToolCTA
         href="/tracker"
         title="Auto-flag lethal commander damage"
-        body="Each player tile shows commander damage from each opponent in a 3-cell grid. Hit 21 and the tile lights up gold so the table sees lethal at a glance."
+        body="Each player tile shows the highest commander-damage total as a chip on the front. Tap to see the per-opponent breakdown. The chip turns yellow at 18 and red at 21 so the table sees lethal coming."
         cta="Open the tracker"
       />
 
@@ -105,21 +105,22 @@ const post: BlogPost = {
 
       <H2>What a tracker should actually do</H2>
       <OL>
-        <LI><Em>Show all incoming commander damage at once</Em> — a 1×3 grid per player, one cell per opponent. No long-press, no sub-menu.</LI>
+        <LI><Em>Surface the most dangerous source</Em> — the highest single-commander total should be visible without tapping anything.</LI>
         <LI><Em>Highlight thresholds</Em> — visually mark anything at or above 21 so the table cannot miss lethal.</LI>
-        <LI><Em>Show partner damage separately</Em> — two columns per opponent who runs partners.</LI>
+        <LI><Em>Per-opponent breakdown one tap away</Em> — a modal that shows damage from every commander, including each partner separately.</LI>
         <LI><Em>Persist across refreshes</Em> — phones go to sleep, browsers crash. The tracker should not.</LI>
-        <LI><Em>Undo</Em> — single most-requested feature for any tracker, anywhere.</LI>
+        <LI><Em>Change history</Em> — the table needs to audit a misclick without arguing about it.</LI>
       </OL>
 
-      <H3>Why we put commander damage on the front of the tile</H3>
+      <H3>Why we put a commander-damage chip on the front of the tile</H3>
       <P>
-        TheStack.gg's <A href="/tracker">life tracker</A> shows the commander
-        damage grid by default on every player tile, and turns the tile gold
-        the moment any one source hits 21. We tried hiding it behind a
-        long-press in v1 and watched two pods miss lethal damage in a single
-        evening. Visibility is the whole point of a damage tracker; if you
-        have to dig for the number, the number is not doing its job.
+        TheStack.gg's <A href="/tracker">life tracker</A> shows the highest
+        commander-damage total as a chip on every player tile and flips it to
+        a red danger state the moment any one source hits 21. Eighteen turns
+        it yellow as a warning. The per-opponent breakdown lives one tap
+        deeper, with each partner counted separately. Visibility on the
+        most-dangerous number is the whole point; if you have to dig for it,
+        the number is not doing its job.
       </P>
 
       <H2>The short version</H2>
