@@ -96,11 +96,12 @@ const post: BlogPost = {
       <H2>How we surface commander damage</H2>
       <P>
         Every player tile shows the highest single-commander damage total as a
-        chip on the front of the card. Tap it to open the per-opponent
-        breakdown so you can see exactly which commander is closest to lethal.
-        Once any one source hits 21, the chip flips to a red danger state so
-        the table cannot miss lethal sitting on the board. Eighteen lights it
-        up yellow as the warning shot.
+        chip on the front of the card. Tap it to expand a per-opponent grid
+        on the tile itself — one cell per other player at the table, with the
+        opponent's name and inline +/- buttons. Any single cell hitting 21
+        turns that cell red and rings the whole tile in red so the loss is
+        visible across the table. Fourteen lights up the cell as a yellow
+        warning shot.
       </P>
 
       <Quote attribution="Pod feedback, March 2026">
@@ -134,7 +135,7 @@ const post: BlogPost = {
         TheStack.gg's <A href="/tracker">life tracker</A> is free, browser-based,
         no account, and built for the Commander table specifically. The
         highest commander-damage source is on the front of every player tile,
-        and the per-opponent breakdown is one tap away. Poison, monarch,
+        and the per-opponent grid is one tap away, inline on the tile. Poison, monarch,
         initiative, and the rest sit alongside it. State persists through
         refreshes. It is a PWA so it works offline after the first load. It is
         one of several tools on the same site —{' '}
