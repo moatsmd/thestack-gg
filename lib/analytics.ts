@@ -26,6 +26,7 @@ export type AnalyticsEvent =
   | 'affiliate_click'              // user clicks an outbound affiliate link
   | 'outbound_click'               // user clicks any non-affiliate outbound link
   | 'pwa_installed'                // beforeinstallprompt → accepted
+  | 'recap_created'                // user ends a tracker game and a recap is generated
 
 /**
  * Properties allowed on tracked events. Vercel Analytics only accepts

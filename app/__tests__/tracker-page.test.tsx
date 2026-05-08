@@ -1,5 +1,22 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+
+// Mock next/navigation — TrackerPage uses useRouter to navigate to /recap/[id]
+// after End-Game submission. The wizard / counter flow tests don't exercise
+// that path, so a no-op stub is enough.
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: jest.fn(),
+    replace: jest.fn(),
+    refresh: jest.fn(),
+    back: jest.fn(),
+    forward: jest.fn(),
+    prefetch: jest.fn(),
+  }),
+  usePathname: () => '/tracker',
+  useSearchParams: () => new URLSearchParams(),
+}))
+
 import TrackerPage from '../tracker/page'
 import { DarkModeProvider } from '@/contexts/DarkModeContext'
 
