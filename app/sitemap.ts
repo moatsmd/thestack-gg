@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next'
+import { getAllPosts } from '@/lib/blog'
 
 const SITE_URL = 'https://www.thestack.gg'
 
@@ -21,6 +22,7 @@ const ROUTES: { path: string; priority: number; changeFrequency: MetadataRoute.S
   { path: '/new-players/basics', priority: 0.6, changeFrequency: 'monthly' },
   { path: '/new-players/combat', priority: 0.6, changeFrequency: 'monthly' },
   { path: '/new-players/stack', priority: 0.6, changeFrequency: 'monthly' },
+  { path: '/blog', priority: 0.8, changeFrequency: 'weekly' },
   { path: '/about', priority: 0.4, changeFrequency: 'yearly' },
   { path: '/privacy', priority: 0.2, changeFrequency: 'yearly' },
   { path: '/terms', priority: 0.2, changeFrequency: 'yearly' },
@@ -28,10 +30,19 @@ const ROUTES: { path: string; priority: number; changeFrequency: MetadataRoute.S
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date()
-  return ROUTES.map((r) => ({
+  const staticRoutes: MetadataRoute.Sitemap = ROUTES.map((r) => ({
     url: `${SITE_URL}${r.path}`,
     lastModified,
     changeFrequency: r.changeFrequency,
     priority: r.priority,
   }))
+
+  const blogRoutes: MetadataRoute.Sitemap = getAllPosts().map((post) => ({
+    url: `${SITE_URL}/blog/${post.slug}`,
+    lastModified: new Date((post.updated ?? post.date) + 'T12:00:00Z'),
+    changeFrequency: 'monthly' as const,
+    priority: 0.7,
+  }))
+
+  return [...staticRoutes, ...blogRoutes]
 }

@@ -13,6 +13,7 @@ const desktopNav = [
   { href: '/rules', label: 'Rules' },
   { href: '/tokens', label: 'Tokens' },
   { href: '/new-players', label: 'Learn' },
+  { href: '/blog', label: 'Codex' },
   { href: '/dice', label: 'Dice' },
 ]
 
