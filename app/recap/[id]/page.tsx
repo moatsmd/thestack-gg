@@ -12,6 +12,7 @@ import { Fleuron, GoldRule } from '@/components/Fleuron'
 import { Logo } from '@/components/Logo'
 import { RecapShareButtons } from '@/components/RecapShareButtons'
 import { RecapLifeGraph } from '@/components/RecapLifeGraph'
+import { RecapPodActions } from '@/components/RecapPodActions'
 
 const SITE_URL = 'https://www.thestack.gg'
 
@@ -149,6 +150,15 @@ export default async function RecapPage({ params }: PageProps) {
       )}
 
       <Fleuron />
+
+      {/* Pod actions */}
+      <section className="panel codex-glow p-6 md:p-8 mt-8 mb-8">
+        <p className="font-display tracking-[0.16em] uppercase text-xs text-[hsl(38_15%_60%)]">
+          Make this a pod
+        </p>
+        <span className="block w-12 h-px bg-primary/40 mt-2 mb-4" />
+        <RecapPodActions recapId={recap.id} />
+      </section>
 
       {/* Share */}
       <section className="panel panel-gilded p-6 md:p-8 mt-8 mb-8">

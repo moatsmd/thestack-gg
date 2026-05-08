@@ -27,6 +27,9 @@ export type AnalyticsEvent =
   | 'outbound_click'               // user clicks any non-affiliate outbound link
   | 'pwa_installed'                // beforeinstallprompt → accepted
   | 'recap_created'                // user ends a tracker game and a recap is generated
+  | 'pod_created'                  // user clicks "Save as pod" on a recap
+  | 'pod_recap_attached'           // user attaches a recap to an existing pod
+  | 'pod_viewed'                   // /pod/[id] page rendered (client-side track)
 
 /**
  * Properties allowed on tracked events. Vercel Analytics only accepts
