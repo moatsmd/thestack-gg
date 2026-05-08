@@ -4,14 +4,14 @@ import { ManaSymbol } from '@/components/ManaSymbol'
 
 const post: BlogPost = {
   slug: 'mtg-glossary-200-terms',
-  title: 'Magic the Gathering Glossary: 200+ Terms Players Use',
+  title: 'Magic the Gathering Glossary: 150+ Terms Players Use',
   description:
-    'A practical Magic: The Gathering glossary covering the 200+ keywords, abilities, and slang players actually use \u2014 with reminder text and rules references.',
+    'A practical Magic: The Gathering glossary covering the keywords, abilities, and slang players actually use \u2014 with reminder text and rules references.',
   date: '2026-05-08',
   category: 'Reference',
   readingTime: 10,
   excerpt:
-    'A working dictionary of the 200+ keywords, evergreen abilities, and table slang every player runs into \u2014 with reminder text and rules references.',
+    'A working dictionary of the keywords, evergreen abilities, and table slang every player runs into \u2014 with reminder text and rules references.',
   keyword: 'magic the gathering glossary',
   body: (
     <>
@@ -20,8 +20,8 @@ const post: BlogPost = {
         evergreen keywords, dozens of returning ones, set-specific mechanics,
         rules terms that never appear on a card, and a layer of table slang
         on top. The Comprehensive Rules document is exhaustive and unreadable;
-        the Wiki is sprawling. This is a practical glossary — the 200-plus
-        terms a player will actually run into across Standard, Modern, and
+        the Wiki is sprawling. This is a practical glossary — the terms
+        a player will actually run into across Standard, Modern, and
         especially Commander, with the gist of each one and a pointer to the
         full text where it matters.
       </Lede>

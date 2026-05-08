@@ -36,20 +36,18 @@ const post: BlogPost = {
       <P>
         The features that separate a tool from a toy are mundane. Big tap targets
         for tired hands. A history log so a misclick does not become a fight.
-        Long-press for ten and shift for five so swings do not require a hundred
-        taps. Player count from one to six without a paywall. Commander damage
-        as a first-class grid, not a hidden sub-menu. Persistent state across
+        Player count from one to six without a paywall. Commander damage
+        tracked per opponent, not just a single number. Persistent state across
         accidental refreshes. Works offline because the venue's WiFi is bad and
         always will be.
       </P>
 
       <H3>The non-negotiables</H3>
       <UL>
-        <LI><Em>Commander damage</Em> tracked per opponent, visible at a glance.</LI>
+        <LI><Em>Commander damage</Em> tracked per opponent, with the highest source visible at a glance.</LI>
         <LI><Em>Per-player counters</Em> for poison, energy, experience, monarch, initiative.</LI>
-        <LI><Em>History</Em> of changes per player so the table can audit a misclick.</LI>
+        <LI><Em>History</Em> of life and damage changes so the table can audit a misclick.</LI>
         <LI><Em>Big touch targets</Em> sized for adult thumbs after two hours.</LI>
-        <LI><Em>Multipliers</Em> — long-press for ten, shift for five.</LI>
         <LI><Em>No account required</Em> to start a game in fifteen seconds.</LI>
         <LI><Em>Works offline</Em> after first load — venue WiFi is unreliable.</LI>
       </UL>
@@ -91,32 +89,29 @@ const post: BlogPost = {
       <ToolCTA
         href="/tracker"
         title="Open the table tracker"
-        body="Four-player layout with first-class commander damage, poison, monarch, initiative, and an audit log. Free, no sign-in, works on any tablet."
+        body="Four-player layout with commander damage, poison, monarch, initiative, mana pool, and a per-player change log. Free, no sign-in, works on any tablet."
         cta="Start a game"
       />
 
-      <H2>What we got wrong on the first version</H2>
+      <H2>How we surface commander damage</H2>
       <P>
-        The first iteration of TheStack.gg's tracker did the thing every life
-        counter does: it put the big number in the middle and tucked commander
-        damage into a long-press menu. Within a week we watched a pod miss a
-        commander kill because the player who needed to see the number did not
-        know to long-press. Commander damage is not a secondary stat. We
-        rebuilt the player tile with the damage grid visible by default, the
-        twenty-one threshold marked in gold, and the moment a single commander
-        hits twenty-one the tile lights up so the table sees it.
+        Every player tile shows the highest single-commander damage total as a
+        chip on the front of the card. Tap it to open the per-opponent
+        breakdown so you can see exactly which commander is closest to lethal.
+        Once any one source hits 21, the chip flips to a red danger state so
+        the table cannot miss lethal sitting on the board. Eighteen lights it
+        up yellow as the warning shot.
       </P>
 
       <Quote attribution="Pod feedback, March 2026">
-        The first time someone hit me for lethal commander damage and the tile
-        actually said so on its own, I forgave the app for everything else.
+        The first time the chip turned red on someone else's board and we
+        actually noticed before they swung again, the tracker earned its keep.
       </Quote>
 
       <H3>Other small lessons</H3>
       <UL>
-        <LI>Long-press to set life to a specific number is faster than tapping +/- forty times after a Necropotence.</LI>
-        <LI>An undo button is worth more than a confirm-on-zero modal — confirm dialogs train players to dismiss them.</LI>
-        <LI>Poison is more common than people think — tracking it inline is cheaper than answering &ldquo;wait, am I dead?&rdquo; every Atraxa game.</LI>
+        <LI>An undo-via-history-log is worth more than a confirm-on-zero modal — confirm dialogs train players to dismiss them.</LI>
+        <LI>Poison is more common than people think — a poison chip per player is cheaper than answering &ldquo;wait, am I dead?&rdquo; every Atraxa game.</LI>
         <LI>Showing the monarch and initiative on a single shared row stops two-minute arguments about who has it.</LI>
       </UL>
 
@@ -137,13 +132,14 @@ const post: BlogPost = {
       <H2>The honest pitch for TheStack.gg</H2>
       <P>
         TheStack.gg's <A href="/tracker">life tracker</A> is free, browser-based,
-        no account, and built for the Commander table specifically. Commander
-        damage is on the front of every player tile. Poison, monarch, initiative,
-        and the rest are one tap away. State persists through refreshes. It is
-        a PWA so it works offline after the first load. It is one of several
-        tools on the same site —{' '}
-        <A href="/stack">a stack visualizer</A> for layered triggers,{' '}
-        <A href="/glossary">a 200-term glossary</A>, and a{' '}
+        no account, and built for the Commander table specifically. The
+        highest commander-damage source is on the front of every player tile,
+        and the per-opponent breakdown is one tap away. Poison, monarch,
+        initiative, and the rest sit alongside it. State persists through
+        refreshes. It is a PWA so it works offline after the first load. It is
+        one of several tools on the same site —{' '}
+        <A href="/stack">a stack explainer</A>,{' '}
+        <A href="/glossary">a keyword glossary</A>, and a{' '}
         <A href="/tokens">token generator</A> — but the tracker is the piece
         most pods will use first.
       </P>

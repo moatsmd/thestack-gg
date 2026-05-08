@@ -37,8 +37,8 @@ const post: BlogPost = {
       <P>
         TheStack.gg's <A href="/toolkit">card lookup</A> is built for the
         narrower question. You type a name or fragment, get the card, and the
-        oracle text is parsed for keywords so any term you don't know is
-        clickable straight to the glossary. Fast on mobile, no sign-up.
+        oracle text is parsed for keywords so any term you don't know shows a
+        plain-English definition on hover. Fast on mobile, no sign-up.
       </P>
       <P>
         For the deeper Scryfall syntax (advanced searches across the entire
@@ -57,17 +57,20 @@ const post: BlogPost = {
         sees the same screen at the same time.
       </P>
 
-      <H2>Stack visualizers</H2>
+      <H2>Stack explainers</H2>
       <P>
-        Stack visualizers are niche but indispensable for the games that need
-        them. When three triggers and a counterspell are in the air, drawing
-        out the stack on a piece of paper is faster than trying to verbally
-        track it. A browser stack visualizer adds the ability to undo,
-        rearrange, and step through resolution one object at a time.
+        The stack is the part of Magic where new players quietly stop
+        following. A short, animated walk-through of a counter war or a
+        priority pass beats any paragraph of rules text for getting the
+        rule across. For an actual messy in-game stack — three triggers,
+        two counterspells, a Strionic Resonator copy — nothing beats pen
+        and paper, drawn out so the whole table can see it.
       </P>
       <P>
         The detailed walk-through is in the <A href="/blog/how-to-track-the-stack-mtg-priority">stack
-        tracking guide</A>. The tool itself is at <A href="/stack">/stack</A>.
+        tracking guide</A>. TheStack.gg's <A href="/stack">stack page</A> is
+        an animated explainer of a Counterspell-on-Counterspell-on-Lightning-
+        Bolt exchange you can play, pause, and reset.
       </P>
 
       <H2>Glossaries and rules references</H2>
@@ -81,7 +84,7 @@ const post: BlogPost = {
         before damage, so yes, the creature is countered or paid for first).
       </P>
       <UL>
-        <LI><Em><A href="/glossary">TheStack.gg glossary</A></Em> — 200+ terms with reminder text and examples.</LI>
+        <LI><Em><A href="/glossary">TheStack.gg glossary</A></Em> — evergreen, returning, and retired keywords with reminder text, rules references, and examples.</LI>
         <LI><Em>Wiki and rules</Em> — for the long-form deep dive.</LI>
         <LI><Em>Judge resources</Em> — when a game-affecting question hits a tournament.</LI>
       </UL>
@@ -97,15 +100,15 @@ const post: BlogPost = {
 
       <H2>Dice and randomizers</H2>
       <P>
-        A surprising number of Commander effects need a die roll or coin
-        flip. Krark's Thumb, Chaos Orb, Goblin Game, the entirety of any
-        Mishra's plot. A browser dice roller with d6, d20, and a coin gets
-        you through 99% of the cases without anyone digging in their bag.
+        A surprising number of Commander effects need a die roll. Krark's
+        Thumb, Chaos Orb, Goblin Game, the entirety of any Mishra's plot.
+        A browser dice roller with d6, d20, and the rest gets you through
+        99% of the cases without anyone digging in their bag.
       </P>
       <P>
-        TheStack.gg's <A href="/dice">dice page</A> gives you weighted-fair
-        dice (no streaks because the JS randomizer is good) and a coin flip
-        big enough to see across the table.
+        TheStack.gg's <A href="/dice">dice page</A> covers every standard
+        die (d4, d6, d8, d10, d12, d20, d100), rolls multiple dice at once,
+        and shows the result big enough to see across the table.
       </P>
 
       <H2>Deckbuilders</H2>
