@@ -24,7 +24,7 @@ describe('CommanderDamageModal', () => {
     expect(screen.queryByText(/Commander Damage/i)).not.toBeInTheDocument()
   })
 
-  it('renders opponents and total damage', () => {
+  it('renders opponents and highest single-source damage', () => {
     render(
       <CommanderDamageModal
         isOpen
@@ -48,8 +48,9 @@ describe('CommanderDamageModal', () => {
     expect(screen.getByText('5')).toBeInTheDocument()
     expect(screen.getByText('2')).toBeInTheDocument()
 
-    const total = screen.getByTestId('commander-total')
-    expect(total).toHaveTextContent('Total: 7')
+    // The 21-rule fires off the highest single source, not the sum.
+    const summary = screen.getByTestId('commander-total')
+    expect(summary).toHaveTextContent('Highest single source: 5')
   })
 
   it('increments and decrements damage with clamping at 0', async () => {
@@ -92,13 +93,18 @@ describe('CommanderDamageModal', () => {
     expect(onChange).toHaveBeenCalledWith('player-2', -1)
   })
 
-  it('marks warning levels based on total damage', () => {
+  it('marks warning levels based on highest single-source damage, not the sum', () => {
+    // Two sources at 11 each — sum is 22 but no single source has hit 21.
+    // Under the 21-rule this is NOT lethal, so warning level must be 'none'.
     const { rerender } = render(
       <CommanderDamageModal
         isOpen
         playerName="Player 1"
         opponents={opponents}
-        commanderDamage={[{ fromPlayerId: 'player-2', amount: 17 }]}
+        commanderDamage={[
+          { fromPlayerId: 'player-2', amount: 11 },
+          { fromPlayerId: 'player-3', amount: 11 },
+        ]}
         onChange={jest.fn()}
         onCommanderNameChange={jest.fn()}
         onClose={jest.fn()}

@@ -118,6 +118,64 @@ describe('Tracker Page', () => {
     await waitFor(() => expect(screen.getByTestId('life-1')).toHaveTextContent('20'))
   })
 
+  it('shows a per-opponent commander damage grid and lethal at 21 from one source', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<TrackerPage />)
+
+    // Multi → 4 players → Commander 40 → Begin (cmd is on by default).
+    await clickWhenSettled(user, 'mode-multi')
+    await clickWhenSettled(user, 'button-wizard-next')
+    await clickWhenSettled(user, 'players-4')
+    await clickWhenSettled(user, 'button-wizard-next')
+    await clickWhenSettled(user, 'format-commander-40')
+    await clickWhenSettled(user, 'button-wizard-next')
+    await clickWhenSettled(user, 'button-wizard-next')
+
+    // Open the cmd grid on Player 1.
+    await waitFor(() => expect(screen.getByTestId('badge-cmd-1')).toBeInTheDocument())
+    await user.click(screen.getByTestId('badge-cmd-1'))
+
+    // 4-player game → each tile has 3 cells (one per opponent).
+    await waitFor(() => expect(screen.getByTestId('cmd-grid-1')).toBeInTheDocument())
+    expect(screen.getByTestId('cmd-cell-1-from-2')).toBeInTheDocument()
+    expect(screen.getByTestId('cmd-cell-1-from-3')).toBeInTheDocument()
+    expect(screen.getByTestId('cmd-cell-1-from-4')).toBeInTheDocument()
+    expect(screen.queryByTestId('cmd-cell-1-from-1')).not.toBeInTheDocument()
+
+    // - clamps at 0; + increments the right cell only.
+    const minus = screen.getByTestId('cmd-minus-1-from-2')
+    expect(minus).toBeDisabled()
+    await user.click(screen.getByTestId('cmd-plus-1-from-2'))
+    await waitFor(() =>
+      expect(screen.getByTestId('cmd-cell-1-from-2')).toHaveAttribute('data-cmd-amount', '1')
+    )
+    expect(screen.getByTestId('cmd-cell-1-from-3')).toHaveAttribute('data-cmd-amount', '0')
+
+    // Badge reflects max single source, not sum.
+    expect(screen.getByTestId('badge-cmd-1')).toHaveTextContent('CMD 1')
+
+    // Drive Player 2 to 21 commander damage from Player 3 → lethal state.
+    await user.click(screen.getByTestId('badge-cmd-2'))
+    await screen.findByTestId('cmd-plus-2-from-3')
+    for (let i = 0; i < 21; i++) {
+      // Re-query each iteration: the cell re-renders after every click and
+      // a stale node reference would silently no-op.
+      await user.click(screen.getByTestId('cmd-plus-2-from-3'))
+    }
+    await waitFor(
+      () =>
+        expect(screen.getByTestId('cmd-cell-2-from-3')).toHaveAttribute(
+          'data-cmd-amount',
+          '21'
+        ),
+      { timeout: 3000 }
+    )
+    expect(screen.getByTestId('cmd-cell-2-from-3')).toHaveAttribute('data-cmd-lethal', 'true')
+    expect(screen.getByTestId('cmd-lethal-2')).toBeInTheDocument()
+    // Other cells on the same tile must NOT be marked lethal.
+    expect(screen.getByTestId('cmd-cell-2-from-1')).toHaveAttribute('data-cmd-lethal', 'false')
+  })
+
   it('Exit returns to the wizard', async () => {
     const user = userEvent.setup()
     renderWithProviders(<TrackerPage />)

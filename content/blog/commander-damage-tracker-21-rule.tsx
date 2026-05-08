@@ -89,7 +89,7 @@ const post: BlogPost = {
       <ToolCTA
         href="/tracker"
         title="Auto-flag lethal commander damage"
-        body="Each player tile shows the highest commander-damage total as a chip on the front. Tap to see the per-opponent breakdown. The chip turns yellow at 18 and red at 21 so the table sees lethal coming."
+        body="Each player tile carries a CMD chip showing the highest single-source total. Tap it to expand a per-opponent grid — one cell per other player at the table — with inline +/- on each cell. Any cell at 21 turns red and the whole tile rings red so the table sees lethal coming."
         cta="Open the tracker"
       />
 
@@ -112,15 +112,18 @@ const post: BlogPost = {
         <LI><Em>Change history</Em> — the table needs to audit a misclick without arguing about it.</LI>
       </OL>
 
-      <H3>Why we put a commander-damage chip on the front of the tile</H3>
+      <H3>Why we built a per-opponent grid into the tile</H3>
       <P>
-        TheStack.gg's <A href="/tracker">life tracker</A> shows the highest
-        commander-damage total as a chip on every player tile and flips it to
-        a red danger state the moment any one source hits 21. Eighteen turns
-        it yellow as a warning. The per-opponent breakdown lives one tap
-        deeper, with each partner counted separately. Visibility on the
-        most-dangerous number is the whole point; if you have to dig for it,
-        the number is not doing its job.
+        TheStack.gg's <A href="/tracker">life tracker</A> puts a CMD chip on
+        every player tile showing the highest single-source total. Tap the
+        chip and the tile expands an inline grid — one cell per other player
+        at the table, with the opponent's name and inline +/- buttons. A
+        4-player pod gets three cells per tile, a 5-player pod gets four,
+        and so on. Any single cell hitting 21 flips that cell red and rings
+        the whole tile in red so the loss is visible across the table. The
+        21-rule is a per-source rule, so the tracker treats it as one. The
+        sum across commanders is never the trigger; only the highest single
+        source is.
       </P>
 
       <H2>The short version</H2>

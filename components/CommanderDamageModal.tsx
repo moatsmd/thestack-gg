@@ -36,8 +36,12 @@ export function CommanderDamageModal({
   }
 
   const damageMap = new Map(commanderDamage.map((entry) => [entry.fromPlayerId, entry.amount]))
-  const totalDamage = commanderDamage.reduce((sum, entry) => sum + entry.amount, 0)
-  const warningLevel = totalDamage >= 21 ? 'danger' : totalDamage >= 18 ? 'warning' : 'none'
+  // The 21-damage rule triggers off any single source, not the sum across
+  // commanders. Use the max single-source amount to drive the warning level.
+  const maxDamage = commanderDamage.length > 0
+    ? Math.max(...commanderDamage.map((entry) => entry.amount))
+    : 0
+  const warningLevel = maxDamage >= 21 ? 'danger' : maxDamage >= 18 ? 'warning' : 'none'
 
   const handleDecrease = (fromPlayerId: string, currentAmount: number) => {
     if (currentAmount <= 0) {
@@ -94,7 +98,7 @@ export function CommanderDamageModal({
                   : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200'
             }`}
           >
-            Total: {totalDamage}
+            Highest single source: {maxDamage}
           </div>
 
           <div className="space-y-3">

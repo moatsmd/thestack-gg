@@ -127,11 +127,23 @@ type Player = {
   id: number
   name: string
   life: number
+  /** Highest single-source commander damage taken (max of cmdFrom). Kept for
+   * back-compat with badge color and recap payload. */
   cmd: number
+  /** Per-opponent commander damage map. Key is opponent player id, value is
+   * damage dealt to this player by that opponent's commander. The 21-damage
+   * rule triggers off any single value here, not the sum. */
+  cmdFrom: Record<number, number>
   poison: number
   mana: number
   energy: number
   experience: number
+}
+
+function maxCmdFrom(cmdFrom: Record<number, number> | undefined): number {
+  if (!cmdFrom) return 0
+  const values = Object.values(cmdFrom)
+  return values.length === 0 ? 0 : Math.max(0, ...values)
 }
 
 type Step = 'mode' | 'players' | 'rules' | 'counters' | 'play'
@@ -197,6 +209,7 @@ export default function TrackerPage() {
       name: mode === 'solo' ? 'You' : `Player ${i + 1}`,
       life: startLife,
       cmd: 0,
+      cmdFrom: {},
       poison: 0,
       mana: 0,
       energy: 0,
@@ -525,9 +538,6 @@ function ActiveTracker({
         if (typeof patch.life === 'number' && after.life !== before.life) {
           log.life(id, after.life - before.life, after.life)
         }
-        if (typeof patch.cmd === 'number' && after.cmd !== before.cmd) {
-          log.cmd(id, after.cmd - before.cmd, after.cmd)
-        }
         if (typeof patch.poison === 'number' && after.poison !== before.poison) {
           log.poison(id, after.poison - before.poison, after.poison)
         }
@@ -536,11 +546,34 @@ function ActiveTracker({
     })
   }
 
+  /**
+   * Bump per-opponent commander damage by a delta. Reads from the freshest
+   * setPlayers prev state to avoid stale closures on rapid clicks. Also
+   * derives the legacy cmd value as the max single-source amount and logs a
+   * commander_damage event with the source player id for the recap.
+   */
+  function bumpCmdFrom(targetId: number, sourceId: number, delta: number) {
+    setPlayers((prev) => {
+      const before = prev.find((p) => p.id === targetId)
+      if (!before) return prev
+      const beforeAmt = before.cmdFrom?.[sourceId] ?? 0
+      const afterAmt = Math.max(0, beforeAmt + delta)
+      if (afterAmt === beforeAmt) return prev
+      const nextCmdFrom = { ...(before.cmdFrom ?? {}), [sourceId]: afterAmt }
+      const nextCmd = maxCmdFrom(nextCmdFrom)
+      const next = prev.map((p) =>
+        p.id === targetId ? { ...p, cmdFrom: nextCmdFrom, cmd: nextCmd } : p
+      )
+      log.cmd(targetId, afterAmt - beforeAmt, nextCmd, sourceId)
+      return next
+    })
+  }
+
   const startLife = gameMode.name === 'Custom' ? customLife : gameMode.life
 
   function reset() {
     setPlayers((prev) =>
-      prev.map((p) => ({ ...p, life: startLife, cmd: 0, poison: 0, mana: 0, energy: 0, experience: 0 }))
+      prev.map((p) => ({ ...p, life: startLife, cmd: 0, cmdFrom: {}, poison: 0, mana: 0, energy: 0, experience: 0 }))
     )
     // Restart the log so the next game gets a clean recap.
     log.start({
@@ -691,9 +724,11 @@ function ActiveTracker({
           <PlayerPanel
             key={p.id}
             player={p}
+            opponents={players.filter((o) => o.id !== p.id)}
             startLife={startLife}
             enabledCounters={enabledCounters}
             update={(patch) => update(p.id, patch)}
+            bumpCmdFrom={(sourceId, delta) => bumpCmdFrom(p.id, sourceId, delta)}
           />
         ))}
       </div>
@@ -884,18 +919,26 @@ function lifeColor(life: number, start: number) {
 
 function PlayerPanel({
   player,
+  opponents,
   startLife,
   enabledCounters,
   update,
+  bumpCmdFrom,
 }: {
   player: Player
+  opponents: Player[]
   startLife: number
   enabledCounters: Counter[]
   update: (p: Partial<Player>) => void
+  bumpCmdFrom: (sourceId: number, delta: number) => void
 }) {
   const [showBadge, setShowBadge] = useState<Counter | null>(null)
   const [lastDelta, setLastDelta] = useState<number>(0)
   const prevLifeRef = useRef<number>(player.life)
+
+  const cmdFrom = player.cmdFrom ?? {}
+  const maxCmd = maxCmdFrom(cmdFrom)
+  const lethalFromCmd = maxCmd >= 21
   const tier =
     player.life <= 0
       ? 'lethal'
@@ -934,7 +977,14 @@ function PlayerPanel({
       : 'text-muted-foreground border-border bg-muted'
 
   return (
-    <div className="panel arcane-glow panel-gilded p-5 relative overflow-hidden">
+    <div
+      className={`panel arcane-glow panel-gilded p-5 relative overflow-hidden ${
+        lethalFromCmd
+          ? 'ring-2 ring-destructive/70 shadow-[0_0_24px_hsl(0_70%_45%/0.45)]'
+          : ''
+      }`}
+      data-lethal-cmd={lethalFromCmd ? 'true' : 'false'}
+    >
       {/* Tier-change flash overlay */}
       <AnimatePresence>
         {tierFlash && (
@@ -965,13 +1015,14 @@ function PlayerPanel({
           data-testid={`input-name-${player.id}`}
         />
         <div className="flex items-center gap-1">
-          {enabledCounters.includes('cmd') && (
+          {enabledCounters.includes('cmd') && opponents.length > 0 && (
             <button
               onClick={() => setShowBadge(showBadge === 'cmd' ? null : 'cmd')}
-              className={`px-1.5 py-0.5 rounded text-[10px] tracking-wider border ${badgeColor(player.cmd, 21, 14)}`}
+              className={`px-1.5 py-0.5 rounded text-[10px] tracking-wider border ${badgeColor(maxCmd, 21, 14)}`}
               data-testid={`badge-cmd-${player.id}`}
+              aria-label={`Commander damage: highest single source ${maxCmd}`}
             >
-              CMD {player.cmd}
+              CMD {maxCmd}
             </button>
           )}
           {enabledCounters.includes('poison') && (
@@ -1087,7 +1138,89 @@ function PlayerPanel({
       </div>
 
       <AnimatePresence>
-        {showBadge && (
+        {showBadge === 'cmd' && opponents.length > 0 && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden mt-3"
+            data-testid={`cmd-grid-${player.id}`}
+          >
+            <div className="panel p-3">
+              <div className="flex items-center justify-between mb-2">
+                <div className="font-display tracking-wide text-sm">Commander Damage</div>
+                <div className="text-[10px] text-muted-foreground tracking-[0.18em] uppercase">21 lethal · per source</div>
+              </div>
+              <div
+                className={`grid gap-2 ${
+                  opponents.length <= 1
+                    ? 'grid-cols-1'
+                    : opponents.length === 2
+                    ? 'grid-cols-2'
+                    : 'grid-cols-2 sm:grid-cols-3'
+                }`}
+              >
+                {opponents.map((opp) => {
+                  const amt = cmdFrom[opp.id] ?? 0
+                  const cellLethal = amt >= 21
+                  const cellWarn = amt >= 14 && amt < 21
+                  const cellCls = cellLethal
+                    ? 'border-destructive/60 bg-destructive/10 text-destructive'
+                    : cellWarn
+                    ? 'border-[hsl(50_75%_50%/0.5)] bg-[hsl(50_75%_50%/0.10)] text-[hsl(50_75%_60%)]'
+                    : 'border-border bg-muted/40 text-foreground'
+                  return (
+                    <div
+                      key={opp.id}
+                      className={`rounded-md border p-2 flex flex-col items-center gap-1 ${cellCls}`}
+                      data-testid={`cmd-cell-${player.id}-from-${opp.id}`}
+                      data-cmd-amount={amt}
+                      data-cmd-lethal={cellLethal ? 'true' : 'false'}
+                    >
+                      <div
+                        className="text-[10px] tracking-wider uppercase truncate max-w-full"
+                        title={opp.name}
+                      >
+                        {opp.name}
+                      </div>
+                      <div className="font-display text-2xl tabular-nums leading-none">
+                        {amt}
+                      </div>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <button
+                          onClick={() => bumpCmdFrom(opp.id, -1)}
+                          className="w-7 h-7 grid place-items-center panel hover-elevate active-elevate-2"
+                          data-testid={`cmd-minus-${player.id}-from-${opp.id}`}
+                          aria-label={`Decrease commander damage from ${opp.name}`}
+                          disabled={amt <= 0}
+                        >
+                          <Minus className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => bumpCmdFrom(opp.id, +1)}
+                          className="w-7 h-7 grid place-items-center panel hover-elevate active-elevate-2"
+                          data-testid={`cmd-plus-${player.id}-from-${opp.id}`}
+                          aria-label={`Increase commander damage from ${opp.name}`}
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+              {lethalFromCmd && (
+                <div
+                  className="mt-2 text-[11px] font-display tracking-wider uppercase text-destructive text-center"
+                  data-testid={`cmd-lethal-${player.id}`}
+                >
+                  Lethal · 21 commander damage
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+        {showBadge && showBadge !== 'cmd' && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
@@ -1096,9 +1229,7 @@ function PlayerPanel({
           >
             <div className="panel p-3 flex items-center justify-between">
               <div className="text-sm">
-                <div className="font-display tracking-wide capitalize">
-                  {showBadge === 'cmd' ? 'Commander Damage' : showBadge}
-                </div>
+                <div className="font-display tracking-wide capitalize">{showBadge}</div>
                 <div className="text-xs text-muted-foreground">Tap +/- to adjust</div>
               </div>
               <div className="flex items-center gap-2">
