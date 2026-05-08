@@ -1,5 +1,6 @@
 import type { BlogPost } from '@/lib/blog'
 import { Lede, P, H2, H3, UL, OL, LI, ToolCTA, A, Em, Quote } from '@/components/blog/Prose'
+import { ManaSymbol } from '@/components/ManaSymbol'
 
 const post: BlogPost = {
   slug: 'mtg-token-generator-every-set',
@@ -29,7 +30,7 @@ const post: BlogPost = {
 
       <H3>Treasure</H3>
       <P>
-        A colorless artifact token with &ldquo;{`{T}`}, sacrifice this token:
+        A colorless artifact token with &ldquo;<ManaSymbol symbol="{T}" />, sacrifice this token:
         Add one mana of any color.&rdquo; Treasures are the format's universal
         ramp and fixing — every artifact deck makes them, every reanimator
         deck loves them, and every cEDH game has a player at six Treasures
@@ -39,7 +40,7 @@ const post: BlogPost = {
 
       <H3>Clue</H3>
       <P>
-        A colorless artifact with &ldquo;{`{2}`}, sacrifice this token: Draw a
+        A colorless artifact with &ldquo;<ManaSymbol symbol="{2}" />, sacrifice this token: Draw a
         card.&rdquo; Investigators turn Clues into card advantage. Clues are
         slower than Treasures (two mana plus the sac) but they stockpile, and
         a five-Clue board is a reliable late-game engine.
@@ -47,7 +48,7 @@ const post: BlogPost = {
 
       <H3>Food</H3>
       <P>
-        A colorless artifact with &ldquo;{`{2}`}, {`{T}`}, sacrifice this
+        A colorless artifact with &ldquo;<ManaSymbol symbol="{2}" />, <ManaSymbol symbol="{T}" />, sacrifice this
         token: You gain 3 life.&rdquo; Food shines in life-matters strategies
         and as a chump-block-then-eat substitute. Tracking is similar to
         Treasures and Clues — a single counter per player suffices unless
@@ -56,7 +57,7 @@ const post: BlogPost = {
 
       <H3>Blood</H3>
       <P>
-        A colorless artifact with &ldquo;{`{1}`}, {`{T}`}, discard a card,
+        A colorless artifact with &ldquo;<ManaSymbol symbol="{1}" />, <ManaSymbol symbol="{T}" />, discard a card,
         sacrifice this token: Draw a card.&rdquo; Blood is rummage-flavored
         — useful for graveyard decks and any plan that wants to cycle the
         top of a hand. Innistrad: Crimson Vow tokens introduced these and
@@ -66,8 +67,8 @@ const post: BlogPost = {
       <H3>Map</H3>
       <P>
         A colorless artifact that lets a creature scry and explore. Maps
-        printed in Lost Caverns of Ixalan and follow-up sets read &ldquo;{`{1}`},
-        {`{T}`}, sacrifice this token: Target creature you control
+        printed in Lost Caverns of Ixalan and follow-up sets read &ldquo;<ManaSymbol symbol="{1}" />,
+        <ManaSymbol symbol="{T}" />, sacrifice this token: Target creature you control
         explores.&rdquo; Track Maps individually only if you have an
         explore-matters payoff. Otherwise a count works.
       </P>

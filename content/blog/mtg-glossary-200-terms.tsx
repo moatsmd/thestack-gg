@@ -1,5 +1,6 @@
 import type { BlogPost } from '@/lib/blog'
 import { Lede, P, H2, H3, UL, OL, LI, ToolCTA, A, Em, Quote } from '@/components/blog/Prose'
+import { ManaSymbol } from '@/components/ManaSymbol'
 
 const post: BlogPost = {
   slug: 'mtg-glossary-200-terms',
@@ -73,7 +74,7 @@ const post: BlogPost = {
         <LI><Em>Flashback</Em> — cast a sorcery or instant from your graveyard for an alternate cost.</LI>
         <LI><Em>Kicker</Em> — pay an additional cost for a bonus effect.</LI>
         <LI><Em>Madness</Em> — when you discard, cast it for the madness cost instead.</LI>
-        <LI><Em>Morph</Em> — cast face-down as a 2/2 for {`{3}`}, turn face-up later for the morph cost.</LI>
+        <LI><Em>Morph</Em> — cast face-down as a 2/2 for <ManaSymbol symbol="{3}" />, turn face-up later for the morph cost.</LI>
         <LI><Em>Ninjutsu</Em> — return an unblocked attacker to hand and put this in from hand, attacking.</LI>
         <LI><Em>Persist</Em> — when it dies, comes back with a -1/-1 counter.</LI>
         <LI><Em>Proliferate</Em> — choose any number of permanents and players with counters; add another of each kind.</LI>
@@ -130,7 +131,7 @@ const post: BlogPost = {
       <H2>Commander-only terms</H2>
       <UL>
         <LI><Em>Color identity</Em> — every mana symbol on a card; commanders restrict the deck to their color identity.</LI>
-        <LI><Em>Command tax</Em> — each time you cast your commander from the command zone, the cost increases by {`{2}`}.</LI>
+        <LI><Em>Command tax</Em> — each time you cast your commander from the command zone, the cost increases by <ManaSymbol symbol="{2}" />.</LI>
         <LI><Em>Commander damage</Em> — 21 from a single commander kills the player. See the <A href="/blog/commander-damage-tracker-21-rule">21-rule guide</A>.</LI>
         <LI><Em>Partner</Em> — a keyword letting two specific commanders share the role.</LI>
         <LI><Em>Background</Em> — Choose a Background pairs a commander with a Background enchantment for color identity.</LI>
