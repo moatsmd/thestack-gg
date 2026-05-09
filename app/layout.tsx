@@ -62,11 +62,20 @@ export const metadata: Metadata = {
     siteName: "TheStack.gg",
     title: siteTitle,
     description: siteDescription,
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "TheStack.gg \u2014 The MTG Companion",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: siteTitle,
     description: siteDescription,
+    images: ["/og-image.png"],
   },
   robots: {
     index: true,

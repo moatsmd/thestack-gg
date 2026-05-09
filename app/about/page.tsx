@@ -60,8 +60,8 @@ export default function AboutPage() {
         <Fleuron />
         <div className="grid md:grid-cols-3 gap-4">
           <Mission icon={<HeartIcon />} title="Mission" body="Replace cluttered, ad-laden trackers with one obsidian console — fast, focused, and quietly beautiful." />
-          <Mission icon={<LayersIcon />} title="Approach" body="Native web. No accounts. No tracking. Just the tools — life, the stack, the rules — at your fingertips." />
-          <Mission icon={<SearchIcon />} title="Built On" body="Card data is supplied by Scryfall. Rules text is summarized from the comprehensive rules. Type by Cinzel and Inter." />
+          <Mission icon={<LayersIcon />} title="Approach" body="Native web. No accounts, no third-party trackers, no cross-site profile — just lightweight, anonymous usage analytics so we know what to fix next." />
+          <Mission icon={<SearchIcon />} title="Built On" body="Card data is supplied by Scryfall. Rules text is summarized from the comprehensive rules. Long-form guides live in the Codex. Type by Cinzel and Inter." />
         </div>
         <Fleuron />
         <h3 className="font-display tracking-[0.18em] uppercase text-[10px] text-[hsl(38_15%_60%)]">The Team</h3>

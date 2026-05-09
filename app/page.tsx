@@ -82,12 +82,8 @@ const accentMap: Record<string, string> = {
 
 const comingSoon = [
   {
-    title: 'Game Replay',
-    desc: 'Step through any session — every life change, every cast, every priority pass.',
-  },
-  {
-    title: 'Playgroups',
-    desc: 'Saved tables, win-rate dashboards, and rivalry rosters across pods.',
+    title: 'Rivalry Rosters',
+    desc: 'Cross-pod head-to-head records — see who actually owns the table over time.',
   },
   {
     title: 'Pod Sync',
@@ -329,7 +325,7 @@ export default function Home() {
             In the workshop.
           </p>
         </div>
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
           {comingSoon.map((c) => (
             <div key={c.title} className="panel p-6 relative">
               <span className="font-display tracking-[0.22em] text-[10px] uppercase text-[hsl(42_75%_65%/0.7)]">
