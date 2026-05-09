@@ -195,6 +195,101 @@ export default function TrackerPage() {
   const log = useGameLog()
   const sync = useSync()
 
+  // Join flow state — driven by ?join=CODE on the URL.
+  const [joinModalOpen, setJoinModalOpen] = useState(false)
+  const [joinCode, setJoinCode] = useState<string>('')
+  const [joinError, setJoinError] = useState<string | null>(null)
+  const [joinClaiming, setJoinClaiming] = useState<number | null>(null)
+  const joinAttemptedRef = useRef(false)
+
+  // Detect ?join=CODE on mount; open the join modal and resolve the code.
+  useEffect(() => {
+    if (joinAttemptedRef.current) return
+    if (typeof window === 'undefined') return
+    const url = new URL(window.location.href)
+    const code = url.searchParams.get('join')
+    if (!code) return
+    joinAttemptedRef.current = true
+    setJoinCode(code)
+    setJoinModalOpen(true)
+    // Strip the join param from the URL so a refresh doesn't re-trigger.
+    url.searchParams.delete('join')
+    window.history.replaceState({}, '', url.toString())
+  }, [])
+
+  // Once we have a deviceId AND the modal is open with a code, resolve it.
+  useEffect(() => {
+    if (!joinModalOpen) return
+    if (!sync.deviceId) return
+    if (sync.session) return // already joined
+    if (sync.status === 'creating') return
+    if (!joinCode) return
+    let cancelled = false
+    ;(async () => {
+      const res = await sync.joinSession(joinCode)
+      if (cancelled) return
+      if (!res) {
+        setJoinError('Pod not found or expired.')
+      } else {
+        setJoinError(null)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [joinModalOpen, joinCode, sync.deviceId, sync.session, sync.status, sync])
+
+  /**
+   * Claim a seat as the joiner. On success, hydrate local players from the
+   * server snapshot and drop straight into ActiveTracker as a viewer.
+   */
+  async function claimAndEnter(seatId: number) {
+    setJoinClaiming(seatId)
+    setJoinError(null)
+    try {
+      const seats = await sync.claimSeat(seatId)
+      if (!seats) {
+        setJoinError('Could not claim that seat. It may be taken.')
+        return
+      }
+      // Seed local Player[] from the snapshot so the tracker renders.
+      const snap = sync.snapshot
+      if (snap && snap.players.length > 0) {
+        setPlayers(
+          snap.players.map<Player>((p) => ({
+            id: p.id,
+            name: p.name,
+            life: p.life,
+            cmd: p.cmd,
+            cmdFrom: p.cmdFrom,
+            poison: p.poison,
+            mana: p.mana,
+            energy: p.energy,
+            experience: p.experience,
+          })),
+        )
+        setGameMode({
+          name: snap.gameMode.name,
+          life: snap.gameMode.life,
+        } as GameMode)
+        setCustomLife(snap.customLife)
+        setEnabledCounters(snap.enabledCounters as Counter[])
+      }
+      setJoinModalOpen(false)
+      setStep('play')
+      track('tracker_joined_pod', { seat_id: seatId })
+    } finally {
+      setJoinClaiming(null)
+    }
+  }
+
+  function cancelJoin() {
+    setJoinModalOpen(false)
+    setJoinError(null)
+    setJoinCode('')
+    sync.teardown()
+  }
+
   // Default keep-screen-on ON when entering tracker — request wake lock if available
   useEffect(() => {
     if (step !== 'play' || !keepScreenOn) return
@@ -285,7 +380,169 @@ export default function TrackerPage() {
           sync={sync}
         />
       )}
+      <JoinModal
+        open={joinModalOpen}
+        code={joinCode}
+        deviceId={sync.deviceId}
+        status={sync.status}
+        seats={sync.seats}
+        snapshot={sync.snapshot}
+        error={joinError}
+        claiming={joinClaiming}
+        onClaim={claimAndEnter}
+        onCancel={cancelJoin}
+      />
     </div>
+  )
+}
+
+/* ──────────────────────────────────────────────
+ * Join Modal
+ * ──────────────────────────────────────────────────────────── */
+
+type JoinModalProps = {
+  open: boolean
+  code: string
+  deviceId: string | null
+  status: UseSyncResult['status']
+  seats: UseSyncResult['seats']
+  snapshot: UseSyncResult['snapshot']
+  error: string | null
+  claiming: number | null
+  onClaim: (seatId: number) => void
+  onCancel: () => void
+}
+
+function JoinModal({
+  open,
+  code,
+  status,
+  seats,
+  snapshot,
+  error,
+  claiming,
+  onClaim,
+  onCancel,
+}: JoinModalProps) {
+  const formattedCode = code
+    ? `${code.slice(0, 3)}-${code.slice(3)}`.toUpperCase()
+    : ''
+  const unclaimedSeats = seats.filter((s) => !s.ownerDeviceId)
+  const resolving = status === 'creating' || (status === 'idle' && !error)
+  const ended = status === 'ended'
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          className="fixed inset-0 z-50 grid place-items-center p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          data-testid="join-dialog"
+        >
+          <div
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={onCancel}
+          />
+          <motion.div
+            className="relative panel-elevated arcane-glow-strong p-6 max-w-sm w-full text-center"
+            initial={{ scale: 0.95 }}
+            animate={{ scale: 1 }}
+            exit={{ scale: 0.95 }}
+            role="dialog"
+            aria-label="Join pod"
+          >
+            <button
+              onClick={onCancel}
+              className="absolute right-3 top-3 p-1.5 rounded-md hover:bg-accent/40"
+              data-testid="button-close-join"
+              aria-label="Close"
+            >
+              <X className="w-4 h-4 text-muted-foreground" />
+            </button>
+            <h3 className="font-display tracking-wide text-xl">Join pod</h3>
+            {formattedCode && (
+              <div
+                className="mt-3 px-4 py-2 panel rounded-md font-display tracking-[0.3em] text-lg"
+                data-testid="join-code"
+              >
+                {formattedCode}
+              </div>
+            )}
+
+            {error && (
+              <p
+                className="mt-4 text-sm text-destructive"
+                data-testid="join-error"
+              >
+                {error}
+              </p>
+            )}
+
+            {!error && resolving && (
+              <p className="mt-4 font-prose italic text-foreground/70 text-sm">
+                Resolving pod…
+              </p>
+            )}
+
+            {!error && ended && (
+              <p className="mt-4 font-prose italic text-foreground/70 text-sm">
+                This pod has ended.
+              </p>
+            )}
+
+            {!error &&
+              !resolving &&
+              !ended &&
+              snapshot &&
+              seats.length > 0 && (
+                <>
+                  <p className="font-prose italic text-foreground/70 text-sm mt-3">
+                    Pick the seat you want to control.
+                  </p>
+                  <div
+                    className="mt-4 grid grid-cols-1 gap-2"
+                    data-testid="join-seat-picker"
+                  >
+                    {seats.map((s) => {
+                      const taken = !!s.ownerDeviceId
+                      const isClaiming = claiming === s.seatId
+                      return (
+                        <button
+                          key={s.seatId}
+                          disabled={taken || claiming !== null}
+                          onClick={() => onClaim(s.seatId)}
+                          className={`panel hover-elevate text-sm py-3 px-4 flex items-center justify-between rounded-md ${
+                            taken ? 'opacity-40 cursor-not-allowed' : ''
+                          }`}
+                          data-testid={`join-seat-${s.seatId}`}
+                        >
+                          <span className="font-display tracking-wide">
+                            {s.name}
+                          </span>
+                          <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                            {taken
+                              ? 'Taken'
+                              : isClaiming
+                              ? 'Claiming…'
+                              : 'Open'}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                  {unclaimedSeats.length === 0 && (
+                    <p className="mt-3 text-xs text-muted-foreground">
+                      All seats are claimed. Ask the host to make room.
+                    </p>
+                  )}
+                </>
+              )}
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }
 
@@ -539,6 +796,7 @@ function ActiveTracker({
   const [qrUrl, setQrUrl] = useState<string>('')
   const [syncOpen, setSyncOpen] = useState(false)
   const [syncStarting, setSyncStarting] = useState(false)
+  const [syncQrUrl, setSyncQrUrl] = useState<string>('')
   const [endOpen, setEndOpen] = useState(false)
   const [endingGame, setEndingGame] = useState(false)
   const [endError, setEndError] = useState<string | null>(null)
@@ -715,6 +973,31 @@ function ActiveTracker({
     setShareOpen(true)
     track('tracker_share_opened', { players: players.length })
   }
+
+  // Render a QR for the sync joinUrl whenever it changes. The QR encodes
+  // the join URL so a phone camera + a single tap drops the joiner into
+  // /tracker?join=CODE.
+  useEffect(() => {
+    let cancelled = false
+    if (!sync.joinUrl) {
+      setSyncQrUrl('')
+      return
+    }
+    QRCode.toDataURL(sync.joinUrl, {
+      color: { dark: '#d4a93a', light: '#0f1115' },
+      width: 240,
+      margin: 1,
+    })
+      .then((url) => {
+        if (!cancelled) setSyncQrUrl(url)
+      })
+      .catch(() => {
+        if (!cancelled) setSyncQrUrl('')
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [sync.joinUrl])
 
   /**
    * Reconcile local Player[] state from remote ops authored by other devices.
@@ -1016,8 +1299,18 @@ function ActiveTracker({
                   >
                     {sync.session.code.slice(0, 3)}-{sync.session.code.slice(3)}
                   </div>
+                  {syncQrUrl && (
+                    <img
+                      src={syncQrUrl}
+                      alt="Scan to join this pod"
+                      className="mx-auto mt-4 rounded-md border border-border"
+                      width={240}
+                      height={240}
+                      data-testid="sync-qr"
+                    />
+                  )}
                   <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mt-3">
-                    QR code &amp; tap-to-join coming soon
+                    Scan with a phone, or share this link
                   </p>
                   {sync.joinUrl && (
                     <p className="font-mono text-[11px] text-foreground/60 mt-2 break-all" data-testid="sync-join-url">
