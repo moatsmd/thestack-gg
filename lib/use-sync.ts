@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getDeviceId } from '@/lib/device-id'
+import { applySyncOp, cloneSnapshot } from '@/lib/sync-apply'
 import type {
   SyncCounter,
   SyncGameMode,
@@ -14,17 +15,20 @@ import type {
 } from '@/types/sync'
 
 /**
- * useSync — write-path hook for Pod Sync (PR #20 of 4).
+ * useSync — read + write hook for Pod Sync (PRs #20–#21 of 4).
  *
- * Responsibilities in this PR:
- *   - Resolve a stable deviceId.
- *   - Create a session on demand from the active tracker state.
- *   - Hold session meta / seats / snapshot in state.
- *   - Accept emit() calls for each tracker write and POST them through a
- *     serial queue with exponential backoff and idempotent opIds.
+ * Write path (PR #20): each tracker mutation is emitted as an op, queued
+ * serially, and POSTed with an idempotent opId.
+ *
+ * Read path (PR #21): when a session is active, a 1.5s poller fetches
+ * /since?seq=N and applies any new ops to a local copy of the snapshot.
+ * Polling pauses when the document is hidden and resumes on visibility.
+ * The hook exposes a `remoteOps` callback that fires for ops authored by
+ * other devices; the tracker uses this to reconcile its local Player[]
+ * state. Ops authored by this device are filtered out of the callback to
+ * avoid double-applying our own writes.
  *
  * Future PRs add:
- *   - PR #21: polling reads via GET /since?seq=N + apply-remote-ops.
  *   - PR #22: QR modal + join flow + seat picker.
  *
  * The hook is intentionally permissive: when no session is active, emit()
@@ -61,6 +65,9 @@ const BACKOFF_MS = [500, 1_000, 2_000, 4_000, 8_000, 16_000, 30_000]
 const backoffFor = (attempts: number) =>
   BACKOFF_MS[Math.min(attempts, BACKOFF_MS.length - 1)]
 
+/** Callback invoked for each remote op (excludes ops authored by this device). */
+export type RemoteOpHandler = (envelope: SyncOpEnvelope) => void
+
 export type UseSyncResult = {
   status: SyncStatus
   deviceId: string | null
@@ -72,10 +79,19 @@ export type UseSyncResult = {
   isHost: boolean
   /** Pending ops not yet acknowledged by server. */
   pendingCount: number
+  /** Latest seq the client has applied. */
+  appliedSeq: number
   /** Create a new sync session from the current tracker state. */
   createSession: (input: CreateInput) => Promise<CreateResponse | null>
   /** Emit an op. No-op when no session is active. */
   emit: (op: SyncOp) => void
+  /**
+   * Subscribe to remote ops. The handler is called once per envelope authored
+   * by another device, in seq order, after the snapshot has been mutated.
+   * Returns an unsubscribe function. Safe to call repeatedly — only the
+   * latest registered handler fires.
+   */
+  subscribeRemoteOps: (handler: RemoteOpHandler | null) => () => void
   /** Tear down — used on Exit/End. Does not delete server state. */
   teardown: () => void
 }
@@ -104,6 +120,14 @@ export function useSync(): UseSyncResult {
   const statusRef = useRef<SyncStatus>('idle')
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Read-path refs (PR #21).
+  const appliedSeqRef = useRef(0)
+  const [appliedSeq, setAppliedSeq] = useState(0)
+  const remoteHandlerRef = useRef<RemoteOpHandler | null>(null)
+  const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pollingRef = useRef(false)
+  const deviceIdRef = useRef<string | null>(null)
+
   useEffect(() => {
     sessionIdRef.current = session?.id ?? null
   }, [session?.id])
@@ -113,8 +137,13 @@ export function useSync(): UseSyncResult {
   }, [status])
 
   useEffect(() => {
+    deviceIdRef.current = deviceId
+  }, [deviceId])
+
+  useEffect(() => {
     return () => {
       if (retryTimerRef.current) clearTimeout(retryTimerRef.current)
+      if (pollTimerRef.current) clearTimeout(pollTimerRef.current)
     }
   }, [])
 
@@ -216,14 +245,153 @@ export function useSync(): UseSyncResult {
         setSnapshot(data.snapshot)
         setJoinUrl(data.joinUrl)
         sessionIdRef.current = data.id
+        appliedSeqRef.current = data.snapshot.seq
+        setAppliedSeq(data.snapshot.seq)
         setStatus('active')
+        startPolling()
         return data
       } catch {
         setStatus('idle')
         return null
       }
     },
-    [deviceId],
+    [deviceId, /* startPolling captured via closure; see read-path block below */],
+  )
+
+  // ── Read path: poll /since?seq=N at 1.5s and apply remote ops ──────
+  const POLL_INTERVAL_MS = 1_500
+
+  const pollOnce = useCallback(async () => {
+    const id = sessionIdRef.current
+    if (!id) return
+    if (statusRef.current === 'ended') return
+    // Skip polling while a tab is hidden — saves battery and avoids the
+    // backlog effect when laptops sleep.
+    if (typeof document !== 'undefined' && document.hidden) return
+
+    try {
+      const res = await fetch(`/api/sync/${id}/since?seq=${appliedSeqRef.current}`)
+      if (!res.ok) {
+        if (res.status === 404) {
+          // Session expired or was never there — give up cleanly.
+          setStatus('ended')
+          return
+        }
+        // 5xx — keep status, just wait for next tick.
+        if (statusRef.current === 'active') setStatus('offline')
+        return
+      }
+      const data = (await res.json()) as {
+        ops: SyncOpEnvelope[]
+        seq: number
+      }
+      // Recover from offline if a successful read came through.
+      if (statusRef.current === 'offline') setStatus('active')
+      if (!data.ops || data.ops.length === 0) {
+        // Even with no new ops, mirror the head seq so a later POST
+        // doesn't ask for a stale floor.
+        appliedSeqRef.current = Math.max(appliedSeqRef.current, data.seq)
+        setAppliedSeq(appliedSeqRef.current)
+        return
+      }
+      // Apply ops in seq order. We compute the new seq + side effects
+      // synchronously here (not inside a functional setSnapshot callback)
+      // so the ref is correctly advanced before any subsequent reads.
+      const newOps = data.ops.filter((env) => env.seq > appliedSeqRef.current)
+      for (const env of newOps) {
+        appliedSeqRef.current = env.seq
+        if (
+          env.deviceId !== deviceIdRef.current &&
+          remoteHandlerRef.current
+        ) {
+          remoteHandlerRef.current(env)
+        }
+        if (env.op.type === 'end_game') {
+          setStatus('ended')
+        }
+      }
+      // Then mutate snapshot (which may be null if we haven't seeded yet).
+      setSnapshot((prev) => {
+        if (!prev) return prev
+        let next = cloneSnapshot(prev)
+        for (const env of newOps) {
+          next = applySyncOp(next, env.op, undefined)
+        }
+        next.seq = appliedSeqRef.current
+        return next
+      })
+      // Mirror seats too — rename ops update seat name through a separate
+      // path; we sync from snapshot.players to keep them consistent.
+      setSeats((prevSeats) => {
+        if (prevSeats.length === 0) return prevSeats
+        let changed = false
+        const out = prevSeats.map((s) => {
+          // Find the matching player on the latest applied snapshot. Reading
+          // the closed-over snapshot would be stale, so we look up by seatId.
+          const renames = data.ops.filter(
+            (o) => o.op.type === 'rename' && o.op.seatId === s.seatId,
+          )
+          if (renames.length === 0) return s
+          const latest = renames[renames.length - 1]
+          if (latest.op.type !== 'rename') return s
+          const trimmed = latest.op.name.trim().slice(0, 32)
+          if (!trimmed || trimmed === s.name) return s
+          changed = true
+          return { ...s, name: trimmed }
+        })
+        return changed ? out : prevSeats
+      })
+      setAppliedSeq(appliedSeqRef.current)
+    } catch {
+      if (statusRef.current === 'active') setStatus('offline')
+    }
+  }, [])
+
+  const startPolling = useCallback(() => {
+    if (pollingRef.current) return
+    pollingRef.current = true
+    const tick = () => {
+      if (!pollingRef.current) return
+      void pollOnce().finally(() => {
+        if (!pollingRef.current) return
+        pollTimerRef.current = setTimeout(tick, POLL_INTERVAL_MS)
+      })
+    }
+    tick()
+  }, [pollOnce])
+
+  const stopPolling = useCallback(() => {
+    pollingRef.current = false
+    if (pollTimerRef.current) {
+      clearTimeout(pollTimerRef.current)
+      pollTimerRef.current = null
+    }
+  }, [])
+
+  // Visibility-aware: pause when tab hides, resume on visible.
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    const onVis = () => {
+      if (document.hidden) return
+      if (sessionIdRef.current && statusRef.current !== 'ended') {
+        // Force one immediate fetch to catch up after a hide period.
+        void pollOnce()
+      }
+    }
+    document.addEventListener('visibilitychange', onVis)
+    return () => document.removeEventListener('visibilitychange', onVis)
+  }, [pollOnce])
+
+  const subscribeRemoteOps = useCallback(
+    (handler: RemoteOpHandler | null) => {
+      remoteHandlerRef.current = handler
+      return () => {
+        if (remoteHandlerRef.current === handler) {
+          remoteHandlerRef.current = null
+        }
+      }
+    },
+    [],
   )
 
   const teardown = useCallback(() => {
@@ -235,11 +403,14 @@ export function useSync(): UseSyncResult {
     setJoinUrl(null)
     sessionIdRef.current = null
     setStatus('idle')
+    appliedSeqRef.current = 0
+    setAppliedSeq(0)
+    stopPolling()
     if (retryTimerRef.current) {
       clearTimeout(retryTimerRef.current)
       retryTimerRef.current = null
     }
-  }, [])
+  }, [stopPolling])
 
   const isHost = useMemo(
     () => !!session && !!deviceId && session.hostDeviceId === deviceId,
@@ -255,8 +426,10 @@ export function useSync(): UseSyncResult {
     joinUrl,
     isHost,
     pendingCount,
+    appliedSeq,
     createSession,
     emit,
+    subscribeRemoteOps,
     teardown,
   }
 }
