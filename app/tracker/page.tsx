@@ -114,6 +114,12 @@ const Trophy = (p: IconProps) => (
     <path d="M12 17v4" />
   </Icon>
 )
+const Pencil = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M12 20h9" />
+    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+  </Icon>
+)
 
 /* ────────────────────────────────────────────────────────────
  * Types
@@ -734,6 +740,7 @@ function ActiveTracker({
       </div>
 
       <Tip />
+      <NameHint multi={players.length > 1} />
 
       <AnimatePresence>
         {shareOpen && (
@@ -939,6 +946,7 @@ function PlayerPanel({
   const cmdFrom = player.cmdFrom ?? {}
   const maxCmd = maxCmdFrom(cmdFrom)
   const lethalFromCmd = maxCmd >= 21
+  const defaultName = opponents.length === 0 ? 'You' : `Player ${player.id}`
   const tier =
     player.life <= 0
       ? 'lethal'
@@ -1008,12 +1016,25 @@ function PlayerPanel({
         )}
       </AnimatePresence>
       <div className="flex items-center justify-between">
-        <input
-          value={player.name}
-          onChange={(e) => update({ name: e.target.value })}
-          className="font-display tracking-wide text-base bg-transparent outline-none w-full max-w-[160px]"
-          data-testid={`input-name-${player.id}`}
-        />
+        <div className="group relative flex items-center gap-1.5 min-w-0 flex-1 max-w-[180px]">
+          <input
+            value={player.name}
+            onChange={(e) => update({ name: e.target.value })}
+            onBlur={(e) => {
+              if (!e.target.value.trim()) {
+                update({ name: defaultName })
+              }
+            }}
+            placeholder={defaultName}
+            aria-label="Player name (tap to rename)"
+            className="font-display tracking-wide text-base bg-transparent outline-none w-full pb-0.5 border-b border-dotted border-[hsl(42_75%_55%/0.35)] hover:border-[hsl(42_75%_55%/0.7)] focus:border-solid focus:border-[hsl(42_75%_55%)] transition-colors placeholder:text-[hsl(38_30%_88%/0.4)]"
+            data-testid={`input-name-${player.id}`}
+          />
+          <Pencil
+            className="w-3 h-3 text-[hsl(42_75%_55%)] opacity-0 group-hover:opacity-50 group-focus-within:opacity-70 transition-opacity flex-shrink-0"
+            strokeWidth={2}
+          />
+        </div>
         <div className="flex items-center gap-1">
           {enabledCounters.includes('cmd') && opponents.length > 0 && (
             <button
@@ -1331,6 +1352,48 @@ function Tip() {
         onClick={() => setOpen(false)}
         className="text-xs text-muted-foreground hover:text-foreground"
         data-testid="button-dismiss-tip"
+      >
+        Got it
+      </button>
+    </div>
+  )
+}
+
+const NAME_HINT_KEY = 'thestack:seen-name-hint'
+
+function NameHint({ multi }: { multi: boolean }) {
+  const [open, setOpen] = useState(false)
+  useEffect(() => {
+    if (!multi) return
+    if (typeof window === 'undefined') return
+    try {
+      if (localStorage.getItem(NAME_HINT_KEY)) return
+    } catch {
+      return
+    }
+    setOpen(true)
+    const t = setTimeout(() => {
+      setOpen(false)
+      try { localStorage.setItem(NAME_HINT_KEY, '1') } catch {}
+    }, 8000)
+    return () => clearTimeout(t)
+  }, [multi])
+  function dismiss() {
+    setOpen(false)
+    try { localStorage.setItem(NAME_HINT_KEY, '1') } catch {}
+  }
+  if (!open) return null
+  return (
+    <div className="mt-3 panel p-3 flex items-start gap-3 text-sm" data-testid="hint-rename">
+      <Pencil className="w-4 h-4 text-primary mt-0.5" />
+      <div className="flex-1">
+        <span className="font-display tracking-wide text-primary">Rename</span>
+        <span className="text-muted-foreground"> — Tap any player’s name to rename them. Empty names snap back.</span>
+      </div>
+      <button
+        onClick={dismiss}
+        className="text-xs text-muted-foreground hover:text-foreground"
+        data-testid="button-dismiss-name-hint"
       >
         Got it
       </button>
