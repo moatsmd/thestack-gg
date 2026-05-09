@@ -355,9 +355,9 @@ const applyOpInPlace = (
       const cur = p.cmdFrom[op.sourceId] ?? 0
       const next = Math.max(0, cur + op.delta)
       p.cmdFrom[op.sourceId] = next
-      // Also update derived life from this commander hit (keep in sync with
-      // the local tracker behaviour: cmdFrom delta also moves life by -delta).
-      p.life = p.life - op.delta
+      // Note: cmd_from does NOT auto-mutate life. The local tracker keeps
+      // commander damage and life independent (player decides whether to
+      // also reduce life). Sync mirrors that behaviour for consistency.
       // Recompute max-from-single-source for the cmd badge.
       let max = 0
       for (const v of Object.values(p.cmdFrom)) if (v > max) max = v

@@ -245,6 +245,149 @@ describe('Tracker Page', () => {
     expect(screen.queryByTestId('hint-rename')).not.toBeInTheDocument()
   })
 
+  describe('Pod Sync wiring', () => {
+    let fetchMock: jest.Mock
+    let originalFetch: typeof globalThis.fetch | undefined
+
+    beforeEach(() => {
+      window.localStorage.setItem('thestack:device-id', 'test-host-aaaa')
+      window.localStorage.setItem('thestack:seen-name-hint', '1')
+      originalFetch = (globalThis as { fetch?: typeof fetch }).fetch
+      fetchMock = jest.fn()
+      ;(globalThis as { fetch: typeof fetch }).fetch =
+        fetchMock as unknown as typeof fetch
+    })
+
+    afterEach(() => {
+      if (originalFetch) {
+        ;(globalThis as { fetch: typeof fetch }).fetch = originalFetch
+      } else {
+        delete (globalThis as { fetch?: typeof fetch }).fetch
+      }
+    })
+
+    const okJson = (body: unknown, status = 200): Response =>
+      ({
+        ok: status >= 200 && status < 300,
+        status,
+        json: async () => body,
+      }) as unknown as Response
+
+    async function startMultiGame() {
+      const user = userEvent.setup()
+      renderWithProviders(<TrackerPage />)
+      await clickWhenSettled(user, 'mode-multi')
+      await clickWhenSettled(user, 'button-wizard-next')
+      await clickWhenSettled(user, 'players-2')
+      await clickWhenSettled(user, 'button-wizard-next')
+      await clickWhenSettled(user, 'format-standard-20')
+      await clickWhenSettled(user, 'button-wizard-next')
+      await clickWhenSettled(user, 'button-wizard-next')
+      // Wait for the active tracker to render before returning.
+      await waitFor(() =>
+        expect(screen.getByTestId('life-1')).toHaveTextContent('20'),
+      )
+      return user
+    }
+
+    it('shows the Sync button only in multiplayer mode', async () => {
+      await startMultiGame()
+      expect(screen.getByTestId('button-sync')).toBeInTheDocument()
+    })
+
+    it('opens the dialog and creates a sync session via /api/sync', async () => {
+      fetchMock.mockResolvedValueOnce(
+        okJson({
+          id: 'sess_xyz',
+          code: 'XYZ123',
+          joinUrl: 'https://thestack.gg/tracker?join=XYZ123',
+          session: {
+            id: 'sess_xyz',
+            code: 'XYZ123',
+            hostDeviceId: 'test-host-aaaa',
+            createdAt: 1,
+            seq: 0,
+          },
+          snapshot: {
+            seq: 0,
+            players: [],
+            gameMode: { name: 'Standard', life: 20 },
+            customLife: 20,
+            enabledCounters: ['cmd', 'poison', 'mana'],
+          },
+          seats: [],
+          expiresInMs: 86_400_000,
+        }),
+      )
+      const user = await startMultiGame()
+
+      await user.click(screen.getByTestId('button-sync'))
+      expect(await screen.findByTestId('sync-dialog')).toBeInTheDocument()
+
+      await user.click(screen.getByTestId('button-start-sync'))
+
+      await waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledWith(
+          '/api/sync',
+          expect.objectContaining({ method: 'POST' }),
+        )
+      })
+
+      // Code is rendered formatted as XYZ-123.
+      const code = await screen.findByTestId('sync-code')
+      expect(code).toHaveTextContent('XYZ-123')
+      expect(screen.getByTestId('sync-status-label')).toHaveTextContent('Live')
+    })
+
+    it('emits a life op to /api/sync/{id}/op when life changes during an active session', async () => {
+      fetchMock
+        .mockResolvedValueOnce(
+          okJson({
+            id: 'sess_xyz',
+            code: 'XYZ123',
+            joinUrl: 'https://thestack.gg/tracker?join=XYZ123',
+            session: {
+              id: 'sess_xyz',
+              code: 'XYZ123',
+              hostDeviceId: 'test-host-aaaa',
+              createdAt: 1,
+              seq: 0,
+            },
+            snapshot: {
+              seq: 0,
+              players: [],
+              gameMode: { name: 'Standard', life: 20 },
+              customLife: 20,
+              enabledCounters: ['cmd', 'poison', 'mana'],
+            },
+            seats: [],
+            expiresInMs: 86_400_000,
+          }),
+        )
+        .mockResolvedValue(okJson({ envelope: { seq: 1 } }))
+
+      const user = await startMultiGame()
+      await user.click(screen.getByTestId('button-sync'))
+      await user.click(await screen.findByTestId('button-start-sync'))
+      await screen.findByTestId('sync-code')
+      await user.click(screen.getByTestId('button-close-sync'))
+
+      // Life-1 → click minus once should POST to /api/sync/sess_xyz/op.
+      await user.click(screen.getByTestId('life-minus-1'))
+
+      await waitFor(() => {
+        const opCall = fetchMock.mock.calls.find(
+          (c) => c[0] === '/api/sync/sess_xyz/op',
+        )
+        expect(opCall).toBeDefined()
+        const body = JSON.parse((opCall![1] as RequestInit).body as string)
+        expect(body.op).toEqual({ type: 'life', seatId: 1, delta: -1 })
+        expect(body.deviceId).toBe('test-host-aaaa')
+        expect(body.opId).toMatch(/^test-host-aaaa:\d+$/)
+      })
+    })
+  })
+
   it('Exit returns to the wizard', async () => {
     const user = userEvent.setup()
     renderWithProviders(<TrackerPage />)
