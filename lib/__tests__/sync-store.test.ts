@@ -162,7 +162,7 @@ describe('sync-store', () => {
   })
 
   describe('appendOp — cmd_from', () => {
-    it('cmd_from updates per-source map and reduces life by delta', async () => {
+    it('cmd_from updates per-source map and recomputes max, leaves life alone', async () => {
       const r = await createSyncSession({ ...baseInput(), enabledCounters: ['cmd'] })
       const result = await appendOp({
         sessionId: r.session.id,
@@ -174,7 +174,9 @@ describe('sync-store', () => {
       if (result.ok) {
         const p = result.snapshot.players.find((x) => x.id === 2)!
         expect(p.cmdFrom?.[3]).toBe(7)
-        expect(p.life).toBe(33)
+        // CMD damage and life are tracked independently in the local tracker
+        // and we mirror that here — life is not auto-mutated.
+        expect(p.life).toBe(40)
         expect(p.cmd).toBe(7)
       }
     })

@@ -8,6 +8,7 @@ import { GoldRule } from '@/components/Fleuron'
 import { track } from '@/lib/analytics'
 import { YourPods } from '@/components/YourPods'
 import { useGameLog, type UseGameLog } from '@/hooks/useGameLog'
+import { useSync, type UseSyncResult } from '@/lib/use-sync'
 import type { RecapPlayer } from '@/types/replay'
 
 /* ────────────────────────────────────────────────────────────
@@ -120,6 +121,14 @@ const Pencil = (p: IconProps) => (
     <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
   </Icon>
 )
+const Wifi = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M5 12.55a11 11 0 0 1 14 0" />
+    <path d="M1.42 9a16 16 0 0 1 21.16 0" />
+    <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+    <line x1="12" y1="20" x2="12.01" y2="20" />
+  </Icon>
+)
 
 /* ────────────────────────────────────────────────────────────
  * Types
@@ -184,6 +193,7 @@ export default function TrackerPage() {
   const [keepScreenOn, setKeepScreenOn] = useState(true)
   const wakeLockRef = useRef<any>(null)
   const log = useGameLog()
+  const sync = useSync()
 
   // Default keep-screen-on ON when entering tracker — request wake lock if available
   useEffect(() => {
@@ -268,9 +278,11 @@ export default function TrackerPage() {
           setKeepScreenOn={setKeepScreenOn}
           onExit={() => {
             log.reset()
+            sync.teardown()
             setStep('mode')
           }}
           log={log}
+          sync={sync}
         />
       )}
     </div>
@@ -507,6 +519,7 @@ type ActiveProps = {
   setKeepScreenOn: (b: boolean) => void
   onExit: () => void
   log: UseGameLog
+  sync: UseSyncResult
 }
 
 function ActiveTracker({
@@ -517,12 +530,15 @@ function ActiveTracker({
   enabledCounters,
   keepScreenOn,
   setKeepScreenOn,
+  sync,
   onExit,
   log,
 }: ActiveProps) {
   const router = useRouter()
   const [shareOpen, setShareOpen] = useState(false)
   const [qrUrl, setQrUrl] = useState<string>('')
+  const [syncOpen, setSyncOpen] = useState(false)
+  const [syncStarting, setSyncStarting] = useState(false)
   const [endOpen, setEndOpen] = useState(false)
   const [endingGame, setEndingGame] = useState(false)
   const [endError, setEndError] = useState<string | null>(null)
@@ -542,10 +558,44 @@ function ActiveTracker({
       const after = next.find((p) => p.id === id)
       if (before && after) {
         if (typeof patch.life === 'number' && after.life !== before.life) {
-          log.life(id, after.life - before.life, after.life)
+          const delta = after.life - before.life
+          log.life(id, delta, after.life)
+          sync.emit({ type: 'life', seatId: id, delta })
         }
         if (typeof patch.poison === 'number' && after.poison !== before.poison) {
-          log.poison(id, after.poison - before.poison, after.poison)
+          const delta = after.poison - before.poison
+          log.poison(id, delta, after.poison)
+          sync.emit({ type: 'counter', seatId: id, counter: 'poison', delta })
+        }
+        if (typeof patch.mana === 'number' && after.mana !== before.mana) {
+          sync.emit({
+            type: 'counter',
+            seatId: id,
+            counter: 'mana',
+            delta: after.mana - before.mana,
+          })
+        }
+        if (typeof patch.energy === 'number' && after.energy !== before.energy) {
+          sync.emit({
+            type: 'counter',
+            seatId: id,
+            counter: 'energy',
+            delta: after.energy - before.energy,
+          })
+        }
+        if (
+          typeof patch.experience === 'number' &&
+          after.experience !== before.experience
+        ) {
+          sync.emit({
+            type: 'counter',
+            seatId: id,
+            counter: 'experience',
+            delta: after.experience - before.experience,
+          })
+        }
+        if (typeof patch.name === 'string' && after.name !== before.name) {
+          sync.emit({ type: 'rename', seatId: id, name: after.name })
         }
       }
       return next
@@ -570,7 +620,14 @@ function ActiveTracker({
       const next = prev.map((p) =>
         p.id === targetId ? { ...p, cmdFrom: nextCmdFrom, cmd: nextCmd } : p
       )
-      log.cmd(targetId, afterAmt - beforeAmt, nextCmd, sourceId)
+      const appliedDelta = afterAmt - beforeAmt
+      log.cmd(targetId, appliedDelta, nextCmd, sourceId)
+      sync.emit({
+        type: 'cmd_from',
+        seatId: targetId,
+        sourceId,
+        delta: appliedDelta,
+      })
       return next
     })
   }
@@ -588,6 +645,7 @@ function ActiveTracker({
       players: players.map<RecapPlayer>((p) => ({ id: p.id, name: p.name })),
     })
     track('tracker_reset', { players: players.length, format: gameMode.name })
+    sync.emit({ type: 'reset' })
   }
 
   // Only show End Game once at least one log entry beyond game_start exists.
@@ -635,6 +693,7 @@ function ActiveTracker({
         events: events.length + 1,
         had_winner: winnerId != null,
       })
+      sync.emit({ type: 'end_game', winnerSeatId: winnerId })
       router.push(`/recap/${data.id}`)
     } catch (err) {
       setEndError(err instanceof Error ? err.message : 'Could not save recap')
@@ -706,6 +765,26 @@ function ActiveTracker({
           >
             <Share2 className="w-4 h-4" /> Share
           </button>
+          {players.length > 1 && (
+            <button
+              onClick={() => setSyncOpen(true)}
+              className={`px-3 py-1.5 panel hover-elevate text-sm inline-flex items-center gap-2 ${
+                sync.status === 'active' ? 'text-primary' : ''
+              } ${sync.status === 'offline' ? 'text-[hsl(42_75%_55%)]' : ''}`}
+              data-testid="button-sync"
+              aria-label="Sync game across players"
+            >
+              <Wifi className={`w-4 h-4 ${sync.status === 'active' ? 'text-primary' : ''}`} />
+              {sync.status === 'active' ? 'Synced' : 'Sync'}
+              {sync.pendingCount > 0 && (
+                <span
+                  className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-[hsl(42_75%_55%)]"
+                  data-testid="sync-pending-dot"
+                  aria-label={`${sync.pendingCount} ops pending`}
+                />
+              )}
+            </button>
+          )}
           {canEndGame && (
             <button
               onClick={() => setEndOpen(true)}
@@ -770,6 +849,115 @@ function ActiveTracker({
               <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mt-3">
                 Snapshot only — read-only on the receiving device.
               </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Pod Sync modal */}
+      <AnimatePresence>
+        {syncOpen && (
+          <motion.div
+            className="fixed inset-0 z-50 grid place-items-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            data-testid="sync-dialog"
+          >
+            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setSyncOpen(false)} />
+            <motion.div
+              className="relative panel-elevated arcane-glow-strong p-6 max-w-sm w-full text-center"
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.95 }}
+              role="dialog"
+              aria-label="Pod Sync"
+            >
+              <button
+                onClick={() => setSyncOpen(false)}
+                className="absolute right-3 top-3 p-1.5 rounded-md hover:bg-accent/40"
+                data-testid="button-close-sync"
+                aria-label="Close"
+              >
+                <X className="w-4 h-4 text-muted-foreground" />
+              </button>
+              <h3 className="font-display tracking-wide text-xl">Pod Sync</h3>
+              {sync.status !== 'active' && sync.status !== 'offline' && (
+                <>
+                  <p className="font-prose italic text-foreground/70 text-sm mt-1">
+                    Sync this game to your friends&rsquo; devices. Each player controls their own life total — everyone sees changes live.
+                  </p>
+                  <button
+                    onClick={async () => {
+                      setSyncStarting(true)
+                      try {
+                        await sync.createSession({
+                          players: players.map((p) => ({
+                            id: p.id,
+                            name: p.name,
+                            life: p.life,
+                            cmd: p.cmd,
+                            cmdFrom: p.cmdFrom,
+                            poison: p.poison,
+                            mana: p.mana,
+                            energy: p.energy,
+                            experience: p.experience,
+                          })),
+                          gameMode: { name: gameMode.name, life: gameMode.life },
+                          customLife,
+                          enabledCounters,
+                        })
+                      } finally {
+                        setSyncStarting(false)
+                      }
+                    }}
+                    disabled={syncStarting || sync.status === 'creating'}
+                    className="mt-5 px-4 py-2 bg-primary text-primary-foreground rounded-md hover-elevate text-sm font-medium inline-flex items-center gap-2 disabled:opacity-50"
+                    data-testid="button-start-sync"
+                  >
+                    <Wifi className="w-4 h-4" />
+                    {sync.status === 'creating' || syncStarting ? 'Starting…' : 'Start sync'}
+                  </button>
+                </>
+              )}
+              {(sync.status === 'active' || sync.status === 'offline') && sync.session && (
+                <>
+                  <p className="font-prose italic text-foreground/70 text-sm mt-1">
+                    Share this code with your friends. They&rsquo;ll join the same game.
+                  </p>
+                  <div
+                    className="mt-4 px-4 py-3 panel rounded-md font-display tracking-[0.3em] text-2xl"
+                    data-testid="sync-code"
+                  >
+                    {sync.session.code.slice(0, 3)}-{sync.session.code.slice(3)}
+                  </div>
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mt-3">
+                    QR code &amp; tap-to-join coming soon
+                  </p>
+                  {sync.joinUrl && (
+                    <p className="font-mono text-[11px] text-foreground/60 mt-2 break-all" data-testid="sync-join-url">
+                      {sync.joinUrl}
+                    </p>
+                  )}
+                  <div className="flex items-center justify-center gap-2 mt-4 text-xs text-muted-foreground">
+                    <span
+                      className={`inline-block w-2 h-2 rounded-full ${
+                        sync.status === 'active' ? 'bg-primary' : 'bg-[hsl(42_75%_55%)]'
+                      }`}
+                      data-testid="sync-status-dot"
+                    />
+                    <span data-testid="sync-status-label">
+                      {sync.status === 'active' ? 'Live' : 'Reconnecting…'}
+                    </span>
+                    {sync.pendingCount > 0 && (
+                      <span data-testid="sync-pending-count">· {sync.pendingCount} pending</span>
+                    )}
+                  </div>
+                </>
+              )}
+              {sync.status === 'ended' && (
+                <p className="font-prose italic text-foreground/70 text-sm mt-2">This pod has ended.</p>
+              )}
             </motion.div>
           </motion.div>
         )}
