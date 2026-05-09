@@ -716,6 +716,68 @@ function ActiveTracker({
     track('tracker_share_opened', { players: players.length })
   }
 
+  /**
+   * Reconcile local Player[] state from remote ops authored by other devices.
+   * Own-device ops are filtered out by useSync, so we only see ops from
+   * other seats here. Mirrors the server's applySyncOp logic but on the
+   * tracker's Player[] shape (life/cmd/poison/mana/energy/experience/name).
+   * Reset and end_game are surfaced too so non-host viewers see those.
+   */
+  useEffect(() => {
+    const unsub = sync.subscribeRemoteOps((env) => {
+      const op = env.op
+      if (op.type === 'life') {
+        setPlayers((prev) =>
+          prev.map((p) =>
+            p.id === op.seatId ? { ...p, life: p.life + op.delta } : p,
+          ),
+        )
+      } else if (op.type === 'counter') {
+        setPlayers((prev) =>
+          prev.map((p) => {
+            if (p.id !== op.seatId) return p
+            const cur = (p[op.counter] as number) ?? 0
+            const nextVal = Math.max(0, cur + op.delta)
+            return { ...p, [op.counter]: nextVal }
+          }),
+        )
+      } else if (op.type === 'cmd_from') {
+        setPlayers((prev) =>
+          prev.map((p) => {
+            if (p.id !== op.seatId) return p
+            const cmdFrom = { ...(p.cmdFrom ?? {}) }
+            const cur = cmdFrom[op.sourceId] ?? 0
+            const nextAmt = Math.max(0, cur + op.delta)
+            cmdFrom[op.sourceId] = nextAmt
+            return { ...p, cmdFrom, cmd: maxCmdFrom(cmdFrom) }
+          }),
+        )
+      } else if (op.type === 'rename') {
+        const trimmed = op.name.trim().slice(0, 32)
+        if (!trimmed) return
+        setPlayers((prev) =>
+          prev.map((p) => (p.id === op.seatId ? { ...p, name: trimmed } : p)),
+        )
+      } else if (op.type === 'reset') {
+        setPlayers((prev) =>
+          prev.map((p) => ({
+            ...p,
+            life: startLife,
+            cmd: 0,
+            cmdFrom: {},
+            poison: 0,
+            mana: 0,
+            energy: 0,
+            experience: 0,
+          })),
+        )
+      }
+      // end_game state surfaces via sync.status === 'ended'; tracker UI
+      // reads that to show the post-game summary. No local mutation needed.
+    })
+    return unsub
+  }, [sync, setPlayers, startLife])
+
   const cols =
     players.length === 1
       ? 'grid-cols-1'
@@ -770,12 +832,35 @@ function ActiveTracker({
               onClick={() => setSyncOpen(true)}
               className={`px-3 py-1.5 panel hover-elevate text-sm inline-flex items-center gap-2 ${
                 sync.status === 'active' ? 'text-primary' : ''
-              } ${sync.status === 'offline' ? 'text-[hsl(42_75%_55%)]' : ''}`}
+              } ${sync.status === 'offline' ? 'text-[hsl(42_75%_55%)]' : ''} ${
+                sync.status === 'ended' ? 'text-muted-foreground' : ''
+              }`}
               data-testid="button-sync"
               aria-label="Sync game across players"
             >
               <Wifi className={`w-4 h-4 ${sync.status === 'active' ? 'text-primary' : ''}`} />
-              {sync.status === 'active' ? 'Synced' : 'Sync'}
+              {sync.status === 'active'
+                ? 'Synced'
+                : sync.status === 'offline'
+                ? 'Reconnecting'
+                : sync.status === 'ended'
+                ? 'Ended'
+                : 'Sync'}
+              {(sync.status === 'active' ||
+                sync.status === 'offline' ||
+                sync.status === 'ended') && (
+                <span
+                  className={`inline-block w-1.5 h-1.5 rounded-full ${
+                    sync.status === 'active'
+                      ? 'bg-primary'
+                      : sync.status === 'offline'
+                      ? 'bg-[hsl(42_75%_55%)]'
+                      : 'bg-muted-foreground'
+                  }`}
+                  data-testid="sync-button-status-dot"
+                  aria-hidden="true"
+                />
+              )}
               {sync.pendingCount > 0 && (
                 <span
                   className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-[hsl(42_75%_55%)]"
@@ -942,12 +1027,20 @@ function ActiveTracker({
                   <div className="flex items-center justify-center gap-2 mt-4 text-xs text-muted-foreground">
                     <span
                       className={`inline-block w-2 h-2 rounded-full ${
-                        sync.status === 'active' ? 'bg-primary' : 'bg-[hsl(42_75%_55%)]'
+                        sync.status === 'active'
+                          ? 'bg-primary'
+                          : sync.status === 'offline'
+                          ? 'bg-[hsl(42_75%_55%)]'
+                          : 'bg-muted-foreground'
                       }`}
                       data-testid="sync-status-dot"
                     />
                     <span data-testid="sync-status-label">
-                      {sync.status === 'active' ? 'Live' : 'Reconnecting…'}
+                      {sync.status === 'active'
+                        ? 'Live'
+                        : sync.status === 'offline'
+                        ? 'Reconnecting…'
+                        : 'Ended'}
                     </span>
                     {sync.pendingCount > 0 && (
                       <span data-testid="sync-pending-count">· {sync.pendingCount} pending</span>
@@ -956,7 +1049,18 @@ function ActiveTracker({
                 </>
               )}
               {sync.status === 'ended' && (
-                <p className="font-prose italic text-foreground/70 text-sm mt-2">This pod has ended.</p>
+                <div className="mt-4">
+                  <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                    <span
+                      className="inline-block w-2 h-2 rounded-full bg-muted-foreground"
+                      data-testid="sync-status-dot"
+                    />
+                    <span data-testid="sync-status-label">Ended</span>
+                  </div>
+                  <p className="font-prose italic text-foreground/70 text-sm mt-2">
+                    This pod has ended.
+                  </p>
+                </div>
               )}
             </motion.div>
           </motion.div>

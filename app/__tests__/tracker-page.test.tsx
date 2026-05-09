@@ -339,6 +339,77 @@ describe('Tracker Page', () => {
       expect(screen.getByTestId('sync-status-label')).toHaveTextContent('Live')
     })
 
+    it('applies a remote life op from /since to the local life-1 display', async () => {
+      // Routed mock: capture create + serve a /since payload with one
+      // remote op authored by another device. Default for everything else
+      // is a no-op response so polling doesn't error.
+      let createServed = false
+      let sinceServed = false
+      fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
+        const u = String(url)
+        const method = (init?.method ?? 'GET').toUpperCase()
+        if (u === '/api/sync' && method === 'POST') {
+          createServed = true
+          return okJson({
+            id: 'sess_xyz',
+            code: 'XYZ123',
+            joinUrl: 'https://thestack.gg/tracker?join=XYZ123',
+            session: {
+              id: 'sess_xyz',
+              code: 'XYZ123',
+              hostDeviceId: 'test-host-aaaa',
+              createdAt: 1,
+              seq: 0,
+            },
+            snapshot: {
+              seq: 0,
+              players: [],
+              gameMode: { name: 'Standard', life: 20 },
+              customLife: 20,
+              enabledCounters: ['cmd', 'poison', 'mana'],
+            },
+            seats: [],
+            expiresInMs: 86_400_000,
+          })
+        }
+        if (u.includes('/since')) {
+          if (!sinceServed) {
+            sinceServed = true
+            return okJson({
+              seq: 1,
+              ops: [
+                {
+                  seq: 1,
+                  opId: 'remote-other:0',
+                  deviceId: 'remote-other',
+                  ts: 100,
+                  op: { type: 'life', seatId: 1, delta: -3 },
+                },
+              ],
+            })
+          }
+          return okJson({ ops: [], seq: 1 })
+        }
+        return okJson({ envelope: { seq: 1 } })
+      })
+
+      const user = await startMultiGame()
+      await user.click(screen.getByTestId('button-sync'))
+      await user.click(await screen.findByTestId('button-start-sync'))
+      await screen.findByTestId('sync-code')
+      await user.click(screen.getByTestId('button-close-sync'))
+      expect(createServed).toBe(true)
+
+      // Wait for the polled remote op to land and life-1 to drop from 20 → 17.
+      await waitFor(
+        () => {
+          expect(screen.getByTestId('life-1')).toHaveTextContent('17')
+        },
+        { timeout: 3_000 },
+      )
+      expect(sinceServed).toBe(true)
+    })
+
     it('emits a life op to /api/sync/{id}/op when life changes during an active session', async () => {
       fetchMock
         .mockResolvedValueOnce(

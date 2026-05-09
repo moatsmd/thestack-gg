@@ -1,4 +1,5 @@
 import { getRedis } from '@/lib/redis'
+import { applySyncOp } from '@/lib/sync-apply'
 import type {
   SyncCounter,
   SyncGameMode,
@@ -333,70 +334,25 @@ const applyOpInPlace = (
     if (!allowed) return { ok: false, error: 'not_seat_owner', status: 403 }
   }
 
-  // Apply mutation.
-  switch (op.type) {
-    case 'life': {
-      const p = snapshot.players.find((x) => x.id === op.seatId)
-      if (!p) return { ok: false, error: 'unknown_seat', status: 400 }
-      p.life = p.life + op.delta
-      break
+  // Validate seat references for ops that target a specific seat. The
+  // shared applySyncOp helper no-ops on unknown seats, but the server
+  // contract returns 400 so the client knows the op was bad.
+  if (
+    op.type === 'life' ||
+    op.type === 'counter' ||
+    op.type === 'cmd_from' ||
+    op.type === 'rename'
+  ) {
+    if (!snapshot.players.find((x) => x.id === op.seatId)) {
+      return { ok: false, error: 'unknown_seat', status: 400 }
     }
-    case 'counter': {
-      const p = snapshot.players.find((x) => x.id === op.seatId)
-      if (!p) return { ok: false, error: 'unknown_seat', status: 400 }
-      const cur = p[op.counter]
-      p[op.counter] = Math.max(0, cur + op.delta)
-      break
-    }
-    case 'cmd_from': {
-      const p = snapshot.players.find((x) => x.id === op.seatId)
-      if (!p) return { ok: false, error: 'unknown_seat', status: 400 }
-      p.cmdFrom ??= {}
-      const cur = p.cmdFrom[op.sourceId] ?? 0
-      const next = Math.max(0, cur + op.delta)
-      p.cmdFrom[op.sourceId] = next
-      // Note: cmd_from does NOT auto-mutate life. The local tracker keeps
-      // commander damage and life independent (player decides whether to
-      // also reduce life). Sync mirrors that behaviour for consistency.
-      // Recompute max-from-single-source for the cmd badge.
-      let max = 0
-      for (const v of Object.values(p.cmdFrom)) if (v > max) max = v
-      p.cmd = max
-      break
-    }
-    case 'rename': {
-      const p = snapshot.players.find((x) => x.id === op.seatId)
-      if (!p) return { ok: false, error: 'unknown_seat', status: 400 }
-      const trimmed = op.name.trim().slice(0, 32)
-      if (trimmed) {
-        p.name = trimmed
-        const seat = seats.find((s) => s.seatId === op.seatId)
-        if (seat) seat.name = trimmed
-      }
-      break
-    }
-    case 'reset': {
-      const startLife =
-        snapshot.gameMode.name === 'Custom'
-          ? snapshot.customLife
-          : snapshot.gameMode.life
-      for (const p of snapshot.players) {
-        p.life = startLife
-        p.cmd = 0
-        p.cmdFrom = {}
-        p.poison = 0
-        p.mana = 0
-        p.energy = 0
-        p.experience = 0
-      }
-      break
-    }
-    case 'end_game': {
-      meta.endedAt = Date.now()
-      snapshot.endedAt = meta.endedAt
-      snapshot.winnerSeatId = op.winnerSeatId
-      break
-    }
+  }
+
+  // Apply mutation via the shared client/server helper.
+  applySyncOp(snapshot, op, seats)
+  if (op.type === 'end_game') {
+    // Server also stamps the meta.endedAt for HEAD/lifecycle queries.
+    meta.endedAt = snapshot.endedAt
   }
 
   // Bump seq, build envelope, append (cap log).

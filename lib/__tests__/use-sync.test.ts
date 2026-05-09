@@ -22,15 +22,57 @@ const TEST_DEVICE_ID = 'test-device-aaaaaaaa'
 let fetchMock: jest.Mock
 let originalFetch: typeof globalThis.fetch | undefined
 
+/**
+ * Routed fetch mock. Tests register per-route handler queues via
+ * `whenCreate(...)`, `whenOp(...)`, or `whenSince(...)`. Each queue is
+ * consumed in order; once empty, a sensible default is used so the 1.5s
+ * polling loop doesn't disrupt assertions on write-path counts.
+ */
+type Resp = Response | Promise<Response> | (() => Response | Promise<Response>)
+let createQueue: Resp[] = []
+let opQueue: Resp[] = []
+let sinceQueue: Resp[] = []
+
+const toResponse = async (r: Resp): Promise<Response> => {
+  const v = typeof r === 'function' ? r() : r
+  return v instanceof Promise ? v : Promise.resolve(v)
+}
+
+async function routedFetch(url: string, init?: RequestInit): Promise<Response> {
+  if (typeof url !== 'string') url = String(url)
+  const method = (init?.method ?? 'GET').toUpperCase()
+
+  if (url === '/api/sync' && method === 'POST') {
+    if (createQueue.length > 0) return toResponse(createQueue.shift()!)
+    return { ok: false, status: 500, json: async () => ({}) } as unknown as Response
+  }
+  if (url.includes('/op') && method === 'POST') {
+    if (opQueue.length > 0) return toResponse(opQueue.shift()!)
+    return { ok: true, status: 200, json: async () => ({ envelope: { seq: 0 } }) } as unknown as Response
+  }
+  if (url.includes('/since')) {
+    if (sinceQueue.length > 0) return toResponse(sinceQueue.shift()!)
+    return { ok: true, status: 200, json: async () => ({ ops: [], seq: 0 }) } as unknown as Response
+  }
+  return { ok: true, status: 200, json: async () => ({}) } as unknown as Response
+}
+
+const whenCreate = (...rs: Resp[]) => createQueue.push(...rs)
+const whenOp = (...rs: Resp[]) => opQueue.push(...rs)
+const whenSince = (...rs: Resp[]) => sinceQueue.push(...rs)
+
 beforeEach(() => {
   // Pin a deterministic deviceId in localStorage so opId/seat checks are
   // predictable across tests. Clear first, then plant our test id.
   __resetDeviceIdForTests()
   window.localStorage.clear()
   window.localStorage.setItem('thestack:device-id', TEST_DEVICE_ID)
+  createQueue = []
+  opQueue = []
+  sinceQueue = []
   // jsdom does not expose `fetch` by default; install our own mock.
   originalFetch = (globalThis as { fetch?: typeof fetch }).fetch
-  fetchMock = jest.fn()
+  fetchMock = jest.fn(routedFetch as unknown as (...args: unknown[]) => unknown)
   ;(globalThis as { fetch: typeof fetch }).fetch = fetchMock as unknown as typeof fetch
   jest.useFakeTimers()
 })
@@ -51,6 +93,10 @@ const ok = (body: unknown, status = 200): Response =>
     status,
     json: async () => body,
   }) as unknown as Response
+
+/** Count fetch calls, ignoring the periodic `/since` poll. */
+const writeCalls = () =>
+  fetchMock.mock.calls.filter((c) => !String(c[0]).includes('/since'))
 
 function makeCreateResponse() {
   return {
@@ -99,7 +145,7 @@ describe('useSync', () => {
 
   it('createSession POSTs to /api/sync and stores session', async () => {
     const created = makeCreateResponse()
-    fetchMock.mockResolvedValueOnce(ok(created))
+    whenCreate(ok(created))
 
     const { result } = renderHook(() => useSync())
     await waitFor(() => expect(result.current.deviceId).toBe(TEST_DEVICE_ID))
@@ -148,9 +194,8 @@ describe('useSync', () => {
   })
 
   it('emit() POSTs an op with deviceId + opId and clears pendingCount on success', async () => {
-    fetchMock
-      .mockResolvedValueOnce(ok(makeCreateResponse()))
-      .mockResolvedValueOnce(ok({ envelope: { seq: 1 } }))
+    whenCreate(ok(makeCreateResponse()))
+    whenOp(ok({ envelope: { seq: 1 } }))
 
     const { result } = renderHook(() => useSync())
     await waitFor(() => expect(result.current.deviceId).toBe(TEST_DEVICE_ID))
@@ -173,8 +218,8 @@ describe('useSync', () => {
 
     await waitFor(() => expect(result.current.pendingCount).toBe(0))
 
-    expect(fetchMock).toHaveBeenCalledTimes(2)
-    const opCall = fetchMock.mock.calls[1]
+    expect(writeCalls()).toHaveLength(2)
+    const opCall = writeCalls()[1]
     expect(opCall[0]).toBe('/api/sync/sess_abc/op')
     const body = JSON.parse((opCall[1] as RequestInit).body as string)
     expect(body.deviceId).toBe(TEST_DEVICE_ID)
@@ -183,11 +228,12 @@ describe('useSync', () => {
   })
 
   it('emit() generates monotonically increasing opIds for dedup', async () => {
-    fetchMock
-      .mockResolvedValueOnce(ok(makeCreateResponse()))
-      .mockResolvedValueOnce(ok({ envelope: { seq: 1 } }))
-      .mockResolvedValueOnce(ok({ envelope: { seq: 2 } }))
-      .mockResolvedValueOnce(ok({ envelope: { seq: 3 } }))
+    whenCreate(ok(makeCreateResponse()))
+    whenOp(
+      ok({ envelope: { seq: 1 } }),
+      ok({ envelope: { seq: 2 } }),
+      ok({ envelope: { seq: 3 } }),
+    )
 
     const { result } = renderHook(() => useSync())
     await waitFor(() => expect(result.current.deviceId).toBe(TEST_DEVICE_ID))
@@ -210,7 +256,7 @@ describe('useSync', () => {
 
     await waitFor(() => expect(result.current.pendingCount).toBe(0))
 
-    const opIds = fetchMock.mock.calls
+    const opIds = writeCalls()
       .slice(1)
       .map((c) => JSON.parse((c[1] as RequestInit).body as string).opId)
     expect(opIds).toEqual([
@@ -221,10 +267,11 @@ describe('useSync', () => {
   })
 
   it('schedules an exponential-backoff retry on network error', async () => {
-    fetchMock
-      .mockResolvedValueOnce(ok(makeCreateResponse()))
-      .mockRejectedValueOnce(new Error('network down'))
-      .mockResolvedValueOnce(ok({ envelope: { seq: 1 } }))
+    whenCreate(ok(makeCreateResponse()))
+    whenOp(
+      () => Promise.reject(new Error('network down')),
+      ok({ envelope: { seq: 1 } }),
+    )
 
     const { result } = renderHook(() => useSync())
     await waitFor(() => expect(result.current.deviceId).toBe(TEST_DEVICE_ID))
@@ -253,14 +300,15 @@ describe('useSync', () => {
 
     await waitFor(() => expect(result.current.pendingCount).toBe(0))
     expect(result.current.status).toBe('active')
-    expect(fetchMock).toHaveBeenCalledTimes(3) // create + failed op + retry
+    expect(writeCalls()).toHaveLength(3) // create + failed op + retry
   })
 
   it('drops op on 403/400 rejection without retrying', async () => {
-    fetchMock
-      .mockResolvedValueOnce(ok(makeCreateResponse()))
-      .mockResolvedValueOnce(ok({ error: 'forbidden' }, 403))
-      .mockResolvedValueOnce(ok({ envelope: { seq: 1 } }))
+    whenCreate(ok(makeCreateResponse()))
+    whenOp(
+      ok({ error: 'forbidden' }, 403),
+      ok({ envelope: { seq: 1 } }),
+    )
 
     const { result } = renderHook(() => useSync())
     await waitFor(() => expect(result.current.deviceId).toBe(TEST_DEVICE_ID))
@@ -283,13 +331,12 @@ describe('useSync', () => {
 
     await waitFor(() => expect(result.current.pendingCount).toBe(0))
     expect(result.current.status).toBe('active')
-    expect(fetchMock).toHaveBeenCalledTimes(3) // create + 403 + 200
+    expect(writeCalls()).toHaveLength(3) // create + 403 + 200
   })
 
   it('clears queue and marks ended on 409 game_ended', async () => {
-    fetchMock
-      .mockResolvedValueOnce(ok(makeCreateResponse()))
-      .mockResolvedValueOnce(ok({ error: 'game_ended' }, 409))
+    whenCreate(ok(makeCreateResponse()))
+    whenOp(ok({ error: 'game_ended' }, 409))
 
     const { result } = renderHook(() => useSync())
     await waitFor(() => expect(result.current.deviceId).toBe(TEST_DEVICE_ID))
@@ -311,11 +358,11 @@ describe('useSync', () => {
     await waitFor(() => expect(result.current.status).toBe('ended'))
     expect(result.current.pendingCount).toBe(0)
     // No further fetches after the 409 — second op was dropped from the queue.
-    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(writeCalls()).toHaveLength(2)
   })
 
   it('teardown() clears state but does not delete server session', async () => {
-    fetchMock.mockResolvedValueOnce(ok(makeCreateResponse()))
+    whenCreate(ok(makeCreateResponse()))
 
     const { result } = renderHook(() => useSync())
     await waitFor(() => expect(result.current.deviceId).toBe(TEST_DEVICE_ID))
@@ -337,6 +384,222 @@ describe('useSync', () => {
     expect(result.current.session).toBeNull()
     expect(result.current.pendingCount).toBe(0)
     // Only the create call — teardown is local-only.
-    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(writeCalls()).toHaveLength(1)
+  })
+
+  // ──── Read-path / polling tests (PR #21) ───────────────────────────
+  describe('polling / remote ops', () => {
+    const sinceCalls = () =>
+      fetchMock.mock.calls.filter((c) => String(c[0]).includes('/since'))
+
+    it('starts polling /since after createSession at 1.5s cadence', async () => {
+      whenCreate(ok(makeCreateResponse()))
+      const { result } = renderHook(() => useSync())
+      await waitFor(() => expect(result.current.deviceId).toBe(TEST_DEVICE_ID))
+      await act(async () => {
+        await result.current.createSession({
+          players: sampleInput().players,
+          gameMode: sampleInput().gameMode,
+          customLife: 20,
+          enabledCounters: ['cmd', 'poison', 'mana'],
+        })
+      })
+
+      // First poll fires immediately on activation.
+      await waitFor(() => expect(sinceCalls().length).toBeGreaterThanOrEqual(1))
+      const firstUrl = String(sinceCalls()[0][0])
+      expect(firstUrl).toMatch(
+        /^\/api\/sync\/sess_abc\/since\?seq=\d+$/,
+      )
+
+      // After advancing 1.6s, a second poll should have fired.
+      await act(async () => {
+        jest.advanceTimersByTime(1_600)
+        for (let i = 0; i < 5; i++) await Promise.resolve()
+      })
+      await waitFor(() => expect(sinceCalls().length).toBeGreaterThanOrEqual(2))
+    })
+
+    it('applies remote ops to snapshot and notifies subscribeRemoteOps', async () => {
+      whenCreate(ok(makeCreateResponse()))
+      // First /since call returns one remote life op authored by another device.
+      whenSince(
+        ok({
+          seq: 1,
+          ops: [
+            {
+              seq: 1,
+              opId: 'other-device-aaaa:0',
+              deviceId: 'other-device-aaaa',
+              ts: 100,
+              op: { type: 'life', seatId: 1, delta: -3 },
+            },
+          ],
+        }),
+      )
+
+      const { result } = renderHook(() => useSync())
+      await waitFor(() => expect(result.current.deviceId).toBe(TEST_DEVICE_ID))
+
+      const remoteCalls: string[] = []
+      act(() => {
+        result.current.subscribeRemoteOps((env) => {
+          remoteCalls.push(`${env.op.type}:${env.deviceId}:${env.seq}`)
+        })
+      })
+
+      await act(async () => {
+        await result.current.createSession({
+          players: [
+            {
+              id: 1,
+              name: 'P1',
+              life: 40,
+              cmd: 0,
+              cmdFrom: {},
+              poison: 0,
+              mana: 0,
+              energy: 0,
+              experience: 0,
+            },
+          ],
+          gameMode: { name: 'Commander', life: 40 },
+          customLife: 20,
+          enabledCounters: ['cmd', 'poison', 'mana'],
+        })
+      })
+      // Seed snapshot.players so applySyncOp has a player to mutate (the
+      // server returns an empty snapshot in our fixture; populate it).
+      await waitFor(() => expect(result.current.snapshot).toBeTruthy())
+      // Drive the poll.
+      await act(async () => {
+        for (let i = 0; i < 10; i++) await Promise.resolve()
+      })
+
+      await waitFor(() => expect(remoteCalls.length).toBe(1))
+      expect(remoteCalls[0]).toBe('life:other-device-aaaa:1')
+      // Snapshot reflected the op (no auto-create of player, but seq advanced).
+      expect(result.current.appliedSeq).toBe(1)
+    })
+
+    it('does NOT notify subscribeRemoteOps for ops authored by this device', async () => {
+      whenCreate(ok(makeCreateResponse()))
+      whenSince(
+        ok({
+          seq: 5,
+          ops: [
+            {
+              seq: 5,
+              opId: `${TEST_DEVICE_ID}:0`,
+              deviceId: TEST_DEVICE_ID,
+              ts: 100,
+              op: { type: 'life', seatId: 1, delta: -1 },
+            },
+          ],
+        }),
+      )
+
+      const { result } = renderHook(() => useSync())
+      await waitFor(() => expect(result.current.deviceId).toBe(TEST_DEVICE_ID))
+      const remoteCalls: string[] = []
+      act(() => {
+        result.current.subscribeRemoteOps(() => remoteCalls.push('x'))
+      })
+      await act(async () => {
+        await result.current.createSession({
+          players: sampleInput().players,
+          gameMode: sampleInput().gameMode,
+          customLife: 20,
+          enabledCounters: ['cmd', 'poison', 'mana'],
+        })
+      })
+      await act(async () => {
+        for (let i = 0; i < 10; i++) await Promise.resolve()
+      })
+      await waitFor(() => expect(result.current.appliedSeq).toBe(5))
+      expect(remoteCalls).toHaveLength(0)
+    })
+
+    it('marks status=ended on remote end_game', async () => {
+      whenCreate(ok(makeCreateResponse()))
+      whenSince(
+        ok({
+          seq: 1,
+          ops: [
+            {
+              seq: 1,
+              opId: 'other:0',
+              deviceId: 'other',
+              ts: 100,
+              op: { type: 'end_game' },
+            },
+          ],
+        }),
+      )
+
+      const { result } = renderHook(() => useSync())
+      await waitFor(() => expect(result.current.deviceId).toBe(TEST_DEVICE_ID))
+      await act(async () => {
+        await result.current.createSession({
+          players: sampleInput().players,
+          gameMode: sampleInput().gameMode,
+          customLife: 20,
+          enabledCounters: ['cmd', 'poison', 'mana'],
+        })
+      })
+      await act(async () => {
+        for (let i = 0; i < 10; i++) await Promise.resolve()
+      })
+      await waitFor(() => expect(result.current.status).toBe('ended'))
+    })
+
+    it('marks status=offline on /since 5xx, recovers when next poll succeeds', async () => {
+      whenCreate(ok(makeCreateResponse()))
+      whenSince(ok({ error: 'boom' }, 500), ok({ ops: [], seq: 0 }))
+
+      const { result } = renderHook(() => useSync())
+      await waitFor(() => expect(result.current.deviceId).toBe(TEST_DEVICE_ID))
+      await act(async () => {
+        await result.current.createSession({
+          players: sampleInput().players,
+          gameMode: sampleInput().gameMode,
+          customLife: 20,
+          enabledCounters: ['cmd', 'poison', 'mana'],
+        })
+      })
+      await waitFor(() => expect(result.current.status).toBe('offline'))
+
+      await act(async () => {
+        jest.advanceTimersByTime(1_600)
+        for (let i = 0; i < 5; i++) await Promise.resolve()
+      })
+      await waitFor(() => expect(result.current.status).toBe('active'))
+    })
+
+    it('teardown stops polling', async () => {
+      whenCreate(ok(makeCreateResponse()))
+      const { result } = renderHook(() => useSync())
+      await waitFor(() => expect(result.current.deviceId).toBe(TEST_DEVICE_ID))
+      await act(async () => {
+        await result.current.createSession({
+          players: sampleInput().players,
+          gameMode: sampleInput().gameMode,
+          customLife: 20,
+          enabledCounters: ['cmd', 'poison', 'mana'],
+        })
+      })
+      await waitFor(() => expect(sinceCalls().length).toBeGreaterThanOrEqual(1))
+      const before = sinceCalls().length
+
+      act(() => {
+        result.current.teardown()
+      })
+      // Advance several intervals — no new /since fetches.
+      await act(async () => {
+        jest.advanceTimersByTime(5_000)
+        for (let i = 0; i < 10; i++) await Promise.resolve()
+      })
+      expect(sinceCalls().length).toBe(before)
+    })
   })
 })
