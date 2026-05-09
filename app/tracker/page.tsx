@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import QRCode from 'qrcode'
@@ -804,6 +804,15 @@ function ActiveTracker({
   const [podName, setPodName] = useState('')
   const [commanders, setCommanders] = useState<Record<number, string>>({})
 
+  // Which seat does this device control? null = no sync active; 'host' = full
+  // control; number = only that seat is editable, all others are read-only.
+  const mySeatId = useMemo(() => {
+    if (!sync.session) return null
+    if (sync.isHost) return 'host'
+    const mySeat = sync.seats.find((s) => s.ownerDeviceId === sync.deviceId)
+    return mySeat?.seatId ?? null
+  }, [sync.session, sync.isHost, sync.deviceId, sync.seats])
+
   /**
    * Centralized update — every player mutation routes through here so the
    * game log captures life / cmd / poison deltas. Other counters (mana,
@@ -1153,7 +1162,7 @@ function ActiveTracker({
               )}
             </button>
           )}
-          {canEndGame && (
+          {canEndGame && (mySeatId === null || mySeatId === 'host') && (
             <button
               onClick={() => setEndOpen(true)}
               className="px-3 py-1.5 bg-[hsl(42_75%_55%)] text-[hsl(220_15%_7%)] rounded-md hover-elevate text-sm inline-flex items-center gap-2 font-medium"
@@ -1162,13 +1171,15 @@ function ActiveTracker({
               <Trophy className="w-4 h-4" /> End game
             </button>
           )}
-          <button
-            onClick={reset}
-            className="px-3 py-1.5 bg-destructive text-destructive-foreground rounded-md hover-elevate text-sm inline-flex items-center gap-2"
-            data-testid="button-reset"
-          >
-            <RotateCcw className="w-4 h-4" /> Reset
-          </button>
+          {(mySeatId === null || mySeatId === 'host') && (
+            <button
+              onClick={reset}
+              className="px-3 py-1.5 bg-destructive text-destructive-foreground rounded-md hover-elevate text-sm inline-flex items-center gap-2"
+              data-testid="button-reset"
+            >
+              <RotateCcw className="w-4 h-4" /> Reset
+            </button>
+          )}
         </div>
       </div>
 
@@ -1182,6 +1193,7 @@ function ActiveTracker({
             enabledCounters={enabledCounters}
             update={(patch) => update(p.id, patch)}
             bumpCmdFrom={(sourceId, delta) => bumpCmdFrom(p.id, sourceId, delta)}
+            readonly={mySeatId !== null && mySeatId !== 'host' && p.id !== mySeatId}
           />
         ))}
       </div>
@@ -1516,6 +1528,7 @@ function PlayerPanel({
   enabledCounters,
   update,
   bumpCmdFrom,
+  readonly = false,
 }: {
   player: Player
   opponents: Player[]
@@ -1523,6 +1536,7 @@ function PlayerPanel({
   enabledCounters: Counter[]
   update: (p: Partial<Player>) => void
   bumpCmdFrom: (sourceId: number, delta: number) => void
+  readonly?: boolean
 }) {
   const [showBadge, setShowBadge] = useState<Counter | null>(null)
   const [lastDelta, setLastDelta] = useState<number>(0)
@@ -1604,21 +1618,28 @@ function PlayerPanel({
         <div className="group relative flex items-center gap-1.5 min-w-0 flex-1 max-w-[180px]">
           <input
             value={player.name}
-            onChange={(e) => update({ name: e.target.value })}
+            onChange={(e) => !readonly && update({ name: e.target.value })}
             onBlur={(e) => {
-              if (!e.target.value.trim()) {
+              if (!readonly && !e.target.value.trim()) {
                 update({ name: defaultName })
               }
             }}
             placeholder={defaultName}
             aria-label="Player name (tap to rename)"
-            className="font-display tracking-wide text-base bg-transparent outline-none w-full pb-0.5 border-b border-dotted border-[hsl(42_75%_55%/0.35)] hover:border-[hsl(42_75%_55%/0.7)] focus:border-solid focus:border-[hsl(42_75%_55%)] transition-colors placeholder:text-[hsl(38_30%_88%/0.4)]"
+            readOnly={readonly}
+            className={`font-display tracking-wide text-base bg-transparent outline-none w-full pb-0.5 border-b transition-colors placeholder:text-[hsl(38_30%_88%/0.4)] ${
+              readonly
+                ? 'border-transparent cursor-default'
+                : 'border-dotted border-[hsl(42_75%_55%/0.35)] hover:border-[hsl(42_75%_55%/0.7)] focus:border-solid focus:border-[hsl(42_75%_55%)]'
+            }`}
             data-testid={`input-name-${player.id}`}
           />
-          <Pencil
-            className="w-3 h-3 text-[hsl(42_75%_55%)] opacity-0 group-hover:opacity-50 group-focus-within:opacity-70 transition-opacity flex-shrink-0"
-            strokeWidth={2}
-          />
+          {!readonly && (
+            <Pencil
+              className="w-3 h-3 text-[hsl(42_75%_55%)] opacity-0 group-hover:opacity-50 group-focus-within:opacity-70 transition-opacity flex-shrink-0"
+              strokeWidth={2}
+            />
+          )}
         </div>
         <div className="flex items-center gap-1">
           {enabledCounters.includes('cmd') && opponents.length > 0 && (
@@ -1722,26 +1743,30 @@ function PlayerPanel({
         <div className="font-display tracking-[0.2em] uppercase text-[10px] text-muted-foreground">Life</div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <BigButton onClick={() => bump('life', -1, -999)} variant="minus" testid={`life-minus-${player.id}`} />
-        <BigButton onClick={() => bump('life', +1, -999)} variant="plus" testid={`life-plus-${player.id}`} />
-      </div>
-      <div className="grid grid-cols-2 gap-2 mt-2">
-        <button
-          onClick={() => bump('life', -5, -999)}
-          className="panel hover-elevate active-elevate-2 py-2 text-sm text-muted-foreground"
-          data-testid={`life-minus5-${player.id}`}
-        >
-          −5
-        </button>
-        <button
-          onClick={() => bump('life', +5, -999)}
-          className="panel hover-elevate active-elevate-2 py-2 text-sm text-muted-foreground"
-          data-testid={`life-plus5-${player.id}`}
-        >
-          +5
-        </button>
-      </div>
+      {!readonly && (
+        <>
+          <div className="grid grid-cols-2 gap-2">
+            <BigButton onClick={() => bump('life', -1, -999)} variant="minus" testid={`life-minus-${player.id}`} />
+            <BigButton onClick={() => bump('life', +1, -999)} variant="plus" testid={`life-plus-${player.id}`} />
+          </div>
+          <div className="grid grid-cols-2 gap-2 mt-2">
+            <button
+              onClick={() => bump('life', -5, -999)}
+              className="panel hover-elevate active-elevate-2 py-2 text-sm text-muted-foreground"
+              data-testid={`life-minus5-${player.id}`}
+            >
+              −5
+            </button>
+            <button
+              onClick={() => bump('life', +5, -999)}
+              className="panel hover-elevate active-elevate-2 py-2 text-sm text-muted-foreground"
+              data-testid={`life-plus5-${player.id}`}
+            >
+              +5
+            </button>
+          </div>
+        </>
+      )}
 
       <AnimatePresence>
         {showBadge === 'cmd' && opponents.length > 0 && (
@@ -1792,25 +1817,27 @@ function PlayerPanel({
                       <div className="font-display text-2xl tabular-nums leading-none">
                         {amt}
                       </div>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <button
-                          onClick={() => bumpCmdFrom(opp.id, -1)}
-                          className="w-7 h-7 grid place-items-center panel hover-elevate active-elevate-2"
-                          data-testid={`cmd-minus-${player.id}-from-${opp.id}`}
-                          aria-label={`Decrease commander damage from ${opp.name}`}
-                          disabled={amt <= 0}
-                        >
-                          <Minus className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => bumpCmdFrom(opp.id, +1)}
-                          className="w-7 h-7 grid place-items-center panel hover-elevate active-elevate-2"
-                          data-testid={`cmd-plus-${player.id}-from-${opp.id}`}
-                          aria-label={`Increase commander damage from ${opp.name}`}
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                      {!readonly && (
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <button
+                            onClick={() => bumpCmdFrom(opp.id, -1)}
+                            className="w-7 h-7 grid place-items-center panel hover-elevate active-elevate-2"
+                            data-testid={`cmd-minus-${player.id}-from-${opp.id}`}
+                            aria-label={`Decrease commander damage from ${opp.name}`}
+                            disabled={amt <= 0}
+                          >
+                            <Minus className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => bumpCmdFrom(opp.id, +1)}
+                            className="w-7 h-7 grid place-items-center panel hover-elevate active-elevate-2"
+                            data-testid={`cmd-plus-${player.id}-from-${opp.id}`}
+                            aria-label={`Increase commander damage from ${opp.name}`}
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )
                 })}
@@ -1836,24 +1863,30 @@ function PlayerPanel({
             <div className="panel p-3 flex items-center justify-between">
               <div className="text-sm">
                 <div className="font-display tracking-wide capitalize">{showBadge}</div>
-                <div className="text-xs text-muted-foreground">Tap +/- to adjust</div>
+                {!readonly && (
+                  <div className="text-xs text-muted-foreground">Tap +/- to adjust</div>
+                )}
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => bump(showBadge as keyof Player, -1)}
-                  className="w-8 h-8 grid place-items-center panel hover-elevate active-elevate-2"
-                  data-testid={`${showBadge}-minus-${player.id}`}
-                >
-                  <Minus className="w-3.5 h-3.5" />
-                </button>
+                {!readonly && (
+                  <button
+                    onClick={() => bump(showBadge as keyof Player, -1)}
+                    className="w-8 h-8 grid place-items-center panel hover-elevate active-elevate-2"
+                    data-testid={`${showBadge}-minus-${player.id}`}
+                  >
+                    <Minus className="w-3.5 h-3.5" />
+                  </button>
+                )}
                 <span className="font-display text-xl w-8 text-center">{(player as any)[showBadge]}</span>
-                <button
-                  onClick={() => bump(showBadge as keyof Player, +1)}
-                  className="w-8 h-8 grid place-items-center panel hover-elevate active-elevate-2"
-                  data-testid={`${showBadge}-plus-${player.id}`}
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                </button>
+                {!readonly && (
+                  <button
+                    onClick={() => bump(showBadge as keyof Player, +1)}
+                    className="w-8 h-8 grid place-items-center panel hover-elevate active-elevate-2"
+                    data-testid={`${showBadge}-plus-${player.id}`}
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
             </div>
           </motion.div>
