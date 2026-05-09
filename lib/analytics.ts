@@ -30,6 +30,7 @@ export type AnalyticsEvent =
   | 'pod_created'                  // user clicks "Save as pod" on a recap
   | 'pod_recap_attached'           // user attaches a recap to an existing pod
   | 'pod_viewed'                   // /pod/[id] page rendered (client-side track)
+  | 'tracker_joined_pod'           // joiner claims a seat via QR/code and enters tracker
 
 /**
  * Properties allowed on tracked events. Vercel Analytics only accepts

@@ -32,6 +32,8 @@ type Resp = Response | Promise<Response> | (() => Response | Promise<Response>)
 let createQueue: Resp[] = []
 let opQueue: Resp[] = []
 let sinceQueue: Resp[] = []
+let byCodeQueue: Resp[] = []
+let seatQueue: Resp[] = []
 
 const toResponse = async (r: Resp): Promise<Response> => {
   const v = typeof r === 'function' ? r() : r
@@ -54,12 +56,22 @@ async function routedFetch(url: string, init?: RequestInit): Promise<Response> {
     if (sinceQueue.length > 0) return toResponse(sinceQueue.shift()!)
     return { ok: true, status: 200, json: async () => ({ ops: [], seq: 0 }) } as unknown as Response
   }
+  if (url.includes('/api/sync/by-code/')) {
+    if (byCodeQueue.length > 0) return toResponse(byCodeQueue.shift()!)
+    return { ok: false, status: 404, json: async () => ({}) } as unknown as Response
+  }
+  if (url.includes('/seat') && method === 'POST') {
+    if (seatQueue.length > 0) return toResponse(seatQueue.shift()!)
+    return { ok: true, status: 200, json: async () => ({ seats: [] }) } as unknown as Response
+  }
   return { ok: true, status: 200, json: async () => ({}) } as unknown as Response
 }
 
 const whenCreate = (...rs: Resp[]) => createQueue.push(...rs)
 const whenOp = (...rs: Resp[]) => opQueue.push(...rs)
 const whenSince = (...rs: Resp[]) => sinceQueue.push(...rs)
+const whenByCode = (...rs: Resp[]) => byCodeQueue.push(...rs)
+const whenSeat = (...rs: Resp[]) => seatQueue.push(...rs)
 
 beforeEach(() => {
   // Pin a deterministic deviceId in localStorage so opId/seat checks are
@@ -70,6 +82,8 @@ beforeEach(() => {
   createQueue = []
   opQueue = []
   sinceQueue = []
+  byCodeQueue = []
+  seatQueue = []
   // jsdom does not expose `fetch` by default; install our own mock.
   originalFetch = (globalThis as { fetch?: typeof fetch }).fetch
   fetchMock = jest.fn(routedFetch as unknown as (...args: unknown[]) => unknown)
@@ -600,6 +614,142 @@ describe('useSync', () => {
         for (let i = 0; i < 10; i++) await Promise.resolve()
       })
       expect(sinceCalls().length).toBe(before)
+    })
+  })
+
+  describe('joinSession / claimSeat', () => {
+    const sinceCalls = () =>
+      fetchMock.mock.calls.filter((c) => String(c[0]).includes('/since'))
+
+    function makeJoinResponse(overrides: Partial<ReturnType<typeof makeCreateResponse>> = {}) {
+      const base = makeCreateResponse()
+      return {
+        id: base.id,
+        session: base.session,
+        snapshot: { ...base.snapshot, seq: 7 },
+        seats: [
+          { seatId: 1, ownerDeviceId: 'host-device', name: 'Host' },
+          { seatId: 2, ownerDeviceId: null, name: 'P2' },
+          { seatId: 3, ownerDeviceId: null, name: 'P3' },
+        ],
+        ...overrides,
+      }
+    }
+
+    it('joinSession resolves a code via /api/sync/by-code, hydrates state, and starts polling', async () => {
+      const join = makeJoinResponse()
+      whenByCode(ok(join))
+      const { result } = renderHook(() => useSync())
+      await waitFor(() => expect(result.current.deviceId).toBe(TEST_DEVICE_ID))
+
+      let returned: unknown = undefined
+      await act(async () => {
+        returned = await result.current.joinSession('abc-123')
+      })
+
+      // Hit the by-code route with normalized (uppercase, alphanumeric-only) code.
+      expect(fetchMock).toHaveBeenCalledWith('/api/sync/by-code/ABC123')
+      expect(returned).not.toBeNull()
+      expect(result.current.session?.id).toBe('sess_abc')
+      expect(result.current.seats).toHaveLength(3)
+      expect(result.current.snapshot?.seq).toBe(7)
+      expect(result.current.appliedSeq).toBe(7)
+      expect(result.current.status).toBe('active')
+      // joinUrl is derived from window.location.origin + ?join=CODE
+      expect(result.current.joinUrl).toContain('?join=ABC123')
+
+      // Polling should be running.
+      await act(async () => {
+        jest.advanceTimersByTime(1_500)
+        for (let i = 0; i < 5; i++) await Promise.resolve()
+      })
+      expect(sinceCalls().length).toBeGreaterThanOrEqual(1)
+    })
+
+    it('joinSession returns null on 404 and does not start polling', async () => {
+      whenByCode(ok({}, 404))
+      const { result } = renderHook(() => useSync())
+      await waitFor(() => expect(result.current.deviceId).toBe(TEST_DEVICE_ID))
+
+      let returned: unknown = 'sentinel'
+      await act(async () => {
+        returned = await result.current.joinSession('NOPE99')
+      })
+      expect(returned).toBeNull()
+      expect(result.current.session).toBeNull()
+      expect(result.current.status).toBe('idle')
+
+      await act(async () => {
+        jest.advanceTimersByTime(3_000)
+        for (let i = 0; i < 5; i++) await Promise.resolve()
+      })
+      expect(sinceCalls().length).toBe(0)
+    })
+
+    it('joinSession returns null on empty/garbage code without hitting the network', async () => {
+      const { result } = renderHook(() => useSync())
+      await waitFor(() => expect(result.current.deviceId).toBe(TEST_DEVICE_ID))
+
+      let returned: unknown = 'sentinel'
+      await act(async () => {
+        returned = await result.current.joinSession('---')
+      })
+      expect(returned).toBeNull()
+      // No by-code fetch should have fired.
+      const byCodeCalls = fetchMock.mock.calls.filter((c) =>
+        String(c[0]).includes('/api/sync/by-code/'),
+      )
+      expect(byCodeCalls).toHaveLength(0)
+    })
+
+    it('claimSeat POSTs deviceId+seatId and mirrors returned seats into state', async () => {
+      whenByCode(ok(makeJoinResponse()))
+      const updatedSeats = [
+        { seatId: 1, ownerDeviceId: 'host-device', name: 'Host' },
+        { seatId: 2, ownerDeviceId: TEST_DEVICE_ID, name: 'P2' },
+        { seatId: 3, ownerDeviceId: null, name: 'P3' },
+      ]
+      whenSeat(ok({ seats: updatedSeats }))
+
+      const { result } = renderHook(() => useSync())
+      await waitFor(() => expect(result.current.deviceId).toBe(TEST_DEVICE_ID))
+
+      await act(async () => {
+        await result.current.joinSession('ABC123')
+      })
+
+      let claimed: unknown = undefined
+      await act(async () => {
+        claimed = await result.current.claimSeat(2)
+      })
+
+      expect(claimed).toEqual(updatedSeats)
+      expect(result.current.seats).toEqual(updatedSeats)
+
+      // Verify POST shape.
+      const seatCall = fetchMock.mock.calls.find((c) =>
+        String(c[0]).includes('/api/sync/sess_abc/seat'),
+      )
+      expect(seatCall).toBeDefined()
+      const [, init] = seatCall as [string, RequestInit]
+      expect((init.method ?? 'GET').toUpperCase()).toBe('POST')
+      const body = JSON.parse(init.body as string)
+      expect(body).toEqual({ deviceId: TEST_DEVICE_ID, seatId: 2 })
+    })
+
+    it('claimSeat returns null when no session is active', async () => {
+      const { result } = renderHook(() => useSync())
+      await waitFor(() => expect(result.current.deviceId).toBe(TEST_DEVICE_ID))
+
+      let claimed: unknown = 'sentinel'
+      await act(async () => {
+        claimed = await result.current.claimSeat(1)
+      })
+      expect(claimed).toBeNull()
+      const seatCalls = fetchMock.mock.calls.filter((c) =>
+        String(c[0]).includes('/seat'),
+      )
+      expect(seatCalls).toHaveLength(0)
     })
   })
 })

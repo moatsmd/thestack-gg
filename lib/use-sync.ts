@@ -61,6 +61,13 @@ type CreateResponse = {
   expiresInMs: number
 }
 
+type JoinResponse = {
+  id: string
+  session: SyncSessionMeta
+  snapshot: SyncSnapshot
+  seats: SyncSeat[]
+}
+
 const BACKOFF_MS = [500, 1_000, 2_000, 4_000, 8_000, 16_000, 30_000]
 const backoffFor = (attempts: number) =>
   BACKOFF_MS[Math.min(attempts, BACKOFF_MS.length - 1)]
@@ -83,6 +90,20 @@ export type UseSyncResult = {
   appliedSeq: number
   /** Create a new sync session from the current tracker state. */
   createSession: (input: CreateInput) => Promise<CreateResponse | null>
+  /**
+   * Join an existing sync session by its sharable code. Resolves the code
+   * to a session id, hydrates local snapshot/seats from the server, and
+   * starts polling. The user must then call claimSeat() to take a seat.
+   * Returns the joined session payload, or null if the code didn't resolve.
+   */
+  joinSession: (code: string) => Promise<JoinResponse | null>
+  /**
+   * Claim a seat on the active session. Posts to /api/sync/[id]/seat with
+   * the current deviceId. On success, mirrors the new seats array locally.
+   * Returns the new seats on success, or null on failure (already taken,
+   * not found, or no active session).
+   */
+  claimSeat: (seatId: number) => Promise<SyncSeat[] | null>
   /** Emit an op. No-op when no session is active. */
   emit: (op: SyncOp) => void
   /**
@@ -417,6 +438,66 @@ export function useSync(): UseSyncResult {
     [session, deviceId],
   )
 
+  const joinSession = useCallback(
+    async (code: string): Promise<JoinResponse | null> => {
+      if (!deviceId) return null
+      if (sessionIdRef.current) {
+        // Already in a session — caller should teardown first.
+        return null
+      }
+      const normalized = code.replace(/[^A-Za-z0-9]/g, '').toUpperCase()
+      if (!normalized) return null
+      setStatus('creating')
+      try {
+        const res = await fetch(`/api/sync/by-code/${normalized}`)
+        if (!res.ok) {
+          setStatus('idle')
+          return null
+        }
+        const data = (await res.json()) as JoinResponse
+        setSession(data.session)
+        setSeats(data.seats)
+        setSnapshot(data.snapshot)
+        setJoinUrl(
+          typeof window !== 'undefined'
+            ? `${window.location.origin}/tracker?join=${data.session.code}`
+            : null,
+        )
+        sessionIdRef.current = data.id
+        appliedSeqRef.current = data.snapshot.seq
+        setAppliedSeq(data.snapshot.seq)
+        setStatus('active')
+        startPolling()
+        return data
+      } catch {
+        setStatus('idle')
+        return null
+      }
+    },
+    [deviceId, startPolling],
+  )
+
+  const claimSeat = useCallback(
+    async (seatId: number): Promise<SyncSeat[] | null> => {
+      const id = sessionIdRef.current
+      if (!id || !deviceId) return null
+      try {
+        const res = await fetch(`/api/sync/${id}/seat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ deviceId, seatId }),
+        })
+        if (!res.ok) return null
+        const data = (await res.json()) as { seats: SyncSeat[] }
+        setSeats(data.seats)
+        return data.seats
+      } catch {
+        return null
+      }
+    },
+    [deviceId],
+  )
+
   return {
     status,
     deviceId,
@@ -428,6 +509,8 @@ export function useSync(): UseSyncResult {
     pendingCount,
     appliedSeq,
     createSession,
+    joinSession,
+    claimSeat,
     emit,
     subscribeRemoteOps,
     teardown,

@@ -457,6 +457,96 @@ describe('Tracker Page', () => {
         expect(body.opId).toMatch(/^test-host-aaaa:\d+$/)
       })
     })
+
+    it('opens JoinModal when ?join=CODE is present, claims a seat, and drops into the tracker', async () => {
+      // Switch device id so this client is a JOINER, not the host above.
+      window.localStorage.setItem('thestack:device-id', 'test-joiner-bbbb')
+
+      // Plant ?join=ABC123 on the URL before mount; TrackerPage reads it on mount.
+      const originalUrl = window.location.href
+      window.history.replaceState({}, '', '/tracker?join=ABC123')
+
+      const sessionPayload = {
+        id: 'sess_join',
+        session: {
+          id: 'sess_join',
+          code: 'ABC123',
+          hostDeviceId: 'host-device',
+          createdAt: 1,
+          seq: 5,
+        },
+        snapshot: {
+          seq: 5,
+          players: [
+            { id: 1, name: 'Host', life: 18, cmd: 0, cmdFrom: {}, poison: 0, mana: 0, energy: 0, experience: 0 },
+            { id: 2, name: 'P2',   life: 20, cmd: 0, cmdFrom: {}, poison: 0, mana: 0, energy: 0, experience: 0 },
+          ],
+          gameMode: { name: 'Standard', life: 20 },
+          customLife: 20,
+          enabledCounters: ['cmd', 'poison', 'mana'],
+        },
+        seats: [
+          { seatId: 1, ownerDeviceId: 'host-device',  name: 'Host' },
+          { seatId: 2, ownerDeviceId: null,           name: 'P2' },
+        ],
+      }
+      const updatedSeats = [
+        { seatId: 1, ownerDeviceId: 'host-device',     name: 'Host' },
+        { seatId: 2, ownerDeviceId: 'test-joiner-bbbb', name: 'P2' },
+      ]
+
+      fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
+        const u = String(url)
+        const method = (init?.method ?? 'GET').toUpperCase()
+        if (u === '/api/sync/by-code/ABC123') {
+          return okJson(sessionPayload)
+        }
+        if (u === '/api/sync/sess_join/seat' && method === 'POST') {
+          return okJson({ seats: updatedSeats })
+        }
+        if (u.includes('/since')) {
+          return okJson({ ops: [], seq: 5 })
+        }
+        return okJson({})
+      })
+
+      try {
+        const user = userEvent.setup()
+        renderWithProviders(<TrackerPage />)
+
+        // JoinModal opens once join is detected and code is resolved.
+        await screen.findByTestId('join-dialog')
+        expect(await screen.findByTestId('join-code')).toHaveTextContent('ABC-123')
+
+        // Seat picker renders both seats; P2 (open) is clickable, Host is taken.
+        const seat2 = await screen.findByTestId('join-seat-2')
+        const seat1 = screen.getByTestId('join-seat-1')
+        expect(seat1).toBeDisabled()
+        expect(seat2).not.toBeDisabled()
+
+        await user.click(seat2)
+
+        // Verify the seat POST went out with deviceId + seatId.
+        await waitFor(() => {
+          const seatCall = fetchMock.mock.calls.find(
+            (c) => c[0] === '/api/sync/sess_join/seat',
+          )
+          expect(seatCall).toBeDefined()
+          const body = JSON.parse((seatCall![1] as RequestInit).body as string)
+          expect(body).toEqual({ deviceId: 'test-joiner-bbbb', seatId: 2 })
+        })
+
+        // Joiner is dropped into ActiveTracker hydrated from the snapshot:
+        // life-1 = 18 (Host), life-2 = 20 (P2). The JoinModal should be gone.
+        await waitFor(() => {
+          expect(screen.getByTestId('life-1')).toHaveTextContent('18')
+          expect(screen.getByTestId('life-2')).toHaveTextContent('20')
+        })
+        expect(screen.queryByTestId('join-dialog')).not.toBeInTheDocument()
+      } finally {
+        window.history.replaceState({}, '', originalUrl)
+      }
+    })
   })
 
   it('Exit returns to the wizard', async () => {
