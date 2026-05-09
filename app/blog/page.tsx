@@ -14,6 +14,21 @@ export const metadata: Metadata = {
       'Long-form guides for Magic: The Gathering players — Commander damage, the stack, life trackers, tokens, glossary, and the best free browser tools.',
     url: 'https://www.thestack.gg/blog',
     type: 'website',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'TheStack.gg — The MTG Companion',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'The Codex — Articles & Guides | TheStack.gg',
+    description:
+      'Long-form guides for Magic: The Gathering players — Commander damage, the stack, life trackers, tokens, glossary, and the best free browser tools.',
+    images: ['/og-image.png'],
   },
 }
 

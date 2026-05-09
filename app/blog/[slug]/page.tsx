@@ -25,11 +25,20 @@ export function generateMetadata({ params }: { params: Params }): Metadata {
       type: 'article',
       publishedTime: post.date,
       modifiedTime: post.updated ?? post.date,
+      images: [
+        {
+          url: '/og-image.png',
+          width: 1200,
+          height: 630,
+          alt: 'TheStack.gg — The MTG Companion',
+        },
+      ],
     },
     twitter: {
       card: 'summary_large_image',
       title: post.title,
       description: post.description,
+      images: ['/og-image.png'],
     },
   }
 }
