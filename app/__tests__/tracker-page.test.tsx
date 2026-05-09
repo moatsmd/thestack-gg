@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 // Mock next/navigation — TrackerPage uses useRouter to navigate to /recap/[id]
@@ -174,6 +174,75 @@ describe('Tracker Page', () => {
     expect(screen.getByTestId('cmd-lethal-2')).toBeInTheDocument()
     // Other cells on the same tile must NOT be marked lethal.
     expect(screen.getByTestId('cmd-cell-2-from-1')).toHaveAttribute('data-cmd-lethal', 'false')
+  })
+
+  it('player name input has dotted underline, placeholder, and snaps back when cleared', async () => {
+    const user = userEvent.setup()
+    // Ensure the rename hint is dismissed for clean DOM
+    window.localStorage.setItem('thestack:seen-name-hint', '1')
+    renderWithProviders(<TrackerPage />)
+
+    // Multi → 3 players → Standard 20 → Begin
+    await clickWhenSettled(user, 'mode-multi')
+    await clickWhenSettled(user, 'button-wizard-next')
+    await clickWhenSettled(user, 'players-3')
+    await clickWhenSettled(user, 'button-wizard-next')
+    await clickWhenSettled(user, 'format-standard-20')
+    await clickWhenSettled(user, 'button-wizard-next')
+    await clickWhenSettled(user, 'button-wizard-next')
+
+    const input = await screen.findByTestId('input-name-1') as HTMLInputElement
+    expect(input).toHaveValue('Player 1')
+    expect(input).toHaveAttribute('placeholder', 'Player 1')
+    expect(input.className).toMatch(/border-dotted/)
+
+    // Clear and blur — should snap back to default name
+    await user.clear(input)
+    expect(input).toHaveValue('')
+    await act(async () => { input.blur() })
+    await waitFor(() => expect(input).toHaveValue('Player 1'))
+
+    // User-typed name persists across blur
+    await user.clear(input)
+    await user.type(input, 'Jess')
+    await act(async () => { input.blur() })
+    await waitFor(() => expect(input).toHaveValue('Jess'))
+  })
+
+  it('shows the rename hint once on first multiplayer game and dismisses on click', async () => {
+    window.localStorage.removeItem('thestack:seen-name-hint')
+    const user = userEvent.setup()
+    renderWithProviders(<TrackerPage />)
+
+    await clickWhenSettled(user, 'mode-multi')
+    await clickWhenSettled(user, 'button-wizard-next')
+    await clickWhenSettled(user, 'players-2')
+    await clickWhenSettled(user, 'button-wizard-next')
+    await clickWhenSettled(user, 'format-standard-20')
+    await clickWhenSettled(user, 'button-wizard-next')
+    await clickWhenSettled(user, 'button-wizard-next')
+
+    const hint = await screen.findByTestId('hint-rename')
+    expect(hint).toBeInTheDocument()
+
+    await user.click(screen.getByTestId('button-dismiss-name-hint'))
+    await waitFor(() => expect(screen.queryByTestId('hint-rename')).not.toBeInTheDocument())
+    expect(window.localStorage.getItem('thestack:seen-name-hint')).toBe('1')
+  })
+
+  it('does NOT show the rename hint in solo mode', async () => {
+    window.localStorage.removeItem('thestack:seen-name-hint')
+    const user = userEvent.setup()
+    renderWithProviders(<TrackerPage />)
+
+    await clickWhenSettled(user, 'mode-solo')
+    await clickWhenSettled(user, 'button-wizard-next')
+    await clickWhenSettled(user, 'format-standard-20')
+    await clickWhenSettled(user, 'button-wizard-next')
+    await clickWhenSettled(user, 'button-wizard-next')
+
+    await waitFor(() => expect(screen.getByTestId('life-1')).toHaveTextContent('20'))
+    expect(screen.queryByTestId('hint-rename')).not.toBeInTheDocument()
   })
 
   it('Exit returns to the wizard', async () => {
