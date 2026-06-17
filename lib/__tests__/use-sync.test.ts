@@ -60,7 +60,7 @@ async function routedFetch(url: string, init?: RequestInit): Promise<Response> {
     if (byCodeQueue.length > 0) return toResponse(byCodeQueue.shift()!)
     return { ok: false, status: 404, json: async () => ({}) } as unknown as Response
   }
-  if (url.includes('/seat') && method === 'POST') {
+  if (url.includes('/seat') && (method === 'POST' || method === 'DELETE')) {
     if (seatQueue.length > 0) return toResponse(seatQueue.shift()!)
     return { ok: true, status: 200, json: async () => ({ seats: [] }) } as unknown as Response
   }
@@ -746,6 +746,93 @@ describe('useSync', () => {
         claimed = await result.current.claimSeat(1)
       })
       expect(claimed).toBeNull()
+      const seatCalls = fetchMock.mock.calls.filter((c) =>
+        String(c[0]).includes('/seat'),
+      )
+      expect(seatCalls).toHaveLength(0)
+    })
+  })
+
+  describe('releaseSeat', () => {
+    it('DELETEs /api/sync/{id}/seat with deviceId+seatId and mirrors returned seats', async () => {
+      whenByCode(
+        ok({
+          id: 'sess_abc',
+          session: makeCreateResponse().session,
+          snapshot: { ...makeCreateResponse().snapshot, seq: 0 },
+          seats: [
+            { seatId: 1, ownerDeviceId: TEST_DEVICE_ID, name: 'Host' },
+            { seatId: 2, ownerDeviceId: 'other-device', name: 'P2' },
+          ],
+        }),
+      )
+      const releasedSeats = [
+        { seatId: 1, ownerDeviceId: TEST_DEVICE_ID, name: 'Host' },
+        { seatId: 2, ownerDeviceId: null, name: 'P2' },
+      ]
+      whenSeat(ok({ seats: releasedSeats }))
+
+      const { result } = renderHook(() => useSync())
+      await waitFor(() => expect(result.current.deviceId).toBe(TEST_DEVICE_ID))
+      await act(async () => {
+        await result.current.joinSession('ABC123')
+      })
+
+      let released: unknown = undefined
+      await act(async () => {
+        released = await result.current.releaseSeat(2)
+      })
+
+      expect(released).toEqual(releasedSeats)
+      expect(result.current.seats).toEqual(releasedSeats)
+
+      const releaseCall = fetchMock.mock.calls.find(
+        (c) =>
+          String(c[0]).includes('/api/sync/sess_abc/seat') &&
+          ((c[1] as RequestInit)?.method ?? '').toUpperCase() === 'DELETE',
+      )
+      expect(releaseCall).toBeDefined()
+      const [, init] = releaseCall as [string, RequestInit]
+      const body = JSON.parse(init.body as string)
+      expect(body).toEqual({ deviceId: TEST_DEVICE_ID, seatId: 2 })
+    })
+
+    it('returns null when the server rejects (e.g. non-host trying to release)', async () => {
+      whenByCode(
+        ok({
+          id: 'sess_abc',
+          session: makeCreateResponse().session,
+          snapshot: { ...makeCreateResponse().snapshot, seq: 0 },
+          seats: [
+            { seatId: 1, ownerDeviceId: 'host-device', name: 'Host' },
+            { seatId: 2, ownerDeviceId: TEST_DEVICE_ID, name: 'P2' },
+          ],
+        }),
+      )
+      whenSeat(ok({ error: 'host_only' }, 403))
+
+      const { result } = renderHook(() => useSync())
+      await waitFor(() => expect(result.current.deviceId).toBe(TEST_DEVICE_ID))
+      await act(async () => {
+        await result.current.joinSession('ABC123')
+      })
+
+      let released: unknown = 'sentinel'
+      await act(async () => {
+        released = await result.current.releaseSeat(1)
+      })
+      expect(released).toBeNull()
+    })
+
+    it('returns null with no network call when no session is active', async () => {
+      const { result } = renderHook(() => useSync())
+      await waitFor(() => expect(result.current.deviceId).toBe(TEST_DEVICE_ID))
+
+      let released: unknown = 'sentinel'
+      await act(async () => {
+        released = await result.current.releaseSeat(1)
+      })
+      expect(released).toBeNull()
       const seatCalls = fetchMock.mock.calls.filter((c) =>
         String(c[0]).includes('/seat'),
       )

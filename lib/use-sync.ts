@@ -104,6 +104,13 @@ export type UseSyncResult = {
    * not found, or no active session).
    */
   claimSeat: (seatId: number) => Promise<SyncSeat[] | null>
+  /**
+   * Host-only: release a previously-claimed seat back to the unclaimed pool.
+   * Used when a returning player's device id was lost (iOS Safari ITP
+   * eviction etc.) and they need their seat freed so they can re-claim it.
+   * Returns the new seats on success, or null on failure / not-host.
+   */
+  releaseSeat: (seatId: number) => Promise<SyncSeat[] | null>
   /** Emit an op. No-op when no session is active. */
   emit: (op: SyncOp) => void
   /**
@@ -498,6 +505,27 @@ export function useSync(): UseSyncResult {
     [deviceId],
   )
 
+  const releaseSeat = useCallback(
+    async (seatId: number): Promise<SyncSeat[] | null> => {
+      const id = sessionIdRef.current
+      if (!id || !deviceId) return null
+      try {
+        const res = await fetch(`/api/sync/${id}/seat`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ deviceId, seatId }),
+        })
+        if (!res.ok) return null
+        const data = (await res.json()) as { seats: SyncSeat[] }
+        setSeats(data.seats)
+        return data.seats
+      } catch {
+        return null
+      }
+    },
+    [deviceId],
+  )
+
   return {
     status,
     deviceId,
@@ -511,6 +539,7 @@ export function useSync(): UseSyncResult {
     createSession,
     joinSession,
     claimSeat,
+    releaseSeat,
     emit,
     subscribeRemoteOps,
     teardown,
