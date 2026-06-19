@@ -4,6 +4,7 @@ import {
   getOpsSince,
   appendOp,
   claimSeat,
+  releaseSeat,
   getIdByCode,
   __clearSyncStoreForTests,
 } from '../sync-store'
@@ -92,6 +93,68 @@ describe('sync-store', () => {
         expect(result.seats.find((s) => s.seatId === 2)?.ownerDeviceId).toBeNull()
         expect(result.seats.find((s) => s.seatId === 3)?.ownerDeviceId).toBe('device-B')
       }
+    })
+  })
+
+  describe('releaseSeat', () => {
+    it('lets the host release a claimed non-host seat', async () => {
+      const r = await createSyncSession({ ...baseInput(), enabledCounters: ['cmd'] })
+      await claimSeat(r.session.id, 2, 'device-B')
+      const result = await releaseSeat(r.session.id, 2, 'host-A')
+      expect(result.ok).toBe(true)
+      if (result.ok) {
+        expect(result.seats.find((s) => s.seatId === 2)?.ownerDeviceId).toBeNull()
+      }
+    })
+
+    it('lets the freed seat be re-claimed by a different (new) device id', async () => {
+      // Models the ITP scenario end-to-end: player B claims seat 2, their
+      // phone wipes localStorage and gets a new device id 'device-B2', host
+      // frees seat 2, the new device id claims it cleanly.
+      const r = await createSyncSession({ ...baseInput(), enabledCounters: ['cmd'] })
+      await claimSeat(r.session.id, 2, 'device-B')
+      // Before release: new device id is locked out.
+      const blocked = await claimSeat(r.session.id, 2, 'device-B2')
+      expect(blocked.ok).toBe(false)
+      if (!blocked.ok) expect(blocked.error).toBe('seat_taken')
+      // Host frees.
+      const freed = await releaseSeat(r.session.id, 2, 'host-A')
+      expect(freed.ok).toBe(true)
+      // After release: new device id can claim.
+      const reclaim = await claimSeat(r.session.id, 2, 'device-B2')
+      expect(reclaim.ok).toBe(true)
+      if (reclaim.ok) {
+        expect(reclaim.seats.find((s) => s.seatId === 2)?.ownerDeviceId).toBe(
+          'device-B2',
+        )
+      }
+    })
+
+    it('rejects release from a non-host device', async () => {
+      const r = await createSyncSession({ ...baseInput(), enabledCounters: ['cmd'] })
+      await claimSeat(r.session.id, 2, 'device-B')
+      const result = await releaseSeat(r.session.id, 2, 'device-C')
+      expect(result.ok).toBe(false)
+      if (!result.ok) expect(result.error).toBe('host_only')
+    })
+
+    it('is idempotent on an already-empty seat (host call succeeds)', async () => {
+      const r = await createSyncSession({ ...baseInput(), enabledCounters: ['cmd'] })
+      const result = await releaseSeat(r.session.id, 3, 'host-A')
+      expect(result.ok).toBe(true)
+    })
+
+    it('rejects releasing an unknown seat', async () => {
+      const r = await createSyncSession({ ...baseInput(), enabledCounters: ['cmd'] })
+      const result = await releaseSeat(r.session.id, 99, 'host-A')
+      expect(result.ok).toBe(false)
+      if (!result.ok) expect(result.error).toBe('unknown_seat')
+    })
+
+    it('returns not_found for an unknown session id', async () => {
+      const result = await releaseSeat('does-not-exist', 1, 'host-A')
+      expect(result.ok).toBe(false)
+      if (!result.ok) expect(result.error).toBe('not_found')
     })
   })
 

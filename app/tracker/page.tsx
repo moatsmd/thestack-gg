@@ -9,6 +9,11 @@ import { track } from '@/lib/analytics'
 import { YourPods } from '@/components/YourPods'
 import { useGameLog, type UseGameLog } from '@/hooks/useGameLog'
 import { useSync, type UseSyncResult } from '@/lib/use-sync'
+import {
+  rememberLastPodSeat,
+  readLastPodSeat,
+  type LastPodSeat,
+} from '@/lib/last-pod-seat'
 import type { RecapPlayer } from '@/types/replay'
 
 /* ────────────────────────────────────────────────────────────
@@ -275,6 +280,16 @@ export default function TrackerPage() {
         setCustomLife(snap.customLife)
         setEnabledCounters(snap.enabledCounters as Counter[])
       }
+      // Remember this claim so a future visit (after iOS Safari ITP wipes
+      // localStorage and rotates the deviceId) can show a "try seat X?"
+      // hint and the host knows which seat to free.
+      if (sync.session) {
+        rememberLastPodSeat({
+          sessionId: sync.session.id,
+          code: sync.session.code,
+          seatId,
+        })
+      }
       setJoinModalOpen(false)
       setStep('play')
       track('tracker_joined_pod', { seat_id: seatId })
@@ -431,6 +446,24 @@ function JoinModal({
   const resolving = status === 'creating' || (status === 'idle' && !error)
   const ended = status === 'ended'
 
+  // Returning-user hint: if localStorage still remembers a previous claim
+  // on THIS code, we can suggest the same seat. This survives iOS Safari
+  // ITP eviction of the device-id cookie/localStorage pair in many cases
+  // because localStorage and the seat-memo share the same eviction policy
+  // — sometimes one survives while the other doesn't.
+  const [memo, setMemo] = useState<LastPodSeat | null>(null)
+  useEffect(() => {
+    if (!open) return
+    setMemo(readLastPodSeat())
+  }, [open])
+  const normalizedCode = code.toUpperCase()
+  const suggestedSeatId =
+    memo && memo.code.toUpperCase() === normalizedCode ? memo.seatId : null
+  const suggestedSeatTaken =
+    suggestedSeatId !== null &&
+    !!seats.find((s) => s.seatId === suggestedSeatId)?.ownerDeviceId
+  const allSeatsTaken = seats.length > 0 && unclaimedSeats.length === 0
+
   return (
     <AnimatePresence>
       {open && (
@@ -498,6 +531,16 @@ function JoinModal({
               snapshot &&
               seats.length > 0 && (
                 <>
+                  {suggestedSeatId !== null && (
+                    <p
+                      className="mt-3 text-xs text-foreground/80 panel rounded-md py-2 px-3"
+                      data-testid="join-return-hint"
+                    >
+                      {suggestedSeatTaken
+                        ? `Looks like you were here before. If your phone lost the pod, ask the host to free seat ${suggestedSeatId} so you can take it back.`
+                        : `Welcome back — try seat ${suggestedSeatId}.`}
+                    </p>
+                  )}
                   <p className="font-prose italic text-foreground/70 text-sm mt-3">
                     Pick the seat you want to control.
                   </p>
@@ -508,6 +551,8 @@ function JoinModal({
                     {seats.map((s) => {
                       const taken = !!s.ownerDeviceId
                       const isClaiming = claiming === s.seatId
+                      const isSuggested =
+                        !taken && suggestedSeatId === s.seatId
                       return (
                         <button
                           key={s.seatId}
@@ -515,6 +560,10 @@ function JoinModal({
                           onClick={() => onClaim(s.seatId)}
                           className={`panel hover-elevate text-sm py-3 px-4 flex items-center justify-between rounded-md ${
                             taken ? 'opacity-40 cursor-not-allowed' : ''
+                          } ${
+                            isSuggested
+                              ? 'ring-2 ring-primary ring-offset-1 ring-offset-background'
+                              : ''
                           }`}
                           data-testid={`join-seat-${s.seatId}`}
                         >
@@ -526,15 +575,18 @@ function JoinModal({
                               ? 'Taken'
                               : isClaiming
                               ? 'Claiming…'
+                              : isSuggested
+                              ? 'Your seat'
                               : 'Open'}
                           </span>
                         </button>
                       )
                     })}
                   </div>
-                  {unclaimedSeats.length === 0 && (
+                  {allSeatsTaken && (
                     <p className="mt-3 text-xs text-muted-foreground">
-                      All seats are claimed. Ask the host to make room.
+                      All seats are claimed. Ask the host to free a seat for
+                      you.
                     </p>
                   )}
                 </>
@@ -797,6 +849,21 @@ function ActiveTracker({
   const [syncOpen, setSyncOpen] = useState(false)
   const [syncStarting, setSyncStarting] = useState(false)
   const [syncQrUrl, setSyncQrUrl] = useState<string>('')
+  const [releasingSeat, setReleasingSeat] = useState<number | null>(null)
+
+  // Host releases a non-host seat. Used when a returning player's deviceId
+  // was lost (iOS Safari ITP / private mode) and they can't re-claim their
+  // welded seat. We refuse to free the host's own seat — host identity is
+  // bound to the device, not the seat number.
+  async function handleFreeSeat(seatId: number) {
+    if (releasingSeat !== null) return
+    setReleasingSeat(seatId)
+    try {
+      await sync.releaseSeat(seatId)
+    } finally {
+      setReleasingSeat(null)
+    }
+  }
   const [endOpen, setEndOpen] = useState(false)
   const [endingGame, setEndingGame] = useState(false)
   const [endError, setEndError] = useState<string | null>(null)
@@ -1328,6 +1395,58 @@ function ActiveTracker({
                     <p className="font-mono text-[11px] text-foreground/60 mt-2 break-all" data-testid="sync-join-url">
                       {sync.joinUrl}
                     </p>
+                  )}
+                  {sync.isHost && sync.seats.length > 0 && (
+                    <div className="mt-5 text-left" data-testid="sync-seat-roster">
+                      <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-2">
+                        Seats
+                      </p>
+                      <ul className="space-y-1.5">
+                        {sync.seats.map((s) => {
+                          const isHostSeat =
+                            !!sync.session &&
+                            s.ownerDeviceId === sync.session.hostDeviceId
+                          const claimed = !!s.ownerDeviceId
+                          const canFree = claimed && !isHostSeat
+                          const releasing = releasingSeat === s.seatId
+                          return (
+                            <li
+                              key={s.seatId}
+                              className="flex items-center justify-between gap-3 text-xs"
+                              data-testid={`sync-seat-row-${s.seatId}`}
+                            >
+                              <span className="font-display tracking-wide">
+                                {s.name}
+                              </span>
+                              <span className="flex items-center gap-2">
+                                <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                                  {isHostSeat
+                                    ? 'You'
+                                    : claimed
+                                    ? 'Claimed'
+                                    : 'Open'}
+                                </span>
+                                {canFree && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleFreeSeat(s.seatId)}
+                                    disabled={releasingSeat !== null}
+                                    className="px-2 py-1 rounded border border-border text-[10px] uppercase tracking-[0.2em] hover-elevate disabled:opacity-50"
+                                    data-testid={`button-free-seat-${s.seatId}`}
+                                  >
+                                    {releasing ? 'Freeing…' : 'Free'}
+                                  </button>
+                                )}
+                              </span>
+                            </li>
+                          )
+                        })}
+                      </ul>
+                      <p className="font-prose italic text-foreground/60 text-[11px] mt-2">
+                        If a friend’s phone lost the pod and they can’t rejoin,
+                        free their seat so they can claim it again.
+                      </p>
+                    </div>
                   )}
                   <div className="flex items-center justify-center gap-2 mt-4 text-xs text-muted-foreground">
                     <span

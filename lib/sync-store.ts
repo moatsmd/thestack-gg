@@ -250,6 +250,57 @@ const claimInPlace = (
   return true
 }
 
+// ─── Seat release (host-only escape hatch) ────────────────────────────
+/**
+ * Host-only operation that clears a seat's ownerDeviceId so it becomes
+ * unclaimed again. Used when a returning player's phone has rotated its
+ * device id (e.g. iOS Safari purged localStorage) and they can no longer
+ * re-claim what was "theirs" before.
+ *
+ * - The requesting deviceId MUST equal meta.hostDeviceId.
+ * - Releasing the host's own implicit seat (seat 1) is forbidden — the
+ *   host is identified by deviceId, not seat ownership.
+ * - Releasing an already-empty seat is a no-op (returns ok with current
+ *   seats) so the UI can call this safely.
+ */
+export const releaseSeat = async (
+  id: string,
+  seatId: number,
+  requesterDeviceId: string,
+): Promise<{ ok: true; seats: SyncSeat[] } | { ok: false; error: string }> => {
+  if (!requesterDeviceId) return { ok: false, error: 'deviceId required' }
+
+  const redis = await getRedis()
+  if (!redis) {
+    cleanupExpired()
+    const sess = memSessions.get(id)
+    if (!sess) return { ok: false, error: 'not_found' }
+    if (sess.meta.hostDeviceId !== requesterDeviceId) {
+      return { ok: false, error: 'host_only' }
+    }
+    const target = sess.seats.find((s) => s.seatId === seatId)
+    if (!target) return { ok: false, error: 'unknown_seat' }
+    target.ownerDeviceId = null
+    return { ok: true, seats: sess.seats }
+  }
+
+  const [metaStr, seatsStr] = await Promise.all([
+    redis.get(metaKey(id)),
+    redis.get(seatsKey(id)),
+  ])
+  if (!metaStr || !seatsStr) return { ok: false, error: 'not_found' }
+  const meta = JSON.parse(metaStr) as SyncSessionMeta
+  if (meta.hostDeviceId !== requesterDeviceId) {
+    return { ok: false, error: 'host_only' }
+  }
+  const seats = JSON.parse(seatsStr) as SyncSeat[]
+  const target = seats.find((s) => s.seatId === seatId)
+  if (!target) return { ok: false, error: 'unknown_seat' }
+  target.ownerDeviceId = null
+  await redis.set(seatsKey(id), JSON.stringify(seats), { EX: SYNC_TTL_SEC })
+  return { ok: true, seats }
+}
+
 // ─── Apply op ─────────────────────────────────────────────────────────
 export type AppendOpInput = {
   sessionId: string

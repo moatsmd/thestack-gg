@@ -547,6 +547,88 @@ describe('Tracker Page', () => {
         window.history.replaceState({}, '', originalUrl)
       }
     })
+
+    it('host can free a claimed non-host seat from the share dialog', async () => {
+      // Host creates session. Seat 2 returns from /api/sync already showing
+      // a (stale) ownerDeviceId 'lost-device-xxxx' — we want the host UI to
+      // surface a 'Free' button next to seat 2, click it, and POST DELETE
+      // /api/sync/{id}/seat with the host's deviceId.
+      const createdSeats = [
+        { seatId: 1, ownerDeviceId: 'test-host-aaaa', name: 'Host' },
+        { seatId: 2, ownerDeviceId: 'lost-device-xxxx', name: 'P2' },
+      ]
+      const freedSeats = [
+        { seatId: 1, ownerDeviceId: 'test-host-aaaa', name: 'Host' },
+        { seatId: 2, ownerDeviceId: null, name: 'P2' },
+      ]
+
+      fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
+        const u = String(url)
+        const method = (init?.method ?? 'GET').toUpperCase()
+        if (u === '/api/sync' && method === 'POST') {
+          return okJson({
+            id: 'sess_xyz',
+            code: 'XYZ123',
+            joinUrl: 'https://thestack.gg/tracker?join=XYZ123',
+            session: {
+              id: 'sess_xyz',
+              code: 'XYZ123',
+              hostDeviceId: 'test-host-aaaa',
+              createdAt: 1,
+              seq: 0,
+            },
+            snapshot: {
+              seq: 0,
+              players: [],
+              gameMode: { name: 'Standard', life: 20 },
+              customLife: 20,
+              enabledCounters: ['cmd', 'poison', 'mana'],
+            },
+            seats: createdSeats,
+            expiresInMs: 86_400_000,
+          })
+        }
+        if (u === '/api/sync/sess_xyz/seat' && method === 'DELETE') {
+          return okJson({ seats: freedSeats })
+        }
+        if (u.includes('/since')) {
+          return okJson({ ops: [], seq: 0 })
+        }
+        return okJson({})
+      })
+
+      const user = await startMultiGame()
+      await user.click(screen.getByTestId('button-sync'))
+      await user.click(screen.getByTestId('button-start-sync'))
+
+      // Seat roster renders with the welded seat 2.
+      const freeBtn = await screen.findByTestId('button-free-seat-2')
+      // Seat 1 is the host — must NOT have a Free button.
+      expect(screen.queryByTestId('button-free-seat-1')).not.toBeInTheDocument()
+
+      await user.click(freeBtn)
+
+      await waitFor(() => {
+        const releaseCall = fetchMock.mock.calls.find(
+          (c) =>
+            String(c[0]) === '/api/sync/sess_xyz/seat' &&
+            ((c[1] as RequestInit)?.method ?? '').toUpperCase() === 'DELETE',
+        )
+        expect(releaseCall).toBeDefined()
+        const body = JSON.parse(
+          ((releaseCall![1] as RequestInit).body as string) ?? '{}',
+        )
+        expect(body).toEqual({ deviceId: 'test-host-aaaa', seatId: 2 })
+      })
+
+      // After release, the Free button for seat 2 should disappear (seat is
+      // now open) and the row should show 'Open'.
+      await waitFor(() => {
+        expect(
+          screen.queryByTestId('button-free-seat-2'),
+        ).not.toBeInTheDocument()
+      })
+    })
   })
 
   it('Exit returns to the wizard', async () => {
