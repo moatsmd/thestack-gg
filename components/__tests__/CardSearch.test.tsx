@@ -8,7 +8,7 @@ jest.mock('@/hooks/useCardSearch')
 
 // Mock child components
 jest.mock('../CardSearchInput', () => ({
-  CardSearchInput: ({ value, onChange, onSearch }: any) => (
+  CardSearchInput: ({ value, onChange, onSearch, onSelectSuggestion }: any) => (
     <div data-testid="card-search-input">
       <input
         placeholder="Search for a card..."
@@ -16,6 +16,7 @@ jest.mock('../CardSearchInput', () => ({
         onChange={(e) => onChange(e.target.value)}
       />
       <button onClick={onSearch}>Search</button>
+      <button onClick={() => onSelectSuggestion('Sol Ring')}>Sol Ring suggestion</button>
     </div>
   ),
 }))
@@ -95,6 +96,31 @@ describe('CardSearch', () => {
 
     expect(screen.getByTestId('card-search-input')).toBeInTheDocument()
     expect(screen.getByTestId('card-search-help')).toBeInTheDocument()
+  })
+
+  it('searches the chosen suggestion immediately', async () => {
+    const user = userEvent.setup()
+    render(<CardSearch />)
+    await user.click(screen.getByRole('button', { name: 'Sol Ring suggestion' }))
+    expect(defaultHookReturn.search).toHaveBeenCalledWith('Sol Ring')
+  })
+
+  it('runs a linked query once and reruns only when the linked query changes', () => {
+    const { rerender } = render(<CardSearch initialQuery="Sol Ring" />)
+    expect(defaultHookReturn.search).toHaveBeenCalledWith('Sol Ring')
+    expect(defaultHookReturn.search).toHaveBeenCalledTimes(1)
+    rerender(<CardSearch initialQuery="Sol Ring" />)
+    expect(defaultHookReturn.search).toHaveBeenCalledTimes(1)
+    rerender(<CardSearch initialQuery="o:flying" />)
+    expect(defaultHookReturn.search).toHaveBeenLastCalledWith('o:flying')
+    expect(defaultHookReturn.search).toHaveBeenCalledTimes(2)
+  })
+
+  it('clears a removed linked query without issuing an empty search', () => {
+    const { rerender } = render(<CardSearch initialQuery="Sol Ring" />)
+    rerender(<CardSearch initialQuery="" />)
+    expect(defaultHookReturn.setQuery).toHaveBeenLastCalledWith('')
+    expect(defaultHookReturn.search).toHaveBeenCalledTimes(1)
   })
 
   it('displays error banner when error exists', () => {

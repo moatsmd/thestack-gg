@@ -16,6 +16,7 @@ describe('PlayerCounter', () => {
     onOpenPoisonCounter: jest.fn(),
     onOpenManaPool: jest.fn(),
     onNameChange: jest.fn(),
+    onExtraCounterChange: jest.fn(),
   }
 
   beforeEach(() => {

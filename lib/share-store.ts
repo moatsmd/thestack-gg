@@ -10,7 +10,8 @@ export interface ShareSession {
 
 const SESSION_TTL_MS = 5 * 60 * 60 * 1000
 const SESSION_TTL_SEC = Math.floor(SESSION_TTL_MS / 1000)
-const sessions = new Map<string, ShareSession>()
+const shareGlobal = globalThis as typeof globalThis & { __theStackShares?: Map<string, ShareSession> }
+const sessions = shareGlobal.__theStackShares ??= new Map<string, ShareSession>()
 
 const cleanupExpired = () => {
   const now = Date.now()

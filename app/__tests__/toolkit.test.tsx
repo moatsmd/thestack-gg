@@ -1,6 +1,11 @@
 import { render, screen } from '@testing-library/react'
 import ToolkitPage from '../toolkit/page'
 
+let mockQueryString = ''
+jest.mock('next/navigation', () => ({
+  useSearchParams: () => new URLSearchParams(mockQueryString),
+}))
+
 // Mock the ToolkitHeader component
 jest.mock('@/components/ToolkitHeader', () => ({
   ToolkitHeader: () => <div data-testid="toolkit-header">Toolkit Header</div>
@@ -8,10 +13,20 @@ jest.mock('@/components/ToolkitHeader', () => ({
 
 // Mock the CardSearch component
 jest.mock('@/components/CardSearch', () => ({
-  CardSearch: () => <div data-testid="card-search">Card Search</div>
+  CardSearch: ({ initialQuery }: { initialQuery?: string }) => <div data-testid="card-search" data-query={initialQuery}>Card Search</div>
 }))
 
 describe('ToolkitPage', () => {
+  beforeEach(() => { mockQueryString = '' })
+
+  it('passes decoded card and keyword links to the search and follows URL changes', () => {
+    mockQueryString = 'q=Sol%20Ring'
+    const { rerender } = render(<ToolkitPage />)
+    expect(screen.getByTestId('card-search')).toHaveAttribute('data-query', 'Sol Ring')
+    mockQueryString = 'q=o%3Aflying'
+    rerender(<ToolkitPage />)
+    expect(screen.getByTestId('card-search')).toHaveAttribute('data-query', 'o:flying')
+  })
   it('renders the toolkit page', () => {
     render(<ToolkitPage />)
 

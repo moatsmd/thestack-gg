@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useCardSearch } from '@/hooks/useCardSearch'
 import { CardSearchInput } from './CardSearchInput'
 import { CardSearchHelp } from './CardSearchHelp'
@@ -12,7 +12,7 @@ import { CardModal } from './CardModal'
 import { ScryfallCard } from '@/types/scryfall'
 import { track } from '@/lib/analytics'
 
-export function CardSearch() {
+export function CardSearch({ initialQuery }: { initialQuery?: string }) {
   const {
     query,
     results,
@@ -31,8 +31,16 @@ export function CardSearch() {
   const [viewMode, setViewMode] = useState<ViewMode>('single')
   const [modalCard, setModalCard] = useState<ScryfallCard | null>(null)
 
+  useEffect(() => {
+    if (initialQuery === undefined) return
+    setModalCard(null)
+    if (initialQuery.trim()) void search(initialQuery)
+    else setQuery('')
+  }, [initialQuery, search, setQuery])
+
   const handleSelectSuggestion = (suggestion: string) => {
-    setQuery(suggestion)
+    track('card_lookup', { query: suggestion, length: suggestion.length })
+    void search(suggestion)
   }
 
   const handleCardClick = (card: ScryfallCard) => {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useId } from 'react'
 
 interface CardSearchInputProps {
   value: string
@@ -23,6 +23,7 @@ export function CardSearchInput({
   const [highlightedIndex, setHighlightedIndex] = useState(-1)
   const inputRef = useRef<HTMLInputElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const suggestionsId = useId()
 
   // Show dropdown when suggestions change
   useEffect(() => {
@@ -53,11 +54,17 @@ export function CardSearchInput({
     }
   }, [])
 
+  const handleSearch = () => {
+    setIsDropdownOpen(false)
+    setHighlightedIndex(-1)
+    onSearch()
+  }
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (!isDropdownOpen || suggestions.length === 0) {
       if (e.key === 'Enter') {
         e.preventDefault()
-        onSearch()
+        handleSearch()
       }
       return
     }
@@ -81,7 +88,7 @@ export function CardSearchInput({
           onSelectSuggestion(suggestions[highlightedIndex])
           setIsDropdownOpen(false)
         } else {
-          onSearch()
+          handleSearch()
         }
         break
 
@@ -115,20 +122,24 @@ export function CardSearchInput({
             placeholder="Search for a card..."
             className="w-full min-h-[48px] px-4 py-3 text-base rounded-lg border border-white/10 bg-[var(--surface-1)] text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-2)] focus:border-transparent transition-colors"
             aria-label="Card search input"
+            role="combobox"
+            aria-expanded={isDropdownOpen && suggestions.length > 0}
             aria-autocomplete="list"
-            aria-controls="search-suggestions"
+            aria-controls={isDropdownOpen ? suggestionsId : undefined}
+            aria-activedescendant={isDropdownOpen && highlightedIndex >= 0 ? `${suggestionsId}-${highlightedIndex}` : undefined}
           />
 
           {isDropdownOpen && suggestions.length > 0 && (
             <div
               ref={dropdownRef}
-              id="search-suggestions"
+              id={suggestionsId}
               role="listbox"
               className="absolute z-10 w-full mt-1 bg-[var(--surface-1)] border border-white/10 rounded-lg shadow-lg max-h-64 overflow-y-auto"
             >
               {suggestions.map((suggestion, index) => (
                 <button
                   key={suggestion}
+                  id={`${suggestionsId}-${index}`}
                   type="button"
                   role="option"
                   aria-selected={index === highlightedIndex}
@@ -148,7 +159,7 @@ export function CardSearchInput({
 
         <button
           type="button"
-          onClick={onSearch}
+          onClick={handleSearch}
           disabled={isLoading}
           className="min-h-[48px] px-6 bg-[var(--accent-2)] hover:bg-[var(--accent-2)]/90 disabled:bg-gray-600 text-gray-900 font-semibold rounded-lg transition"
           aria-label="Search"

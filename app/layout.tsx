@@ -16,6 +16,7 @@ const bodyFont = IM_Fell_English({
   weight: "400",
   style: ["normal", "italic"],
   variable: "--font-body",
+  adjustFontFallback: false,
 });
 
 const proseFont = Cormorant_Garamond({
@@ -87,8 +88,6 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   themeColor: "#1f2937",
 };
 
@@ -114,7 +113,7 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="en">
+    <html lang="en" className="dark" suppressHydrationWarning>
       <head>
         {/* Impact (TCGplayer / Card Kingdom affiliate network) site verification */}
         <meta

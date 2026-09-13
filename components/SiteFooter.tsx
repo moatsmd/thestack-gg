@@ -3,7 +3,7 @@ import { Logo } from './Logo'
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-[hsl(40_30%_20%/0.6)] bg-[hsl(220_15%_7%/0.6)] mt-12">
+    <footer className="border-t border-[hsl(40_30%_20%/0.6)] bg-[hsl(220_15%_7%/0.6)] mt-12 pb-nav">
       <div className="max-w-6xl mx-auto px-4 md:px-8 py-10">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-sm">
           <div>
@@ -45,18 +45,18 @@ export function SiteFooter() {
           </div>
           <div>
             <h4 className="font-display tracking-[0.2em] text-xs uppercase text-[hsl(38_15%_60%)] mb-3">
-              Community
+              Explore
             </h4>
             <ul className="space-y-2 text-[hsl(38_15%_60%)]">
               <li>
-                <a href="#" className="hover:text-[hsl(42_75%_65%)]">
-                  Discord
-                </a>
+                <Link href="/blog" className="hover:text-[hsl(42_75%_65%)]">
+                  The Codex
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-[hsl(42_75%_65%)]">
-                  Twitter / X
-                </a>
+                <Link href="/new-players" className="hover:text-[hsl(42_75%_65%)]">
+                  New Player Guide
+                </Link>
               </li>
               <li>
                 <a

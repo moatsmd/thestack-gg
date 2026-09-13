@@ -43,6 +43,13 @@ const baseEvents = (): GameEvent[] => [
 ]
 
 describe('recap-store', () => {
+  it('keeps a local recap when a different route reloads the store module', async () => {
+    const saved = await createRecap({ players, format: 'Commander', startingLife: 40, events: baseEvents() })
+    jest.resetModules()
+    const reloaded = await import('../recap-store')
+    expect((await reloaded.getRecap(saved.id))?.id).toBe(saved.id)
+  })
+
   it('creates a recap and assigns a non-empty id', async () => {
     const r = await createRecap({
       players,

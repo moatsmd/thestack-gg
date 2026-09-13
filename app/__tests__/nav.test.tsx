@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { BottomNavBar } from '@/components/BottomNavBar'
 import { DarkModeProvider } from '@/contexts/DarkModeContext'
@@ -52,5 +52,35 @@ describe('BottomNavBar (redesigned)', () => {
     renderNav()
     await user.click(screen.getByTestId('more-button'))
     expect(screen.getByText(/tokens/i)).toBeInTheDocument()
+  })
+
+  it('announces the current tool', () => {
+    renderNav()
+    expect(screen.getByRole('link', { name: 'Tracker' })).toHaveAttribute('aria-current', 'page')
+  })
+
+  it('opens an accessible dialog and returns focus to More after Escape', async () => {
+    const user = userEvent.setup()
+    renderNav()
+    const trigger = screen.getByRole('button', { name: 'More options' })
+    await user.click(trigger)
+    const dialog = screen.getByRole('dialog', { name: 'More tools and settings' })
+    expect(dialog).toContainElement(document.activeElement as HTMLElement)
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(trigger).toHaveFocus()
+  })
+
+  it('keeps keyboard focus within the open drawer', async () => {
+    const user = userEvent.setup()
+    renderNav()
+    await user.click(screen.getByRole('button', { name: 'More options' }))
+    const dialog = screen.getByRole('dialog', { name: 'More tools and settings' })
+    const close = within(dialog).getByRole('button', { name: 'Close menu' })
+    close.focus()
+    await user.tab({ shift: true })
+    expect(within(dialog).getByTestId('dark-mode-toggle')).toHaveFocus()
+    await user.tab()
+    expect(close).toHaveFocus()
   })
 })

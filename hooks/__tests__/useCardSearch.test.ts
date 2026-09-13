@@ -1,4 +1,4 @@
-import { renderHook, act, waitFor } from '@testing-library/react'
+import { renderHook, act, waitFor, cleanup } from '@testing-library/react'
 import { useCardSearch } from '../useCardSearch'
 import * as scryfallApi from '@/lib/scryfall-api'
 import { ScryfallCard, ScryfallSearchResponse } from '@/types/scryfall'
@@ -13,12 +13,14 @@ const mockFetchSearchPage = scryfallApi.fetchSearchPage as jest.MockedFunction<t
 
 describe('useCardSearch', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    jest.resetAllMocks()
     jest.useFakeTimers()
+    mockAutocomplete.mockResolvedValue([])
   })
 
   afterEach(() => {
-    jest.runOnlyPendingTimers()
+    cleanup()
+    jest.clearAllTimers()
     jest.useRealTimers()
   })
 
@@ -388,6 +390,7 @@ describe('useCardSearch', () => {
 
   describe('autocomplete error handling', () => {
     it('should handle autocomplete errors gracefully', async () => {
+      const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {})
       mockAutocomplete.mockRejectedValue(new Error('Autocomplete failed'))
 
       const { result } = renderHook(() => useCardSearch())
@@ -406,6 +409,8 @@ describe('useCardSearch', () => {
 
       // Should not crash and suggestions should be empty
       expect(result.current.suggestions).toEqual([])
+      expect(consoleError).toHaveBeenCalledWith('Autocomplete error:', expect.any(Error))
+      consoleError.mockRestore()
     })
   })
 

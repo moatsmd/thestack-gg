@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { Fleuron, GoldRule } from '@/components/Fleuron'
 
 const sequence = [
@@ -19,6 +19,8 @@ type StackEntry = { id: number; text: string }
 export default function StackPage() {
   const [step, setStep] = useState(0)
   const [playing, setPlaying] = useState(true)
+  const reducedMotion = useReducedMotion()
+  useEffect(() => { if (reducedMotion) setPlaying(false) }, [reducedMotion])
 
   useEffect(() => {
     if (!playing) return
@@ -27,19 +29,18 @@ export default function StackPage() {
   }, [playing])
 
   let stack: StackEntry[] = []
-  if (step < 3) {
-    stack = sequence.slice(0, step + 1).map((s, i) => ({
+  if (step <= 3) {
+    stack = sequence.slice(0, Math.min(3, step + 1)).map((s, i) => ({
       id: i,
       text: s
         .replace(/^Player [AB] (casts|responds with) /, '')
         .replace(/ targeting.*$/, ''),
-    }))
+    })).reverse()
   } else if (step === 4) {
     stack = [
       { id: 0, text: 'Lightning Bolt' },
-      { id: 1, text: 'Counterspell' },
     ]
-  } else if (step === 5 || step === 6) {
+  } else if (step === 5) {
     stack = [{ id: 0, text: 'Lightning Bolt' }]
   }
 
@@ -67,10 +68,11 @@ export default function StackPage() {
               The Stack
             </span>
             <div className="flex items-center gap-1">
+              <button onClick={() => { setPlaying(false); setStep(s => (s + 1) % sequence.length) }} className="panel min-h-11 px-2 text-xs">Next step</button>
               <button
                 type="button"
                 onClick={() => setPlaying((p) => !p)}
-                className="panel hover-elevate p-1.5 inline-flex items-center justify-center text-[hsl(38_30%_88%)]"
+                className="panel hover-elevate min-w-11 min-h-11 p-1.5 inline-flex items-center justify-center text-[hsl(38_30%_88%)]"
                 aria-label={playing ? 'Pause' : 'Play'}
                 data-testid="button-play"
               >
@@ -106,7 +108,7 @@ export default function StackPage() {
               <button
                 type="button"
                 onClick={() => setStep(0)}
-                className="panel hover-elevate p-1.5 inline-flex items-center justify-center text-[hsl(38_30%_88%)]"
+                className="panel hover-elevate min-w-11 min-h-11 p-1.5 inline-flex items-center justify-center text-[hsl(38_30%_88%)]"
                 aria-label="Reset"
                 data-testid="button-reset-stack"
               >
@@ -143,8 +145,9 @@ export default function StackPage() {
                 stack.map((item, idx) => (
                   <motion.div
                     key={`${step}-${item.id}`}
+                    data-testid={idx === 0 ? "stack-top" : undefined}
                     initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: idx * 56 }}
+                    animate={{ opacity: 1, y: idx * 74 }}
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ duration: 0.35 }}
                     className={`absolute left-0 right-0 panel-elevated p-3 rounded-md border ${
@@ -190,6 +193,7 @@ export default function StackPage() {
                     : 'border-[hsl(40_30%_20%)] bg-[hsl(220_15%_10%/0.4)]'
                 }`}
               >
+                <button onClick={() => { setStep(i); setPlaying(false) }} aria-current={i === step ? "step" : undefined} className="w-full text-left min-h-11">
                 <span className="font-display tracking-wider text-[10px] uppercase text-[hsl(38_15%_60%)] mr-2">
                   {i + 1}
                 </span>
@@ -202,6 +206,7 @@ export default function StackPage() {
                 >
                   {s}
                 </span>
+                </button>
               </li>
             ))}
           </ol>
@@ -216,7 +221,7 @@ export default function StackPage() {
       >
         <RuleCard
           title="Priority"
-          body="Players take turns receiving priority. The active player gets it first each step. You may only cast spells or activate abilities while you have priority."
+          body="The active player receives priority first in most steps and phases, and after a spell or ability resolves. Players then pass in turn order. Mana abilities and effects that instruct you to cast a spell have special timing rules."
         />
         <RuleCard
           title="LIFO Resolution"
@@ -236,17 +241,18 @@ export default function StackPage() {
       >
         <RuleCard
           title="Counterspell on your spell"
-          body="Counterspell goes on top. You still have priority and can cast another spell or ability before it resolves."
+          body="Counterspell goes on top, and its caster receives priority again. When priority reaches you, you may respond before it resolves. Nothing resolves until every player passes in succession."
         />
         <RuleCard
           title="Triggered ability"
-          body="The trigger goes on the stack and both players receive priority before it resolves. Either player can respond."
+          body="A triggered ability is put on the stack before the next player receives priority. Every player has a chance to respond before it resolves."
         />
         <RuleCard
           title="Two spells in a row"
-          body="The second spell goes on top of the first. Your second spell resolves first, then your first spell resolves."
+          body="You can hold priority to cast another spell if its timing allows it. The second spell goes above the first. Players receive priority again between resolutions."
         />
       </section>
+      <p className="text-sm text-muted-foreground pb-6">Reference: <a href="https://magic.wizards.com/en/rules" target="_blank" rel="noopener noreferrer" className="text-primary underline">Official Comprehensive Rules, section 117: Timing and Priority</a>.</p>
     </div>
   )
 }

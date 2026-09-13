@@ -7,6 +7,8 @@ const createJestConfig = nextJest({
 const customJestConfig = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   testEnvironment: 'jest-environment-jsdom',
+  modulePathIgnorePatterns: ['<rootDir>/.next-dev/'],
+  testPathIgnorePatterns: ['<rootDir>/.next-dev/'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
     '^framer-motion$': '<rootDir>/__mocks__/framer-motion.tsx',

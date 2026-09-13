@@ -10,8 +10,8 @@ export function generateStaticParams(): Params[] {
   return getAllPostSlugs().map((slug) => ({ slug }))
 }
 
-export function generateMetadata({ params }: { params: Params }): Metadata {
-  const post = getPostBySlug(params.slug)
+export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
+  const post = getPostBySlug((await params).slug)
   if (!post) return {}
   const url = `https://www.thestack.gg/blog/${post.slug}`
   return {
@@ -53,8 +53,8 @@ function formatDate(iso: string): string {
   })
 }
 
-export default function BlogPostPage({ params }: { params: Params }) {
-  const post = getPostBySlug(params.slug)
+export default async function BlogPostPage({ params }: { params: Promise<Params> }) {
+  const post = getPostBySlug((await params).slug)
   if (!post) notFound()
 
   // JSON-LD Article schema for richer Search result rendering

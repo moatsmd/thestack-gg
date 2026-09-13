@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import StackPage from '../stack/page'
 import { DarkModeProvider } from '@/contexts/DarkModeContext'
 
@@ -10,6 +10,20 @@ const renderStack = () =>
   )
 
 describe('StackPage (animated demo)', () => {
+  it('places the newest spell on top and empties after final resolution', () => {
+    renderStack()
+    fireEvent.click(screen.getByRole('button', { name: 'Next step' }))
+    expect(screen.getByTestId('stack-top')).toHaveTextContent('Counterspell')
+    fireEvent.click(screen.getByRole('button', { name: 'Next step' }))
+    expect(screen.getByTestId('stack-top')).toHaveTextContent('Red Elemental Blast')
+    fireEvent.click(screen.getByRole('button', { name: 'Next step' }))
+    expect(screen.getByTestId('stack-top')).toHaveTextContent('Red Elemental Blast')
+    fireEvent.click(screen.getByRole('button', { name: 'Next step' }))
+    expect(screen.getByTestId('stack-top')).toHaveTextContent('Lightning Bolt')
+    fireEvent.click(screen.getByRole('button', { name: 'Next step' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Next step' }))
+    expect(screen.getByText('The stack is empty.')).toBeInTheDocument()
+  })
   it('renders the display heading', () => {
     renderStack()
     // Display heading is a <p> in the new layout, but eyebrow + tagline include "Stack"

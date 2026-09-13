@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 
 export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((prev: T) => T)) => void] {
   // State to store our value
@@ -15,12 +15,16 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T 
       return initialValue
     }
   })
+  const valueRef = useRef(storedValue)
 
   // Return a wrapped version of useState's setter function that
   // persists the new value to localStorage
-  const setValue = (value: T | ((prev: T) => T)) => {
+  const setValue = useCallback((value: T | ((prev: T) => T)) => {
     try {
-      const newValue = value instanceof Function ? value(storedValue) : value
+      // A render's state can lag behind rapid taps and retained callbacks.
+      // Update this reference synchronously so every operation builds on the last.
+      const newValue = value instanceof Function ? value(valueRef.current) : value
+      valueRef.current = newValue
       setStoredValue(newValue)
 
       if (typeof window !== 'undefined') {
@@ -29,7 +33,7 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T 
     } catch (error) {
       console.error(`Error setting localStorage key "${key}":`, error)
     }
-  }
+  }, [key])
 
   return [storedValue, setValue]
 }

@@ -1,5 +1,8 @@
 import { getRedis } from '@/lib/redis'
 import { applySyncOp } from '@/lib/sync-apply'
+import { isSyncId, parseSyncOp } from '@/lib/sync-validation'
+import { checkNames } from '@/lib/name-moderation'
+import { createHash } from 'node:crypto'
 import type {
   SyncCounter,
   SyncGameMode,
@@ -7,6 +10,7 @@ import type {
   SyncOp,
   SyncOpEnvelope,
   SyncPlayer,
+  SyncPollResponse,
   SyncSeat,
   SyncSessionMeta,
   SyncSnapshot,
@@ -21,14 +25,11 @@ import type {
  *   sync:seats:<id>     → JSON SyncSeat[]
  *   sync:ops:<id>       → JSON SyncOpEnvelope[] (capped at MAX_OPS)
  *   sync:code:<code>    → string id (reverse lookup for join-by-code)
+ *   sync:receipt:<id>:<hash> → accepted envelope, retained for the session TTL
  *
- * Concurrency: ops are accepted serially per session via the `appendOp`
- * function. Two clients writing simultaneously go through the route handler
- * which serializes via Redis WATCH/MULTI in production. For MVP we do
- * read-modify-write without WATCH and accept that the rare lost-tick
- * collision (≤1.5s window) is acceptable for a 6-player table — each op is
- * scoped to a single seat and ops mutate independent fields, so collisions
- * almost never overlap.
+ * Concurrency: MGET reads a consistent version, then a Lua compare-and-swap
+ * commits all state keys together. A conflicting writer retries against the
+ * latest version. No connection-scoped WATCH state is shared across requests.
  */
 
 const SYNC_TTL_MS = 24 * 60 * 60 * 1000
@@ -41,10 +42,23 @@ type MemSession = {
   snapshot: SyncSnapshot
   seats: SyncSeat[]
   ops: SyncOpEnvelope[]
+  receipts: Map<string, SyncOpEnvelope>
 }
-const memSessions = new Map<string, MemSession>()
-const memCodeIndex = new Map<string, string>()
-const memCreatedAt = new Map<string, number>()
+type SyncMemory = {
+  sessions: Map<string, MemSession>
+  codeIndex: Map<string, string>
+  createdAt: Map<string, number>
+}
+// Next's development route bundles and HMR reload modules independently.
+// Keep their fallback in one process-wide registry; this is local development
+// storage only, never a substitute for a shared database on serverless hosts.
+const syncGlobal = globalThis as typeof globalThis & { __theStackSyncMemory?: SyncMemory }
+const memory = syncGlobal.__theStackSyncMemory ??= {
+  sessions: new Map(), codeIndex: new Map(), createdAt: new Map(),
+}
+const memSessions = memory.sessions
+const memCodeIndex = memory.codeIndex
+const memCreatedAt = memory.createdAt
 
 const cleanupExpired = () => {
   const now = Date.now()
@@ -80,6 +94,72 @@ const snapKey = (id: string) => `sync:snap:${id}`
 const seatsKey = (id: string) => `sync:seats:${id}`
 const opsKey = (id: string) => `sync:ops:${id}`
 const codeKey = (code: string) => `sync:code:${code}`
+const sessionKeys = (id: string) => [metaKey(id), snapKey(id), seatsKey(id), opsKey(id)]
+
+const COMMIT_SESSION = `
+for i = 1, 4 do
+  if redis.call('GET', KEYS[i]) ~= ARGV[i] then return 0 end
+end
+for i = 1, 4 do
+  redis.call('SET', KEYS[i], ARGV[4 + i], 'KEEPTTL')
+end
+if KEYS[5] then
+  local ttl = redis.call('PTTL', KEYS[1])
+  if ttl > 0 then redis.call('SET', KEYS[5], ARGV[9], 'PX', ttl) end
+end
+return 1
+`
+
+const decodeSession = (values: (string | null)[]): MemSession | null => {
+  if (values.some((value) => value === null)) return null
+  return {
+    meta: JSON.parse(values[0]!),
+    snapshot: JSON.parse(values[1]!),
+    seats: JSON.parse(values[2]!),
+    ops: JSON.parse(values[3]!),
+    receipts: new Map(),
+  }
+}
+
+type MutationFailure = { ok: false; error: string; status?: number }
+const mutateSession = async <T extends { ok: boolean; envelope?: SyncOpEnvelope }>(
+  id: string,
+  mutate: (session: MemSession, receipt?: SyncOpEnvelope) => T,
+  receiptId?: string,
+): Promise<T | MutationFailure> => {
+  const redis = await getRedis()
+  if (!redis) {
+    cleanupExpired()
+    const session = memSessions.get(id)
+    if (!session) return { ok: false, error: 'not_found', status: 404 }
+    const result = mutate(session, receiptId ? session.receipts.get(receiptId) : undefined)
+    if (receiptId && result.ok && result.envelope) session.receipts.set(receiptId, result.envelope)
+    return result
+  }
+  const keys = [...sessionKeys(id), ...(receiptId ? [`sync:receipt:${id}:${receiptId}`] : [])]
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const before = await redis.mGet(keys)
+    const session = decodeSession(before.slice(0, 4))
+    if (!session) return { ok: false, error: 'not_found', status: 404 }
+    const receipt = before[4] ? JSON.parse(before[4]) as SyncOpEnvelope : undefined
+    const result = mutate(session, receipt)
+    if (!result.ok) return result
+    if (receipt) return result
+    const after = [session.meta, session.snapshot, session.seats, session.ops].map((value) => JSON.stringify(value))
+    const committed = await redis.eval(COMMIT_SESSION, {
+      keys,
+      arguments: [...before.slice(0, 4) as string[], ...after, ...(receiptId ? [JSON.stringify(result.envelope)] : [])],
+    })
+    if (committed === 1) return result
+    // Concurrent phones otherwise race in lockstep and can exhaust the retry
+    // budget while a faster writer keeps winning. Brief jitter yields fairly.
+    await new Promise((resolve) => setTimeout(resolve,
+      Math.min(50, 4 * (attempt + 1)) + Math.floor(Math.random() * 12),
+    ))
+  }
+  // Safe to retry with the same opId; no speculative state was committed.
+  return { ok: false, error: 'sync_busy', status: 503 }
+}
 
 // ─── Public types for create input ────────────────────────────────────
 export type CreateSyncInput = {
@@ -122,7 +202,7 @@ export const createSyncSession = async (
   const redis = await getRedis()
   if (!redis) {
     cleanupExpired()
-    memSessions.set(meta.id, { meta, snapshot, seats, ops: [] })
+    memSessions.set(meta.id, { meta, snapshot, seats, ops: [], receipts: new Map() })
     memCodeIndex.set(meta.code, meta.id)
     memCreatedAt.set(meta.id, now)
     return { session: meta, snapshot, seats }
@@ -152,17 +232,8 @@ export const getSyncSession = async (
     if (!sess) return null
     return { session: sess.meta, snapshot: sess.snapshot, seats: sess.seats }
   }
-  const [metaStr, snapStr, seatsStr] = await Promise.all([
-    redis.get(metaKey(id)),
-    redis.get(snapKey(id)),
-    redis.get(seatsKey(id)),
-  ])
-  if (!metaStr || !snapStr || !seatsStr) return null
-  return {
-    session: JSON.parse(metaStr) as SyncSessionMeta,
-    snapshot: JSON.parse(snapStr) as SyncSnapshot,
-    seats: JSON.parse(seatsStr) as SyncSeat[],
-  }
+  const session = decodeSession(await redis.mGet(sessionKeys(id)))
+  return session ? { session: session.meta, snapshot: session.snapshot, seats: session.seats } : null
 }
 
 export const getIdByCode = async (code: string): Promise<string | null> => {
@@ -181,27 +252,26 @@ export const getIdByCode = async (code: string): Promise<string | null> => {
 export const getOpsSince = async (
   id: string,
   sinceSeq: number,
-): Promise<{ ops: SyncOpEnvelope[]; seq: number } | null> => {
+): Promise<SyncPollResponse | null> => {
   const redis = await getRedis()
   if (!redis) {
     cleanupExpired()
     const sess = memSessions.get(id)
     if (!sess) return null
-    return {
-      ops: sess.ops.filter((o) => o.seq > sinceSeq),
-      seq: sess.meta.seq,
-    }
+    return pollResponse(sess, sinceSeq)
   }
-  const [opsStr, metaStr] = await Promise.all([
-    redis.get(opsKey(id)),
-    redis.get(metaKey(id)),
-  ])
-  if (!opsStr || !metaStr) return null
-  const ops = JSON.parse(opsStr) as SyncOpEnvelope[]
-  const meta = JSON.parse(metaStr) as SyncSessionMeta
+  const session = decodeSession(await redis.mGet(sessionKeys(id)))
+  return session ? pollResponse(session, sinceSeq) : null
+}
+
+const pollResponse = (session: MemSession, sinceSeq: number): SyncPollResponse => {
+  const firstAvailable = session.ops[0]?.seq ?? session.meta.seq + 1
+  const needsSnapshot = sinceSeq < firstAvailable - 1 || sinceSeq > session.meta.seq
   return {
-    ops: ops.filter((o) => o.seq > sinceSeq),
-    seq: meta.seq,
+    seq: session.meta.seq,
+    seats: session.seats,
+    ops: needsSnapshot ? [] : session.ops.filter((op) => op.seq > sinceSeq),
+    ...(needsSnapshot ? { snapshot: session.snapshot } : {}),
   }
 }
 
@@ -213,24 +283,12 @@ export const claimSeat = async (
 ): Promise<{ ok: true; seats: SyncSeat[] } | { ok: false; error: string }> => {
   if (!deviceId) return { ok: false, error: 'deviceId required' }
 
-  const redis = await getRedis()
-  if (!redis) {
-    cleanupExpired()
-    const sess = memSessions.get(id)
-    if (!sess) return { ok: false, error: 'not_found' }
+  return mutateSession(id, (sess) => {
+    if (sess.meta.endedAt) return { ok: false as const, error: 'game_ended' }
     return claimInPlace(sess.seats, seatId, deviceId)
-      ? { ok: true, seats: sess.seats }
-      : { ok: false, error: 'seat_taken' }
-  }
-
-  const seatsStr = await redis.get(seatsKey(id))
-  if (!seatsStr) return { ok: false, error: 'not_found' }
-  const seats = JSON.parse(seatsStr) as SyncSeat[]
-  if (!claimInPlace(seats, seatId, deviceId)) {
-    return { ok: false, error: 'seat_taken' }
-  }
-  await redis.set(seatsKey(id), JSON.stringify(seats), { EX: SYNC_TTL_SEC })
-  return { ok: true, seats }
+      ? { ok: true as const, seats: sess.seats }
+      : { ok: false as const, error: 'seat_taken' }
+  })
 }
 
 const claimInPlace = (
@@ -258,8 +316,7 @@ const claimInPlace = (
  * re-claim what was "theirs" before.
  *
  * - The requesting deviceId MUST equal meta.hostDeviceId.
- * - Releasing the host's own implicit seat (seat 1) is forbidden — the
- *   host is identified by deviceId, not seat ownership.
+ * - Host identity is independent of which seat the host has claimed.
  * - Releasing an already-empty seat is a no-op (returns ok with current
  *   seats) so the UI can call this safely.
  */
@@ -270,35 +327,15 @@ export const releaseSeat = async (
 ): Promise<{ ok: true; seats: SyncSeat[] } | { ok: false; error: string }> => {
   if (!requesterDeviceId) return { ok: false, error: 'deviceId required' }
 
-  const redis = await getRedis()
-  if (!redis) {
-    cleanupExpired()
-    const sess = memSessions.get(id)
-    if (!sess) return { ok: false, error: 'not_found' }
+  return mutateSession(id, (sess) => {
     if (sess.meta.hostDeviceId !== requesterDeviceId) {
-      return { ok: false, error: 'host_only' }
+      return { ok: false as const, error: 'host_only' }
     }
     const target = sess.seats.find((s) => s.seatId === seatId)
-    if (!target) return { ok: false, error: 'unknown_seat' }
+    if (!target) return { ok: false as const, error: 'unknown_seat' }
     target.ownerDeviceId = null
-    return { ok: true, seats: sess.seats }
-  }
-
-  const [metaStr, seatsStr] = await Promise.all([
-    redis.get(metaKey(id)),
-    redis.get(seatsKey(id)),
-  ])
-  if (!metaStr || !seatsStr) return { ok: false, error: 'not_found' }
-  const meta = JSON.parse(metaStr) as SyncSessionMeta
-  if (meta.hostDeviceId !== requesterDeviceId) {
-    return { ok: false, error: 'host_only' }
-  }
-  const seats = JSON.parse(seatsStr) as SyncSeat[]
-  const target = seats.find((s) => s.seatId === seatId)
-  if (!target) return { ok: false, error: 'unknown_seat' }
-  target.ownerDeviceId = null
-  await redis.set(seatsKey(id), JSON.stringify(seats), { EX: SYNC_TTL_SEC })
-  return { ok: true, seats }
+    return { ok: true as const, seats: sess.seats }
+  })
 }
 
 // ─── Apply op ─────────────────────────────────────────────────────────
@@ -316,40 +353,17 @@ export type AppendOpResult =
 export const appendOp = async (
   input: AppendOpInput,
 ): Promise<AppendOpResult> => {
-  if (!input.deviceId) return { ok: false, error: 'deviceId required', status: 400 }
-  if (!input.opId) return { ok: false, error: 'opId required', status: 400 }
+  if (!isSyncId(input.deviceId)) return { ok: false, error: 'deviceId required', status: 400 }
+  if (!isSyncId(input.opId)) return { ok: false, error: 'opId required', status: 400 }
+  const op = parseSyncOp(input.op)
+  if (!op) return { ok: false, error: 'Invalid op', status: 400 }
+  input = { ...input, op }
 
-  const redis = await getRedis()
-  if (!redis) {
-    cleanupExpired()
-    const sess = memSessions.get(input.sessionId)
-    if (!sess) return { ok: false, error: 'not_found', status: 404 }
-    return applyOpInPlace(sess.meta, sess.snapshot, sess.seats, sess.ops, input)
-  }
-
-  const [metaStr, snapStr, seatsStr, opsStr] = await Promise.all([
-    redis.get(metaKey(input.sessionId)),
-    redis.get(snapKey(input.sessionId)),
-    redis.get(seatsKey(input.sessionId)),
-    redis.get(opsKey(input.sessionId)),
-  ])
-  if (!metaStr || !snapStr || !seatsStr || !opsStr) {
-    return { ok: false, error: 'not_found', status: 404 }
-  }
-  const meta = JSON.parse(metaStr) as SyncSessionMeta
-  const snapshot = JSON.parse(snapStr) as SyncSnapshot
-  const seats = JSON.parse(seatsStr) as SyncSeat[]
-  const ops = JSON.parse(opsStr) as SyncOpEnvelope[]
-
-  const result = applyOpInPlace(meta, snapshot, seats, ops, input)
-  if (!result.ok) return result
-
-  await Promise.all([
-    redis.set(metaKey(input.sessionId), JSON.stringify(meta), { EX: SYNC_TTL_SEC }),
-    redis.set(snapKey(input.sessionId), JSON.stringify(snapshot), { EX: SYNC_TTL_SEC }),
-    redis.set(opsKey(input.sessionId), JSON.stringify(ops), { EX: SYNC_TTL_SEC }),
-  ])
-  return result
+  const receiptId = createHash('sha256').update(JSON.stringify([input.deviceId, input.opId])).digest('hex')
+  return mutateSession(input.sessionId, (sess, receipt): AppendOpResult => receipt
+    ? { ok: true, envelope: receipt, snapshot: sess.snapshot }
+    : applyOpInPlace(sess.meta, sess.snapshot, sess.seats, sess.ops, input),
+  receiptId)
 }
 
 const applyOpInPlace = (
@@ -360,7 +374,7 @@ const applyOpInPlace = (
   input: AppendOpInput,
 ): AppendOpResult => {
   // Idempotency: if opId already applied, return prior envelope.
-  const dup = ops.find((o) => o.opId === input.opId)
+  const dup = ops.find((o) => o.opId === input.opId && o.deviceId === input.deviceId)
   if (dup) return { ok: true, envelope: dup, snapshot }
 
   // If the game has ended, only allow no-op reads (block all writes).
@@ -372,6 +386,12 @@ const applyOpInPlace = (
   // Host owns any seat with ownerDeviceId === null and is also the only
   // one allowed to emit reset / end_game.
   const op = input.op
+  if (op.type === 'cmd_from' && !snapshot.players.some((player) => player.id === op.sourceId)) {
+    return { ok: false, error: 'unknown_source', status: 400 }
+  }
+  if (op.type === 'end_game' && op.winnerSeatId !== undefined && !snapshot.players.some((player) => player.id === op.winnerSeatId)) {
+    return { ok: false, error: 'unknown_winner', status: 400 }
+  }
   if (op.type === 'reset' || op.type === 'end_game') {
     if (input.deviceId !== meta.hostDeviceId) {
       return { ok: false, error: 'host_only', status: 403 }
@@ -400,6 +420,10 @@ const applyOpInPlace = (
   }
 
   // Apply mutation via the shared client/server helper.
+  if (op.type === 'rename') {
+    const moderation = checkNames([{ label: 'Player name', value: op.name }])
+    if (!moderation.ok) return { ok: false, error: moderation.error, status: 422 }
+  }
   applySyncOp(snapshot, op, seats)
   if (op.type === 'end_game') {
     // Server also stamps the meta.endedAt for HEAD/lifecycle queries.

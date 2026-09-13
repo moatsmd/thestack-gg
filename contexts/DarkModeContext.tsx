@@ -16,14 +16,16 @@ export function DarkModeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     setIsMounted(true)
     // Load dark mode preference from localStorage
-    const stored = localStorage.getItem('manadork-dark-mode')
-    setIsDarkMode(stored !== null ? stored === 'true' : true)
+    try {
+      const stored = localStorage.getItem('manadork-dark-mode')
+      setIsDarkMode(stored !== null ? stored === 'true' : true)
+    } catch { /* Theme controls remain available when browser storage is blocked. */ }
   }, [])
 
   useEffect(() => {
     if (isMounted) {
       // Save to localStorage
-      localStorage.setItem('manadork-dark-mode', isDarkMode.toString())
+      try { localStorage.setItem('manadork-dark-mode', isDarkMode.toString()) } catch { /* Use an in-memory preference. */ }
 
       // Update document class
       if (isDarkMode) {
@@ -37,7 +39,7 @@ export function DarkModeProvider({ children }: { children: ReactNode }) {
   }, [isDarkMode, isMounted])
 
   const toggleDarkMode = () => {
-    setIsDarkMode(!isDarkMode)
+    setIsDarkMode(previous => !previous)
   }
 
   return (

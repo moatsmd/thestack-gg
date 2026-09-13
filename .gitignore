@@ -11,6 +11,10 @@
 
 # next.js
 /.next/
+/.next-dev/
+/audit-*.log
+/public/sw.js
+/public/workbox-*.js
 /out/
 
 # production

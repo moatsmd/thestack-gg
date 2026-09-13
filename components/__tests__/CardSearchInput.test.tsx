@@ -160,6 +160,14 @@ describe('CardSearchInput', () => {
     })
   })
 
+  it('closes suggestions immediately when Enter submits the typed query', async () => {
+    const user = userEvent.setup()
+    render(<CardSearchInput {...defaultProps} value="Sol Ring" suggestions={['Sol Ring']} />)
+    await user.type(screen.getByPlaceholderText(/search for a card/i), '{Enter}')
+    expect(defaultProps.onSearch).toHaveBeenCalledTimes(1)
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+  })
+
   it('closes dropdown when clicking outside', async () => {
     const user = userEvent.setup()
     const suggestions = ['Sol Ring', 'Sol Talisman']

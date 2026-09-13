@@ -16,12 +16,12 @@ import type { PodRecapSummary } from '@/types/pod'
 
 const SITE_URL = 'https://www.thestack.gg'
 
-type PageProps = { params: { id: string } }
+type PageProps = { params: Promise<{ id: string }> }
 
 export const dynamic = 'force-dynamic'
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const pod = await getPod(params.id)
+  const pod = await getPod((await params).id)
   if (!pod) return { title: 'Pod not found' }
   const url = `${SITE_URL}/pod/${pod.id}`
   const description = `${pod.recapIds.length} games \u00b7 ${pod.members.length} players \u00b7 follow this pod's leaderboard, head-to-head, and recaps.`
@@ -55,7 +55,7 @@ const winnerName = (recap: PodRecapSummary): string | undefined => {
 }
 
 export default async function PodPage({ params }: PageProps) {
-  const pod = await getPod(params.id)
+  const pod = await getPod((await params).id)
   if (!pod) notFound()
 
   const recaps: PodRecapSummary[] = []

@@ -1,45 +1,33 @@
 import { NextResponse } from 'next/server'
 import { claimSeat, releaseSeat } from '@/lib/sync-store'
-
-const isString = (v: unknown): v is string =>
-  typeof v === 'string' && v.length > 0
-const isNumber = (v: unknown): v is number =>
-  typeof v === 'number' && Number.isFinite(v)
+import { readSyncBody } from '@/lib/sync-request'
+import { isSyncId, isSeatId } from '@/lib/sync-validation'
+import { publicSeats, SYNC_RESPONSE_HEADERS } from '@/lib/sync-public'
 
 /** POST /api/sync/[id]/seat — claim a seat for this device. */
 export async function POST(
   request: Request,
-  context: { params: Promise<{ id: string }> } | { params: { id: string } },
+  context: { params: Promise<{ id: string }> },
 ) {
-  const params =
-    'then' in (context.params as Promise<unknown>)
-      ? await (context.params as Promise<{ id: string }>)
-      : (context.params as { id: string })
+  const params = await context.params
 
-  let body: unknown
-  try {
-    body = await request.json()
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
-  }
-  if (!body || typeof body !== 'object') {
-    return NextResponse.json({ error: 'Missing body' }, { status: 400 })
-  }
-  const b = body as Record<string, unknown>
+  const parsed = await readSyncBody(request)
+  if (parsed.error) return parsed.error
+  const b = parsed.body
 
-  if (!isString(b.deviceId)) {
+  if (!isSyncId(b.deviceId)) {
     return NextResponse.json({ error: 'Missing deviceId' }, { status: 400 })
   }
-  if (!isNumber(b.seatId)) {
+  if (!isSeatId(b.seatId)) {
     return NextResponse.json({ error: 'Missing seatId' }, { status: 400 })
   }
 
   const result = await claimSeat(params.id, b.seatId, b.deviceId)
   if (!result.ok) {
-    const status = result.error === 'not_found' ? 404 : 409
+    const status = result.error === 'not_found' ? 404 : result.error === 'sync_busy' ? 503 : 409
     return NextResponse.json({ error: result.error }, { status })
   }
-  return NextResponse.json({ seats: result.seats })
+  return NextResponse.json({ seats: publicSeats(result.seats, b.deviceId) }, { headers: SYNC_RESPONSE_HEADERS })
 }
 
 /**
@@ -53,28 +41,18 @@ export async function POST(
  */
 export async function DELETE(
   request: Request,
-  context: { params: Promise<{ id: string }> } | { params: { id: string } },
+  context: { params: Promise<{ id: string }> },
 ) {
-  const params =
-    'then' in (context.params as Promise<unknown>)
-      ? await (context.params as Promise<{ id: string }>)
-      : (context.params as { id: string })
+  const params = await context.params
 
-  let body: unknown
-  try {
-    body = await request.json()
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
-  }
-  if (!body || typeof body !== 'object') {
-    return NextResponse.json({ error: 'Missing body' }, { status: 400 })
-  }
-  const b = body as Record<string, unknown>
+  const parsed = await readSyncBody(request)
+  if (parsed.error) return parsed.error
+  const b = parsed.body
 
-  if (!isString(b.deviceId)) {
+  if (!isSyncId(b.deviceId)) {
     return NextResponse.json({ error: 'Missing deviceId' }, { status: 400 })
   }
-  if (!isNumber(b.seatId)) {
+  if (!isSeatId(b.seatId)) {
     return NextResponse.json({ error: 'Missing seatId' }, { status: 400 })
   }
 
@@ -87,8 +65,10 @@ export async function DELETE(
         ? 403
         : result.error === 'unknown_seat'
         ? 400
+        : result.error === 'sync_busy'
+        ? 503
         : 409
     return NextResponse.json({ error: result.error }, { status })
   }
-  return NextResponse.json({ seats: result.seats })
+  return NextResponse.json({ seats: publicSeats(result.seats, b.deviceId) }, { headers: SYNC_RESPONSE_HEADERS })
 }

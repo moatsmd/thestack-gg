@@ -46,6 +46,7 @@ export type UseGameLog = {
   end: (winnerId?: number) => void
   /** Wipe the log (used when the user resets the tracker). */
   reset: () => void
+  restore: (events: GameEvent[]) => void
 }
 
 export function useGameLog(): UseGameLog {
@@ -140,6 +141,13 @@ export function useGameLog(): UseGameLog {
     setEvents([])
   }, [])
 
+  const restore = useCallback((saved: GameEvent[]) => {
+    setEvents(saved)
+    seqRef.current = saved.reduce((max, event) => Math.max(max, event.seq + 1), 0)
+    hasEndedRef.current = saved.some(event => event.type === 'game_end')
+    isRecordingRef.current = saved.length > 0 && !hasEndedRef.current
+  }, [])
+
   return {
     events,
     isRecording: isRecordingRef.current,
@@ -150,5 +158,6 @@ export function useGameLog(): UseGameLog {
     cmd,
     end,
     reset,
+    restore,
   }
 }

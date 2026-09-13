@@ -16,12 +16,12 @@ import { RecapPodActions } from '@/components/RecapPodActions'
 
 const SITE_URL = 'https://www.thestack.gg'
 
-type PageProps = { params: { id: string } }
+type PageProps = { params: Promise<{ id: string }> }
 
 export const dynamic = 'force-dynamic'
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const recap = await getRecap(params.id)
+  const recap = await getRecap((await params).id)
   if (!recap) {
     return { title: 'Recap not found' }
   }
@@ -49,7 +49,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function RecapPage({ params }: PageProps) {
-  const recap = await getRecap(params.id)
+  const recap = await getRecap((await params).id)
   if (!recap) {
     notFound()
   }

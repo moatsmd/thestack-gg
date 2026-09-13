@@ -34,6 +34,7 @@ async function clickWhenSettled(user: ReturnType<typeof userEvent.setup>, testId
 }
 
 describe('Tracker Page', () => {
+  beforeEach(() => { localStorage.clear(); window.history.replaceState({}, '', '/tracker') })
   it('renders the wizard at the mode step on load', () => {
     renderWithProviders(<TrackerPage />)
     expect(screen.getByText(/Life Tracker/i)).toBeInTheDocument()
@@ -115,6 +116,7 @@ describe('Tracker Page', () => {
     await waitFor(() => expect(screen.getByTestId('life-1')).toHaveTextContent('18'))
 
     await user.click(screen.getByTestId('button-reset'))
+    await user.click(screen.getByRole('button', { name: 'Reset totals' }))
     await waitFor(() => expect(screen.getByTestId('life-1')).toHaveTextContent('20'))
   })
 
@@ -310,7 +312,7 @@ describe('Tracker Page', () => {
           },
           snapshot: {
             seq: 0,
-            players: [],
+            players: [1, 2].map(id => ({ id, name: `Player ${id}`, life: 20, cmd: 0, cmdFrom: {}, poison: 0, mana: 0, energy: 0, experience: 0 })),
             gameMode: { name: 'Standard', life: 20 },
             customLife: 20,
             enabledCounters: ['cmd', 'poison', 'mana'],
@@ -319,6 +321,7 @@ describe('Tracker Page', () => {
           expiresInMs: 86_400_000,
         }),
       )
+      fetchMock.mockResolvedValue(okJson({ ops: [], seq: 0 }))
       const user = await startMultiGame()
 
       await user.click(screen.getByTestId('button-sync'))
@@ -363,7 +366,7 @@ describe('Tracker Page', () => {
             },
             snapshot: {
               seq: 0,
-              players: [],
+              players: [1, 2].map(id => ({ id, name: `Player ${id}`, life: 20, cmd: 0, cmdFrom: {}, poison: 0, mana: 0, energy: 0, experience: 0 })),
               gameMode: { name: 'Standard', life: 20 },
               customLife: 20,
               enabledCounters: ['cmd', 'poison', 'mana'],
@@ -426,7 +429,7 @@ describe('Tracker Page', () => {
             },
             snapshot: {
               seq: 0,
-              players: [],
+              players: [1, 2].map(id => ({ id, name: `Player ${id}`, life: 20, cmd: 0, cmdFrom: {}, poison: 0, mana: 0, energy: 0, experience: 0 })),
               gameMode: { name: 'Standard', life: 20 },
               customLife: 20,
               enabledCounters: ['cmd', 'poison', 'mana'],
@@ -454,7 +457,8 @@ describe('Tracker Page', () => {
         const body = JSON.parse((opCall![1] as RequestInit).body as string)
         expect(body.op).toEqual({ type: 'life', seatId: 1, delta: -1 })
         expect(body.deviceId).toBe('test-host-aaaa')
-        expect(body.opId).toMatch(/^test-host-aaaa:\d+$/)
+        expect(typeof body.opId).toBe('string')
+        expect(body.opId.length).toBeGreaterThan(10)
       })
     })
 
@@ -579,7 +583,7 @@ describe('Tracker Page', () => {
             },
             snapshot: {
               seq: 0,
-              players: [],
+              players: [1, 2].map(id => ({ id, name: `Player ${id}`, life: 20, cmd: 0, cmdFrom: {}, poison: 0, mana: 0, energy: 0, experience: 0 })),
               gameMode: { name: 'Standard', life: 20 },
               customLife: 20,
               enabledCounters: ['cmd', 'poison', 'mana'],
@@ -643,6 +647,7 @@ describe('Tracker Page', () => {
 
     await waitFor(() => expect(screen.getByTestId('button-exit-game')).toBeInTheDocument())
     await user.click(screen.getByTestId('button-exit-game'))
+    await user.click(screen.getByRole('button', { name: 'Leave table' }))
     expect(await screen.findByTestId('mode-solo')).toBeInTheDocument()
   })
 })

@@ -18,7 +18,7 @@ export default function RulesPage() {
   const rules = useComprehensiveRules()
 
   const handleSelectSuggestion = (suggestion: string) => {
-    cardSearch.setQuery(suggestion)
+    void cardSearch.search(suggestion)
   }
 
   return (
@@ -94,10 +94,11 @@ export default function RulesPage() {
               >
                 <input
                   type="text"
+                  aria-label="Search Comprehensive Rules"
                   value={rules.query}
                   onChange={(event) => rules.setQuery(event.target.value)}
                   placeholder="Search Comprehensive Rules (e.g., 'priority', 'stack')"
-                  className="flex-1 rounded-md border border-[hsl(40_30%_18%)] bg-transparent px-3 py-2 text-sm text-[hsl(38_30%_88%)] focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="min-w-0 min-h-11 flex-1 rounded-md border border-[hsl(40_30%_18%)] bg-transparent px-3 py-2 text-sm text-[hsl(38_30%_88%)] focus:outline-none focus:ring-2 focus:ring-primary"
                 />
                 <button
                   type="submit"
@@ -116,13 +117,13 @@ export default function RulesPage() {
             {!rules.isLoading && (
               <div className="grid gap-4 lg:grid-cols-[1fr_2fr]">
                 <div className="panel p-5 space-y-3">
-                  <h3 className="font-display tracking-[0.18em] uppercase text-[10px] text-[hsl(38_15%_60%)]">Results</h3>
+                  <h3 className="font-display tracking-[0.18em] uppercase text-[10px] text-[hsl(38_15%_60%)]">Results {rules.results.length > 0 && `(${rules.results.length})`}</h3>
                   {rules.results.length === 0 ? (
                     <div className="text-sm text-[hsl(38_15%_60%)] font-prose italic">
                       Search to see matching rule sections.
                     </div>
                   ) : (
-                    <ul className="space-y-2">
+                    <ul className="space-y-2 max-h-72 overflow-y-auto pr-1" aria-label="Matching rule sections">
                       {rules.results.map((section) => (
                         <li key={section.id}>
                           <button
@@ -133,7 +134,7 @@ export default function RulesPage() {
                             <div className="text-xs font-display tracking-wider text-primary">
                               {section.id}
                             </div>
-                            <div className="text-sm text-[hsl(38_30%_88%)]">
+                            <div className="text-sm text-[hsl(38_30%_88%)] line-clamp-2">
                               {section.title}
                             </div>
                           </button>

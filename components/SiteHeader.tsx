@@ -39,6 +39,7 @@ export function SiteHeader() {
       <div className="max-w-6xl mx-auto px-4 md:px-8 h-14 flex items-center justify-between">
         <Link
           href="/"
+          aria-label="TheStack.gg home"
           className="flex items-center gap-3"
           data-testid="link-home"
         >
@@ -47,7 +48,7 @@ export function SiteHeader() {
             TheStack<span className="text-[hsl(42_75%_55%/0.7)]">.gg</span>
           </span>
         </Link>
-        <nav className="hidden md:flex items-center gap-1 text-sm text-[hsl(38_15%_60%)]">
+        <nav aria-label="Main navigation" className="hidden lg:flex items-center gap-1 text-sm text-[hsl(38_15%_60%)]">
           {desktopNav.map((item) => {
             const active =
               item.href === '/'
@@ -57,6 +58,7 @@ export function SiteHeader() {
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={active ? 'page' : undefined}
                 className={`px-3 py-1.5 rounded-md transition-colors hover:text-[hsl(38_30%_88%)] hover:bg-[hsl(220_15%_13%/0.7)] ${
                   active ? 'text-[hsl(42_75%_65%)]' : ''
                 }`}

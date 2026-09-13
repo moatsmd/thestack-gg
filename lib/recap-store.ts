@@ -11,7 +11,9 @@ import type { GameEvent, Recap, RecapPlayer } from '@/types/replay'
 
 const RECAP_TTL_MS = 30 * 24 * 60 * 60 * 1000
 const RECAP_TTL_SEC = Math.floor(RECAP_TTL_MS / 1000)
-const recaps = new Map<string, Recap>()
+// Route bundles and hot reloads share the local fallback within this process.
+const recapGlobal = globalThis as typeof globalThis & { __theStackRecaps?: Map<string, Recap> }
+const recaps = recapGlobal.__theStackRecaps ??= new Map<string, Recap>()
 
 const cleanupExpired = () => {
   const now = Date.now()

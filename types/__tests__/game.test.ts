@@ -6,6 +6,8 @@ describe('Game Types', () => {
       mode: 'solo',
       gameType: 'standard',
       startingLife: 20,
+      enabledCounters: [],
+      tableStatus: { monarchId: null, initiativeId: null, isNight: false, citysBlessingIds: [] },
       players: [],
       createdAt: new Date(),
     }

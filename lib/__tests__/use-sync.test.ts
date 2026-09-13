@@ -5,7 +5,7 @@
  *   - createSession POSTs to /api/sync and stores the resulting session.
  *   - emit() queues an op and POSTs to /api/sync/{id}/op with the deviceId
  *     and a unique opId.
- *   - opId monotonically increments per device, providing dedup.
+ *   - opIds remain unique across reloads and remain stable when retrying.
  *   - Network failure schedules an exponential-backoff retry.
  *   - 403/400 server rejection drops the op and continues.
  *   - 409 (game_ended) clears the queue and sets status='ended'.
@@ -15,7 +15,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { useSync } from '../use-sync'
 import { __resetDeviceIdForTests } from '../device-id'
-import type { SyncOp } from '@/types/sync'
+import type { SyncCounter, SyncOp, SyncPlayer } from '@/types/sync'
 
 const TEST_DEVICE_ID = 'test-device-aaaaaaaa'
 
@@ -126,7 +126,7 @@ function makeCreateResponse() {
     },
     snapshot: {
       seq: 0,
-      players: [],
+      players: [] as SyncPlayer[],
       gameMode: { name: 'Commander', life: 40 },
       customLife: 20,
       enabledCounters: ['cmd', 'poison', 'mana'] as const,
@@ -146,7 +146,7 @@ const sampleInput = () => ({
   ],
   gameMode: { name: 'Commander', life: 40 },
   customLife: 20,
-  enabledCounters: ['cmd', 'poison', 'mana'] as ReturnType<typeof Array.of>,
+  enabledCounters: ['cmd', 'poison', 'mana'] as SyncCounter[],
 })
 
 describe('useSync', () => {
@@ -177,7 +177,7 @@ describe('useSync', () => {
       '/api/sync',
       expect.objectContaining({
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: expect.objectContaining({ 'Content-Type': 'application/json' }),
       }),
     )
     const body = JSON.parse(
@@ -190,7 +190,7 @@ describe('useSync', () => {
     expect(result.current.session?.id).toBe('sess_abc')
     expect(result.current.session?.code).toBe('ABC123')
     expect(result.current.joinUrl).toBe(
-      'https://thestack.gg/tracker?join=ABC123',
+      `${window.location.origin}/tracker?join=ABC123`,
     )
     expect(result.current.isHost).toBe(true)
   })
@@ -237,11 +237,11 @@ describe('useSync', () => {
     expect(opCall[0]).toBe('/api/sync/sess_abc/op')
     const body = JSON.parse((opCall[1] as RequestInit).body as string)
     expect(body.deviceId).toBe(TEST_DEVICE_ID)
-    expect(body.opId).toBe(`${TEST_DEVICE_ID}:0`)
+    expect(body.opId).toEqual(expect.any(String))
     expect(body.op).toEqual({ type: 'life', seatId: 1, delta: -2 })
   })
 
-  it('emit() generates monotonically increasing opIds for dedup', async () => {
+  it('emit() generates unique opIds for dedup', async () => {
     whenCreate(ok(makeCreateResponse()))
     whenOp(
       ok({ envelope: { seq: 1 } }),
@@ -273,11 +273,7 @@ describe('useSync', () => {
     const opIds = writeCalls()
       .slice(1)
       .map((c) => JSON.parse((c[1] as RequestInit).body as string).opId)
-    expect(opIds).toEqual([
-      `${TEST_DEVICE_ID}:0`,
-      `${TEST_DEVICE_ID}:1`,
-      `${TEST_DEVICE_ID}:2`,
-    ])
+    expect(new Set(opIds).size).toBe(3)
   })
 
   it('schedules an exponential-backoff retry on network error', async () => {
@@ -648,7 +644,9 @@ describe('useSync', () => {
       })
 
       // Hit the by-code route with normalized (uppercase, alphanumeric-only) code.
-      expect(fetchMock).toHaveBeenCalledWith('/api/sync/by-code/ABC123')
+      expect(fetchMock).toHaveBeenCalledWith('/api/sync/by-code/ABC123', expect.objectContaining({
+        cache: 'no-store', headers: { 'X-Sync-Device-Id': TEST_DEVICE_ID },
+      }))
       expect(returned).not.toBeNull()
       expect(result.current.session?.id).toBe('sess_abc')
       expect(result.current.seats).toHaveLength(3)
@@ -840,3 +838,368 @@ describe('useSync', () => {
     })
   })
 })
+
+describe('sleep and reload recovery', () => {
+  const create = async (result: { current: ReturnType<typeof useSync> }) => {
+    whenCreate(ok(makeCreateResponse()))
+    await act(async () => { await result.current.createSession(sampleInput()) })
+  }
+  const flush = async () => { for (let i = 0; i < 20; i++) await Promise.resolve() }
+  const opBodies = () => fetchMock.mock.calls
+    .filter((c) => String(c[0]).endsWith('/op'))
+    .map((c) => JSON.parse((c[1] as RequestInit).body as string))
+
+  it('does not reuse operation IDs after a page reload', async () => {
+    const first = renderHook(() => useSync())
+    await create(first.result)
+    await act(async () => { first.result.current.emit({ type: 'life', seatId: 1, delta: -1 }); await flush() })
+    first.unmount()
+    const second = renderHook(() => useSync())
+    whenByCode(ok(makeCreateResponse()))
+    await act(async () => { await second.result.current.joinSession('ABC123') })
+    await act(async () => { second.result.current.emit({ type: 'life', seatId: 1, delta: -2 }); await flush() })
+    expect(opBodies()).toHaveLength(2)
+    expect(opBodies()[0].opId).not.toBe(opBodies()[1].opId)
+  })
+
+  it('keeps an outbox across unmount and retries the same op when resuming the same player', async () => {
+    const first = renderHook(() => useSync())
+    await create(first.result)
+    whenOp(() => Promise.reject(new Error('offline')))
+    await act(async () => { first.result.current.emit({ type: 'life', seatId: 1, delta: -2 }); await flush() })
+    expect(first.result.current.pendingCount).toBe(1)
+    first.unmount()
+    const second = renderHook(() => useSync())
+    expect(second.result.current.savedSession?.session.code).toBe('ABC123')
+    expect(second.result.current.savedSession?.pendingCount).toBe(1)
+    whenByCode(ok(makeCreateResponse()), ok(makeCreateResponse()))
+    await act(async () => { await second.result.current.resumeSession() })
+    expect(opBodies()).toHaveLength(2)
+    expect(opBodies()[1]).toEqual(opBodies()[0])
+    expect(second.result.current.seats[0].ownerDeviceId).toBe(TEST_DEVICE_ID)
+    expect(second.result.current.pendingCount).toBe(0)
+  })
+
+  it('ignores a create response arriving after the user leaves', async () => {
+    let finish!: (response: Response) => void
+    whenCreate(new Promise<Response>((resolve) => { finish = resolve }))
+    const { result } = renderHook(() => useSync())
+    let creation!: Promise<unknown>
+    act(() => { creation = result.current.createSession(sampleInput()) })
+    act(() => result.current.teardown())
+    await act(async () => { finish(ok(makeCreateResponse())); await creation })
+    expect(result.current.session).toBeNull()
+    expect(result.current.status).toBe('idle')
+  })
+
+  it('ignores an in-flight poll after teardown', async () => {
+    let finish!: (response: Response) => void
+    whenSince(new Promise<Response>((resolve) => { finish = resolve }))
+    const { result } = renderHook(() => useSync())
+    const remote = jest.fn()
+    act(() => { result.current.subscribeRemoteOps(remote) })
+    await create(result)
+    act(() => result.current.teardown())
+    await act(async () => {
+      finish(ok({ seq: 1, ops: [{ seq: 1, opId: 'remote-1', deviceId: 'other', ts: 1, op: { type: 'end_game' } }] }))
+      await flush()
+    })
+    expect(remote).not.toHaveBeenCalled()
+    expect(result.current.status).toBe('idle')
+    expect(result.current.appliedSeq).toBe(0)
+  })
+
+  it('coalesces focus and visibility signals while a read is in flight', async () => {
+    let finish!: (response: Response) => void
+    whenSince(new Promise<Response>((resolve) => { finish = resolve }))
+    const { result } = renderHook(() => useSync())
+    await create(result)
+    await act(async () => {
+      document.dispatchEvent(new Event('visibilitychange'))
+      window.dispatchEvent(new Event('focus'))
+      window.dispatchEvent(new Event('online'))
+      await flush()
+    })
+    expect(fetchMock.mock.calls.filter((c) => String(c[0]).includes('/since'))).toHaveLength(1)
+    await act(async () => { finish(ok({ ops: [], seq: 0 })); await flush() })
+  })
+
+  it('immediately retries queued changes when the phone wakes', async () => {
+    const { result } = renderHook(() => useSync())
+    await create(result)
+    whenOp(() => Promise.reject(new Error('offline')), ok({ envelope: { seq: 1 } }))
+    await act(async () => { result.current.emit({ type: 'life', seatId: 1, delta: -2 }); await flush() })
+    expect(result.current.pendingCount).toBe(1)
+    await act(async () => { document.dispatchEvent(new Event('visibilitychange')); await flush() })
+    expect(result.current.pendingCount).toBe(0)
+    expect(opBodies()).toHaveLength(2)
+  })
+
+  it('projects pending changes and rolls back a rejected write with a visible error', async () => {
+    const created = makeCreateResponse()
+    created.snapshot.players = sampleInput().players
+    whenCreate(ok(created))
+    let finish!: (response: Response) => void
+    whenOp(new Promise<Response>((resolve) => { finish = resolve }))
+    const { result } = renderHook(() => useSync())
+    await act(async () => { await result.current.createSession(sampleInput()) })
+    act(() => result.current.emit({ type: 'life', seatId: 1, delta: -2 }))
+    expect(result.current.snapshot?.players[0].life).toBe(38)
+    await act(async () => { finish(ok({ error: 'forbidden' }, 403)); await flush() })
+    expect(result.current.snapshot?.players[0].life).toBe(40)
+    expect(result.current.error).toMatch(/not saved|permission|seat/i)
+  })
+})
+
+// JSON recovery is untrusted local storage. Invalid entries must never reach the reducer.
+describe('recovery storage validation', () => {
+  it('ignores an outbox operation with invalid numeric fields', () => {
+    window.localStorage.setItem('thestack:sync-recovery:v1', JSON.stringify({
+      version: 1, deviceId: TEST_DEVICE_ID, session: makeCreateResponse().session,
+      seats: makeCreateResponse().seats, savedAt: Date.now(),
+      queue: [{ opId: 'broken', attempts: 0, op: { type: 'life', seatId: 1, delta: 'bad' } }],
+    }))
+    const { result } = renderHook(() => useSync())
+    expect(result.current.savedSession).toBeNull()
+  })
+})
+
+describe('authoritative recovery and reconciliation', () => {
+  const flush = async () => { for (let i = 0; i < 25; i++) await Promise.resolve() }
+  const withPlayers = () => ({ ...makeCreateResponse(), snapshot: { ...makeCreateResponse().snapshot, players: sampleInput().players } })
+
+  it('does not double-apply a saved operation whose acknowledgement was lost', async () => {
+    const initial = withPlayers()
+    const first = renderHook(() => useSync())
+    whenCreate(ok(initial))
+    whenOp(() => Promise.reject(new Error('ack lost')))
+    await act(async () => { await first.result.current.createSession(sampleInput()) })
+    await act(async () => { first.result.current.emit({ type: 'life', seatId: 1, delta: -2 }); await flush() })
+    const sent = fetchMock.mock.calls.find((c) => String(c[0]).endsWith('/op'))!
+    const body = JSON.parse((sent[1] as RequestInit).body as string)
+    first.unmount()
+    const accepted = withPlayers()
+    accepted.snapshot.players[0].life = 38
+    accepted.snapshot.seq = 1
+    whenByCode(ok(accepted))
+    whenOp(ok({ envelope: { seq: 1, ...body }, snapshot: accepted.snapshot }))
+    const second = renderHook(() => useSync())
+    let resumed: Awaited<ReturnType<typeof second.result.current.resumeSession>> = null
+    await act(async () => { resumed = await second.result.current.resumeSession() })
+    expect(resumed!.snapshot.players[0].life).toBe(38)
+    expect(second.result.current.snapshot?.players[0].life).toBe(38)
+    expect(second.result.current.pendingCount).toBe(0)
+  })
+
+  it('keeps rejected acknowledgement recovery available until reconnect succeeds', async () => {
+    const first = renderHook(() => useSync())
+    whenCreate(ok(withPlayers()))
+    await act(async () => { await first.result.current.createSession(sampleInput()) })
+    whenOp(() => Promise.reject(new Error('offline')))
+    await act(async () => { first.result.current.emit({ type: 'life', seatId: 1, delta: -2 }); await flush() })
+    first.unmount()
+    whenByCode(ok(withPlayers()))
+    whenOp(() => Promise.reject(new Error('still offline')))
+    const second = renderHook(() => useSync())
+    await act(async () => { expect(await second.result.current.resumeSession()).toBeNull() })
+    expect(second.result.current.session).toBeNull()
+    expect(second.result.current.savedSession?.pendingCount).toBe(1)
+    expect(second.result.current.error).toMatch(/queued/)
+    const accepted = withPlayers()
+    accepted.snapshot.players[0].life = 38
+    accepted.snapshot.seq = 1
+    whenByCode(ok(withPlayers()))
+    whenOp(ok({ snapshot: accepted.snapshot }))
+    await act(async () => { expect(await second.result.current.resumeSession()).not.toBeNull() })
+    expect(second.result.current.snapshot?.players[0].life).toBe(38)
+  })
+
+  it('replaces a truncated-history snapshot and refreshes seat ownership', async () => {
+    whenCreate(ok(withPlayers()))
+    const { result } = renderHook(() => useSync())
+    await act(async () => { await result.current.createSession(sampleInput()); await flush() })
+    const updated = withPlayers()
+    updated.snapshot.players[0].life = 9
+    updated.snapshot.seq = 2000
+    updated.seats[1].ownerDeviceId = 'other-device'
+    whenSince(ok({ ops: [], seq: 2000, snapshot: updated.snapshot, seats: updated.seats }))
+    await act(async () => { await result.current.reconnect() })
+    expect(result.current.snapshot?.players[0].life).toBe(9)
+    expect(result.current.appliedSeq).toBe(2000)
+    expect(result.current.seats[1].ownerDeviceId).toBe('other-device')
+  })
+
+  it('does not report connected while write failures remain despite a healthy read', async () => {
+    whenCreate(ok(withPlayers()))
+    const { result } = renderHook(() => useSync())
+    await act(async () => { await result.current.createSession(sampleInput()); await flush() })
+    whenOp(() => Promise.reject(new Error('write failure')), () => Promise.reject(new Error('write failure')))
+    await act(async () => { result.current.emit({ type: 'life', seatId: 1, delta: -2 }); await flush() })
+    await act(async () => { await result.current.reconnect() })
+    expect(result.current.status).toBe('offline')
+    expect(result.current.pendingCount).toBe(1)
+    expect(result.current.snapshot?.players[0].life).toBe(38)
+  })
+
+  it('forgets recovery on explicit leave and stops an expired outbox from retrying', async () => {
+    whenCreate(ok(withPlayers()))
+    const { result, unmount } = renderHook(() => useSync())
+    await act(async () => { await result.current.createSession(sampleInput()); await flush() })
+    whenOp(ok({ error: 'not_found' }, 404))
+    await act(async () => { result.current.emit({ type: 'life', seatId: 1, delta: -2 }); await flush() })
+    expect(result.current.status).toBe('ended')
+    expect(result.current.pendingCount).toBe(0)
+    expect(result.current.savedSession).toBeNull()
+    act(() => result.current.teardown())
+    unmount()
+    const next = renderHook(() => useSync())
+    expect(next.result.current.savedSession).toBeNull()
+  })
+})
+
+describe('concurrent response ordering', () => {
+  const flush = async () => { for (let i = 0; i < 25; i++) await Promise.resolve() }
+  it('does not let an old poll undo a seat claim', async () => {
+    let finish!: (response: Response) => void
+    whenCreate(ok(makeCreateResponse()))
+    whenSince(new Promise<Response>((resolve) => { finish = resolve }))
+    const { result } = renderHook(() => useSync())
+    await act(async () => { await result.current.createSession(sampleInput()) })
+    const updated = makeCreateResponse().seats.map((seat) => ({ ...seat, ownerDeviceId: seat.seatId === 2 ? TEST_DEVICE_ID : null }))
+    whenSeat(ok({ seats: updated }))
+    await act(async () => { await result.current.claimSeat(2) })
+    await act(async () => { finish(ok({ ops: [], seq: 0, seats: makeCreateResponse().seats })); await flush() })
+    expect(result.current.seats[1].ownerDeviceId).toBe(TEST_DEVICE_ID)
+  })
+
+  it('never resurrects an ended game when an earlier write finally succeeds', async () => {
+    let finish!: (response: Response) => void
+    whenCreate(ok(makeCreateResponse()))
+    const { result } = renderHook(() => useSync())
+    await act(async () => { await result.current.createSession(sampleInput()); await flush() })
+    whenOp(new Promise<Response>((resolve) => { finish = resolve }))
+    act(() => result.current.emit({ type: 'life', seatId: 1, delta: -2 }))
+    whenSince(ok({ ops: [{ seq: 2, opId: 'end', deviceId: 'host', ts: 1, op: { type: 'end_game' } }], seq: 2 }))
+    await act(async () => { jest.advanceTimersByTime(1500); await flush() })
+    expect(result.current.status).toBe('ended')
+    await act(async () => { finish(ok({ snapshot: makeCreateResponse().snapshot })); await flush() })
+    expect(result.current.status).toBe('ended')
+    expect(result.current.savedSession).toBeNull()
+  })
+})
+
+it('does not revive an expired table when a previous write succeeds', async () => {
+  let finish!: (response: Response) => void
+  whenCreate(ok(makeCreateResponse()))
+  const { result } = renderHook(() => useSync())
+  await act(async () => { await result.current.createSession(sampleInput()) })
+  whenOp(new Promise<Response>((resolve) => { finish = resolve }))
+  act(() => result.current.emit({ type: 'life', seatId: 1, delta: -2 }))
+  whenSince(ok({ error: 'not_found' }, 404))
+  await act(async () => {
+    jest.advanceTimersByTime(1500)
+    for (let i = 0; i < 25; i++) await Promise.resolve()
+  })
+  expect(result.current.status).toBe('ended')
+  await act(async () => {
+    finish(ok({ snapshot: makeCreateResponse().snapshot }))
+    for (let i = 0; i < 25; i++) await Promise.resolve()
+  })
+  expect(result.current.status).toBe('ended')
+  expect(result.current.savedSession).toBeNull()
+})
+
+it.each([413, 422])('rolls back an unretryable HTTP %s response instead of queuing forever', async (status) => {
+  whenCreate(ok({ ...makeCreateResponse(), snapshot: { ...makeCreateResponse().snapshot, players: sampleInput().players } }))
+  const { result } = renderHook(() => useSync())
+  await act(async () => { await result.current.createSession(sampleInput()) })
+  whenOp(ok({ error: 'invalid_name' }, status))
+  await act(async () => {
+    result.current.emit({ type: 'rename', seatId: 1, name: 'Rejected name' })
+    for (let i = 0; i < 25; i++) await Promise.resolve()
+  })
+  expect(result.current.pendingCount).toBe(0)
+  expect(result.current.snapshot?.players[0].name).toBe('P1')
+  expect(result.current.error).toMatch(/not saved/i)
+})
+
+describe('flush acknowledgement contract', () => {
+  it('waits for the end-game acknowledgement before reporting safe navigation', async () => {
+    whenCreate(ok(makeCreateResponse()))
+    const { result } = renderHook(() => useSync())
+    await act(async () => { await result.current.createSession(sampleInput()) })
+    let finish!: (response: Response) => void
+    whenOp(new Promise<Response>((resolve) => { finish = resolve }))
+    let finished = false
+    let flushed!: Promise<boolean>
+    act(() => {
+      result.current.emit({ type: 'end_game', winnerSeatId: 1 })
+      flushed = result.current.flush().then((safe) => { finished = safe; return safe })
+    })
+    await act(async () => { for (let i = 0; i < 10; i++) await Promise.resolve() })
+    expect(finished).toBe(false)
+    const snapshot = { ...makeCreateResponse().snapshot, seq: 1, endedAt: Date.now(), winnerSeatId: 1 }
+    await act(async () => { finish(ok({ snapshot })); expect(await flushed).toBe(true) })
+    expect(result.current.status).toBe('ended')
+    expect(result.current.pendingCount).toBe(0)
+  })
+
+  it('returns false and preserves pending end-game operations when offline', async () => {
+    whenCreate(ok(makeCreateResponse()))
+    const { result } = renderHook(() => useSync())
+    await act(async () => { await result.current.createSession(sampleInput()) })
+    whenOp(() => Promise.reject(new Error('offline')))
+    await act(async () => {
+      result.current.emit({ type: 'end_game' })
+      expect(await result.current.flush()).toBe(false)
+    })
+    expect(result.current.pendingCount).toBe(1)
+    expect(result.current.savedSession?.pendingCount).toBe(1)
+  })
+
+  it('returns false for permanently rejected writes even after their outbox is cleared', async () => {
+    whenCreate(ok(makeCreateResponse()))
+    const { result } = renderHook(() => useSync())
+    await act(async () => { await result.current.createSession(sampleInput()) })
+    whenOp(ok({ error: 'host_only' }, 403))
+    await act(async () => {
+      result.current.emit({ type: 'end_game' })
+      expect(await result.current.flush()).toBe(false)
+    })
+    expect(result.current.pendingCount).toBe(0)
+    await act(async () => { expect(await result.current.flush()).toBe(false) })
+  })
+})
+
+it('reuses a pending end-game operation when the finish action is retried', async () => {
+  whenCreate(ok(makeCreateResponse()))
+  const { result } = renderHook(() => useSync())
+  await act(async () => { await result.current.createSession(sampleInput()) })
+  whenOp(() => Promise.reject(new Error('offline')))
+  await act(async () => {
+    result.current.emit({ type: 'end_game', winnerSeatId: 1 })
+    expect(await result.current.flush()).toBe(false)
+  })
+  whenOp(ok({ snapshot: { ...makeCreateResponse().snapshot, seq: 1, endedAt: Date.now(), winnerSeatId: 1 } }))
+  await act(async () => {
+    result.current.emit({ type: 'end_game', winnerSeatId: 1 })
+    expect(await result.current.flush()).toBe(true)
+  })
+  const writes = fetchMock.mock.calls.filter((call) => String(call[0]).endsWith('/op'))
+    .map((call) => JSON.parse((call[1] as RequestInit).body as string))
+  expect(writes).toHaveLength(2)
+  expect(writes[0].opId).toBe(writes[1].opId)
+  expect(result.current.status).toBe('ended')
+})
+
+it.each(['http://0.0.0.0:3227/tracker?join=ABC123', 'https://unrelated.example/tracker?join=ABC123'])(
+  'builds invite links from the browser origin when the server returns %s', async (joinUrl) => {
+    whenCreate(ok({ ...makeCreateResponse(), joinUrl }))
+    const { result } = renderHook(() => useSync())
+    let created: Awaited<ReturnType<typeof result.current.createSession>> = null
+    await act(async () => { created = await result.current.createSession(sampleInput()) })
+    const reachableUrl = `${window.location.origin}/tracker?join=ABC123`
+    expect(result.current.joinUrl).toBe(reachableUrl)
+    expect(created!.joinUrl).toBe(reachableUrl)
+  },
+)

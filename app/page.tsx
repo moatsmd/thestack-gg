@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 import { Fleuron, GoldRule } from '@/components/Fleuron'
 import { useNews } from '@/hooks/useNews'
 
@@ -12,7 +12,7 @@ const tools = [
     kind: 'Core',
     accent: 'primary',
     blurb:
-      'Life totals, commander damage, and poison counters in one obsidian console.',
+      'Life totals, commander damage, and a shared table across your phones.',
     icon: 'heart',
   },
   {
@@ -80,14 +80,18 @@ const accentMap: Record<string, string> = {
   purple: 'text-[hsl(270_50%_70%)] bg-[hsl(270_40%_55%/0.10)] border-[hsl(270_40%_55%/0.25)]',
 }
 
-const comingSoon = [
+const syncSteps = [
   {
-    title: 'Rivalry Rosters',
-    desc: 'Cross-pod head-to-head records — see who actually owns the table over time.',
+    title: 'Set your table',
+    desc: 'Open the Life Tracker, choose your players, and start a game.',
   },
   {
-    title: 'Pod Sync',
-    desc: 'Real-time table sync across phones — one source of truth for the game state.',
+    title: 'Invite your pod',
+    desc: 'Open Pod Sync in the tracker. Share the table code or let friends scan the QR code.',
+  },
+  {
+    title: 'Take your seat',
+    desc: 'Each player joins on their phone and chooses a seat. Life changes stay together.',
   },
 ]
 
@@ -154,6 +158,7 @@ function ToolIcon({ name }: { name: string }) {
 }
 
 function StackingCardsBg() {
+  const reducedMotion = useReducedMotion()
   return (
     <div
       className="pointer-events-none absolute -right-10 top-1/2 -translate-y-1/2 hidden md:block opacity-[0.35]"
@@ -177,12 +182,12 @@ function StackingCardsBg() {
             stroke="url(#cg)"
             strokeWidth="1.2"
             fill="hsl(220 15% 10%)"
-            initial={{ y: 80 - i * 18, opacity: 0 }}
-            animate={{
+            initial={false}
+            animate={reducedMotion ? { opacity: 1 } : {
               y: [80 - i * 18, 70 - i * 18, 80 - i * 18],
               opacity: 1,
             }}
-            transition={{
+            transition={reducedMotion ? { duration: 0 } : {
               duration: 6 + i,
               delay: i * 0.5,
               repeat: Infinity,
@@ -211,12 +216,13 @@ function formatNewsDate(iso: string) {
 
 export default function Home() {
   const { items, isLoading, error } = useNews()
+  const reducedMotion = useReducedMotion()
 
   return (
     <>
       {/* Hero */}
       <section className="relative max-w-6xl mx-auto px-4 md:px-8 pt-8 md:pt-16">
-        <div className="panel codex-glow panel-gilded relative overflow-hidden p-8 md:p-14">
+        <div className="panel codex-glow panel-gilded relative overflow-hidden p-6 sm:p-8 md:p-14">
           <StackingCardsBg />
           <div className="relative">
             <div className="flex items-center gap-3 text-[10px] md:text-xs font-display tracking-[0.32em] uppercase text-[hsl(38_15%_60%/0.8)]">
@@ -224,10 +230,10 @@ export default function Home() {
               <span>Vault of the Stack</span>
             </div>
             <motion.h1
-              initial={{ opacity: 0, y: 8 }}
+              initial={reducedMotion ? false : { opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7 }}
-              className="font-display text-gold-gradient mt-5 text-5xl md:text-7xl tracking-wide leading-[1.05]"
+              transition={{ duration: reducedMotion ? 0 : 0.7 }}
+              className="font-display text-gold-gradient mt-5 text-4xl sm:text-5xl md:text-7xl tracking-wide leading-[1.05]"
             >
               TheStack.gg
             </motion.h1>
@@ -238,8 +244,8 @@ export default function Home() {
               </span>
             </div>
             <p className="font-prose text-[hsl(38_30%_88%/0.85)] text-lg md:text-xl max-w-2xl leading-snug">
-              Dark-mode tools for life totals, the stack, and spell sequencing —
-              fast, focused, beautiful, and right at hand.
+              Track life, share a table across phones, and settle the next rules
+              question. Everything your pod needs, right at hand.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
@@ -258,6 +264,11 @@ export default function Home() {
                 <ToolIcon name="search" />
                 Card Lookup
               </Link>
+            </div>
+            <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm text-[hsl(38_30%_88%/0.7)]">
+              <span>✦ Free to play</span>
+              <span>✦ No account required</span>
+              <a href="#pod-sync" className="text-[hsl(42_75%_65%)] underline underline-offset-4">Play across phones ↓</a>
             </div>
           </div>
         </div>
@@ -282,7 +293,7 @@ export default function Home() {
               data-testid={`tile-${tool.title.toLowerCase().replace(/\s/g, '-')}`}
             >
               <motion.div
-                whileHover={{ y: -3 }}
+                whileHover={reducedMotion ? undefined : { y: -3 }}
                 transition={{ duration: 0.2 }}
                 className="panel codex-glow p-6 h-full group relative overflow-hidden"
               >
@@ -314,32 +325,42 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Coming soon */}
-      <section className="max-w-6xl mx-auto px-4 md:px-8 mt-16 md:mt-24">
-        <div className="text-center">
+      {/* Shared table guide */}
+      <section id="pod-sync" aria-labelledby="pod-sync-heading" className="max-w-6xl mx-auto px-4 md:px-8 mt-16 md:mt-24 scroll-mt-20">
+        <div className="panel panel-gilded codex-glow p-6 md:p-10">
+        <div className="text-center max-w-2xl mx-auto">
           <Fleuron />
-          <h2 className="font-display tracking-[0.18em] uppercase text-xs text-[hsl(38_15%_60%)]">
-            On the Horizon
+          <p className="font-display tracking-[0.18em] uppercase text-xs text-[hsl(42_75%_65%)]">
+            Pod Sync · Available now
+          </p>
+          <h2 id="pod-sync-heading" className="font-display text-3xl md:text-4xl mt-3 text-[hsl(38_30%_88%)]">
+            Your phones. One table.
           </h2>
-          <p className="font-prose italic text-2xl md:text-3xl mt-2 text-[hsl(38_30%_88%/0.9)]">
-            In the workshop.
+          <p className="font-prose text-xl mt-3 text-[hsl(38_30%_88%/0.8)]">
+            Keep the whole pod in the game with a shared life tracker.
+            A table code is all you need to join.
           </p>
         </div>
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-          {comingSoon.map((c) => (
-            <div key={c.title} className="panel p-6 relative">
-              <span className="font-display tracking-[0.22em] text-[10px] uppercase text-[hsl(42_75%_65%/0.7)]">
-                Coming soon
+        <ol className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+          {syncSteps.map((step, index) => (
+            <li key={step.title} className="border-t border-[hsl(42_75%_55%/0.25)] pt-5">
+              <span aria-hidden="true" className="font-display text-sm text-[hsl(42_75%_65%)]">
+                0{index + 1}
               </span>
-              <h3 className="font-display text-xl mt-4 text-[hsl(38_30%_88%)]">
-                {c.title}
+              <h3 className="font-display text-xl mt-2 text-[hsl(38_30%_88%)]">
+                {step.title}
               </h3>
-              <span className="block w-7 h-px bg-[hsl(42_75%_55%/0.3)] mt-2" />
-              <p className="font-prose text-[hsl(38_30%_88%/0.7)] mt-2 leading-snug">
-                {c.desc}
+              <p className="font-prose text-lg text-[hsl(38_30%_88%/0.8)] mt-2 leading-snug">
+                {step.desc}
               </p>
-            </div>
+            </li>
           ))}
+        </ol>
+        <div className="mt-8 text-center">
+          <Link href="/tracker" className="inline-flex min-h-11 items-center gap-2 px-5 py-2.5 bg-[hsl(42_75%_55%)] text-[hsl(220_15%_7%)] rounded-md font-medium hover-elevate">
+            Gather your pod <span aria-hidden="true">→</span>
+          </Link>
+        </div>
         </div>
       </section>
 

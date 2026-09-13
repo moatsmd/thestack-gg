@@ -1,7 +1,9 @@
 'use client'
 
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { DialogFocus } from '@/components/DialogFocus'
 import { motion, AnimatePresence } from 'framer-motion'
 import QRCode from 'qrcode'
 import { GoldRule } from '@/components/Fleuron'
@@ -15,6 +17,9 @@ import {
   type LastPodSeat,
 } from '@/lib/last-pod-seat'
 import type { RecapPlayer } from '@/types/replay'
+import type { SyncSnapshot } from '@/types/sync'
+import { readTable, saveTable, clearTable } from '@/lib/tracker-save'
+import { useWakeLock } from '@/hooks/useWakeLock'
 
 /* ────────────────────────────────────────────────────────────
  * Inline SVG icons (lucide-react is not installed in prod).
@@ -196,53 +201,139 @@ export default function TrackerPage() {
   const [enabledCounters, setEnabledCounters] = useState<Counter[]>(['cmd', 'poison', 'mana'])
   const [players, setPlayers] = useState<Player[]>([])
   const [keepScreenOn, setKeepScreenOn] = useState(true)
-  const wakeLockRef = useRef<any>(null)
+  const wakeLock = useWakeLock()
   const log = useGameLog()
   const sync = useSync()
+  const { request: requestWakeLock, release: releaseWakeLock } = wakeLock
+  const { resumeSession, joinSession, deviceId: syncDeviceId } = sync
+  const activeSyncCode = sync.session?.code
 
   // Join flow state — driven by ?join=CODE on the URL.
   const [joinModalOpen, setJoinModalOpen] = useState(false)
   const [joinCode, setJoinCode] = useState<string>('')
   const [joinError, setJoinError] = useState<string | null>(null)
   const [joinClaiming, setJoinClaiming] = useState<number | null>(null)
-  const joinAttemptedRef = useRef(false)
+  const [joinRetry, setJoinRetry] = useState(0)
 
-  // Detect ?join=CODE on mount; open the join modal and resolve the code.
-  useEffect(() => {
-    if (joinAttemptedRef.current) return
-    if (typeof window === 'undefined') return
-    const url = new URL(window.location.href)
-    const code = url.searchParams.get('join')
-    if (!code) return
-    joinAttemptedRef.current = true
-    setJoinCode(code)
-    setJoinModalOpen(true)
-    // Strip the join param from the URL so a refresh doesn't re-trigger.
-    url.searchParams.delete('join')
-    window.history.replaceState({}, '', url.toString())
+  const [manualCode, setManualCode] = useState('')
+  const [resumeError, setResumeError] = useState<string | null>(null)
+  const [restoring, setRestoring] = useState(false)
+  const [storageWarning, setStorageWarning] = useState(false)
+  const [ready, setReady] = useState(false)
+  const [waitingForSync, setWaitingForSync] = useState(false)
+  const resumeAttemptedRef = useRef(false)
+  const requestedCodeRef = useRef<string | null>(null)
+  const joinGeneration = useRef(0)
+  const { start: startLog, restore: restoreLog } = log
+
+  const restoreRecordedHistory = useCallback((sessionId: string, snap: SyncSnapshot) => {
+    const saved = readTable()
+    if (saved?.syncSessionId === sessionId && saved.events.length) {
+      restoreLog(saved.events)
+    } else {
+      // Begin recording at the return to this table. Earlier actions cannot
+      // be reconstructed from a snapshot, so do not invent catch-up events.
+      startLog({
+        format: `${snap.gameMode.name} (recording resumed)`,
+        startingLife: snap.gameMode.name === 'Custom' ? snap.customLife : snap.gameMode.life,
+        players: snap.players.map(({ id, name }) => ({ id, name })),
+      })
+    }
+  }, [restoreLog, startLog])
+
+  const enterSnapshot = useCallback((snap: SyncSnapshot) => {
+    if (!snap.players.length) return
+    setPlayers(snap.players)
+    setGameMode(snap.gameMode)
+    setCustomLife(snap.customLife)
+    setEnabledCounters(snap.enabledCounters)
+    setMode(snap.players.length === 1 ? 'solo' : 'multi')
+    setStep('play')
+    setWaitingForSync(false)
+    setJoinModalOpen(false)
+    window.history.replaceState({}, '', '/tracker')
   }, [])
 
-  // Once we have a deviceId AND the modal is open with a code, resolve it.
   useEffect(() => {
-    if (!joinModalOpen) return
-    if (!sync.deviceId) return
-    if (sync.session) return // already joined
-    if (sync.status === 'creating') return
-    if (!joinCode) return
-    let cancelled = false
-    ;(async () => {
-      const res = await sync.joinSession(joinCode)
-      if (cancelled) return
-      if (!res) {
-        setJoinError('Pod not found or expired.')
-      } else {
-        setJoinError(null)
+    const code = new URL(window.location.href).searchParams.get('join')
+    if (code) {
+      setJoinCode(code.replace(/[^a-z0-9]/gi, '').toUpperCase())
+      setJoinModalOpen(true)
+    } else {
+      const saved = readTable()
+      if (saved) {
+        restoreLog(saved.events)
+        if (saved.syncSessionId) setWaitingForSync(true)
+        else enterSnapshot(saved.snapshot)
       }
-    })()
-    return () => {
-      cancelled = true
     }
-  }, [joinModalOpen, joinCode, sync.deviceId, sync.session, sync.status, sync])
+    setReady(true)
+  }, [enterSnapshot, restoreLog])
+
+  const resumeTable = useCallback(async () => {
+    setRestoring(true)
+    setResumeError(null)
+    const result = await resumeSession()
+    setRestoring(false)
+    if (result) {
+      restoreRecordedHistory(result.id, result.snapshot)
+      const mine = result.seats.some(seat => seat.ownerDeviceId === syncDeviceId)
+      if (mine || result.session.hostDeviceId === syncDeviceId) enterSnapshot(result.snapshot)
+      else {
+        requestedCodeRef.current = result.session.code
+        setJoinCode(result.session.code)
+        setJoinModalOpen(true)
+        setWaitingForSync(false)
+      }
+    } else setResumeError('We could not reconnect. Check your connection, or start a new table if this session has expired.')
+  }, [resumeSession, syncDeviceId, enterSnapshot, restoreRecordedHistory])
+
+  useEffect(() => {
+    if (!ready || sync.session || !sync.savedSession || !sync.deviceId || joinCode || resumeAttemptedRef.current) return
+    resumeAttemptedRef.current = true
+    void resumeTable()
+  }, [ready, sync.session, sync.savedSession, sync.deviceId, joinCode, resumeTable])
+
+  // Each deliberate join attempt runs once. A render or failed request must
+  // never trigger an unbounded retry loop.
+  useEffect(() => {
+    if (!joinModalOpen || !syncDeviceId || !joinCode || requestedCodeRef.current === joinCode || activeSyncCode === joinCode) return
+    requestedCodeRef.current = joinCode
+    const generation = ++joinGeneration.current
+    void joinSession(joinCode).then(result => {
+      if (generation !== joinGeneration.current) return
+      if (!result) { setJoinError('Pod not found, expired, or temporarily unavailable.'); return }
+      setJoinError(null)
+      restoreRecordedHistory(result.id, result.snapshot)
+      if (result.snapshot.endedAt || result.session.endedAt) return
+      const mine = result.seats.find(seat => seat.ownerDeviceId === syncDeviceId)
+      if (mine || result.session.hostDeviceId === syncDeviceId) {
+        enterSnapshot(result.snapshot)
+        if (mine) rememberLastPodSeat({ sessionId: result.id, code: result.session.code, seatId: mine.seatId })
+      }
+    })
+  }, [joinModalOpen, joinCode, syncDeviceId, joinSession, activeSyncCode, enterSnapshot, joinRetry, restoreRecordedHistory])
+
+  // The hook projects pending local edits on top of canonical server state.
+  // Mirroring it also repairs rejected edits and full-snapshot catch-ups.
+  useEffect(() => {
+    if (step === 'play' && sync.session && sync.snapshot?.players.length) {
+      setPlayers(sync.snapshot.players)
+      setGameMode(sync.snapshot.gameMode)
+      setCustomLife(sync.snapshot.customLife)
+      setEnabledCounters(sync.snapshot.enabledCounters)
+    }
+  }, [step, sync.session, sync.snapshot])
+
+  useEffect(() => {
+    if (!ready || step !== 'play' || !players.length || restoring) return
+    const stored = saveTable({
+      snapshot: { seq: sync.appliedSeq, players, gameMode, customLife, enabledCounters },
+      events: log.events,
+      syncSessionId: sync.session?.id ?? null,
+    })
+    setStorageWarning(!stored)
+  }, [ready, step, players, gameMode, customLife, enabledCounters, log.events, sync.session?.id, sync.appliedSeq, restoring])
 
   /**
    * Claim a seat as the joiner. On success, hydrate local players from the
@@ -292,6 +383,7 @@ export default function TrackerPage() {
       }
       setJoinModalOpen(false)
       setStep('play')
+      window.history.replaceState({}, '', '/tracker')
       track('tracker_joined_pod', { seat_id: seatId })
     } finally {
       setJoinClaiming(null)
@@ -299,35 +391,23 @@ export default function TrackerPage() {
   }
 
   function cancelJoin() {
+    joinGeneration.current += 1
+    requestedCodeRef.current = null
     setJoinModalOpen(false)
     setJoinError(null)
     setJoinCode('')
+    window.history.replaceState({}, '', '/tracker')
     sync.teardown()
   }
 
-  // Default keep-screen-on ON when entering tracker — request wake lock if available
   useEffect(() => {
-    if (step !== 'play' || !keepScreenOn) return
-    let cancelled = false
-    const req = async () => {
-      try {
-        // @ts-ignore
-        if ('wakeLock' in navigator) {
-          // @ts-ignore
-          const lock = await navigator.wakeLock.request('screen')
-          if (!cancelled) wakeLockRef.current = lock
-        }
-      } catch {}
-    }
-    req()
-    return () => {
-      cancelled = true
-      if (wakeLockRef.current) wakeLockRef.current.release?.()
-      wakeLockRef.current = null
-    }
-  }, [step, keepScreenOn])
+    if (step === 'play' && keepScreenOn) void requestWakeLock()
+    else void releaseWakeLock()
+    return () => { void releaseWakeLock() }
+  }, [step, keepScreenOn, requestWakeLock, releaseWakeLock])
 
   function startGame() {
+    resumeAttemptedRef.current = true
     const n = mode === 'solo' ? 1 : playerCount
     const startLife = gameMode.name === 'Custom' ? customLife : gameMode.life
     const newPlayers: Player[] = Array.from({ length: n }, (_, i) => ({
@@ -359,8 +439,39 @@ export default function TrackerPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 md:px-8 pt-6 md:pt-12 pb-12">
-      {step !== 'play' && <YourPods />}
-      {step !== 'play' && (
+      {storageWarning && <p role="status" className="panel p-3 mb-4 text-sm text-amber-300">This browser cannot save your table. Keep this tab open while playing.</p>}
+      {(restoring || resumeError || waitingForSync) && (
+        <section className="panel panel-gilded p-6 mb-6 max-w-2xl mx-auto" aria-live="polite">
+          <p className="text-xs uppercase tracking-widest text-primary">Welcome back</p>
+          <h1 className="font-display text-2xl mt-2">{restoring ? 'Returning to your table…' : 'Your table is waiting'}</h1>
+          <p className="mt-2 text-sm text-muted-foreground">{resumeError || 'Restoring your game and your seat.'}</p>
+          {!restoring && <div className="flex flex-wrap gap-3 mt-4">
+            <button className="min-h-11 px-4 bg-primary text-primary-foreground rounded-md" onClick={() => void resumeTable()}>Reconnect to table</button>
+            <button className="min-h-11 px-4 panel" disabled={!!sync.savedSession?.pendingCount} onClick={() => {
+              sync.teardown(); clearTable(); log.reset(); setResumeError(null); setWaitingForSync(false); setStep('mode')
+            }}>Start a new table</button>
+          </div>}
+        </section>
+      )}
+      {step !== 'play' && !restoring && !waitingForSync && !resumeError && <>
+        <form className="panel panel-gilded p-4 max-w-2xl mx-auto mb-6 flex flex-wrap items-end gap-3" onSubmit={event => {
+          event.preventDefault()
+          const code = manualCode.replace(/[^a-z0-9]/gi, '').toUpperCase()
+          if (code.length !== 6) return
+          requestedCodeRef.current = null
+          setJoinError(null)
+          setJoinCode(code)
+          setJoinModalOpen(true)
+        }}>
+          <div className="flex-1 min-w-0">
+            <label htmlFor="pod-code" className="text-sm font-display text-primary">Already at a table?</label>
+            <input id="pod-code" aria-label="Pod code" autoComplete="off" autoCapitalize="characters" spellCheck={false} maxLength={7} value={manualCode} onChange={e => setManualCode(e.target.value)} placeholder="ABC-123" className="mt-2 w-full panel px-3 min-h-11 font-mono tracking-widest uppercase" />
+          </div>
+          <button disabled={manualCode.replace(/[^a-z0-9]/gi, '').length !== 6} className="min-h-11 px-4 bg-primary text-primary-foreground rounded-md disabled:opacity-40">Join pod</button>
+        </form>
+        <YourPods />
+      </>}
+      {step !== 'play' && !restoring && !waitingForSync && !resumeError && (
         <Wizard
           step={step}
           setStep={setStep}
@@ -377,7 +488,7 @@ export default function TrackerPage() {
           startGame={startGame}
         />
       )}
-      {step === 'play' && (
+      {step === 'play' && !restoring && !resumeError && (
         <ActiveTracker
           players={players}
           setPlayers={setPlayers}
@@ -386,9 +497,13 @@ export default function TrackerPage() {
           enabledCounters={enabledCounters}
           keepScreenOn={keepScreenOn}
           setKeepScreenOn={setKeepScreenOn}
+          screenActive={wakeLock.isActive}
+          screenSupported={wakeLock.isSupported}
           onExit={() => {
+            clearTable()
             log.reset()
             sync.teardown()
+            window.history.replaceState({}, '', '/tracker')
             setStep('mode')
           }}
           log={log}
@@ -406,6 +521,11 @@ export default function TrackerPage() {
         claiming={joinClaiming}
         onClaim={claimAndEnter}
         onCancel={cancelJoin}
+        onRetry={() => {
+          requestedCodeRef.current = null
+          setJoinError(null)
+          setJoinRetry(n => n + 1)
+        }}
       />
     </div>
   )
@@ -426,11 +546,13 @@ type JoinModalProps = {
   claiming: number | null
   onClaim: (seatId: number) => void
   onCancel: () => void
+  onRetry: () => void
 }
 
 function JoinModal({
   open,
   code,
+  deviceId,
   status,
   seats,
   snapshot,
@@ -438,11 +560,12 @@ function JoinModal({
   claiming,
   onClaim,
   onCancel,
+  onRetry,
 }: JoinModalProps) {
   const formattedCode = code
     ? `${code.slice(0, 3)}-${code.slice(3)}`.toUpperCase()
     : ''
-  const unclaimedSeats = seats.filter((s) => !s.ownerDeviceId)
+  const unclaimedSeats = seats.filter((s) => !s.ownerDeviceId || s.ownerDeviceId === deviceId)
   const resolving = status === 'creating' || (status === 'idle' && !error)
   const ended = status === 'ended'
 
@@ -479,13 +602,15 @@ function JoinModal({
             onClick={onCancel}
           />
           <motion.div
-            className="relative panel-elevated arcane-glow-strong p-6 max-w-sm w-full text-center"
+            className="relative panel-elevated arcane-glow-strong p-6 max-w-sm w-full max-h-[85dvh] overflow-y-auto text-center"
             initial={{ scale: 0.95 }}
             animate={{ scale: 1 }}
             exit={{ scale: 0.95 }}
             role="dialog"
             aria-label="Join pod"
+            aria-modal="true"
           >
+            <DialogFocus onClose={onCancel} />
             <button
               onClick={onCancel}
               className="absolute right-3 top-3 p-1.5 rounded-md hover:bg-accent/40"
@@ -507,12 +632,14 @@ function JoinModal({
             {error && (
               <p
                 className="mt-4 text-sm text-destructive"
+                role="alert"
                 data-testid="join-error"
               >
                 {error}
               </p>
             )}
 
+            {error && <button onClick={onRetry} className="mt-3 panel min-h-11 px-4">Try again</button>}
             {!error && resolving && (
               <p className="mt-4 font-prose italic text-foreground/70 text-sm">
                 Resolving pod…
@@ -549,7 +676,7 @@ function JoinModal({
                     data-testid="join-seat-picker"
                   >
                     {seats.map((s) => {
-                      const taken = !!s.ownerDeviceId
+                      const taken = !!s.ownerDeviceId && s.ownerDeviceId !== deviceId
                       const isClaiming = claiming === s.seatId
                       const isSuggested =
                         !taken && suggestedSeatId === s.seatId
@@ -825,6 +952,8 @@ type ActiveProps = {
   customLife: number
   enabledCounters: Counter[]
   keepScreenOn: boolean
+  screenActive: boolean
+  screenSupported: boolean
   setKeepScreenOn: (b: boolean) => void
   onExit: () => void
   log: UseGameLog
@@ -838,14 +967,16 @@ function ActiveTracker({
   customLife,
   enabledCounters,
   keepScreenOn,
+  screenActive,
+  screenSupported,
   setKeepScreenOn,
   sync,
   onExit,
   log,
 }: ActiveProps) {
   const router = useRouter()
-  const [shareOpen, setShareOpen] = useState(false)
-  const [qrUrl, setQrUrl] = useState<string>('')
+  const [confirmAction, setConfirmAction] = useState<'reset' | 'leave' | null>(null)
+  const [copyStatus, setCopyStatus] = useState('')
   const [syncOpen, setSyncOpen] = useState(false)
   const [syncStarting, setSyncStarting] = useState(false)
   const [syncQrUrl, setSyncQrUrl] = useState<string>('')
@@ -867,6 +998,8 @@ function ActiveTracker({
   const [endOpen, setEndOpen] = useState(false)
   const [endingGame, setEndingGame] = useState(false)
   const [endError, setEndError] = useState<string | null>(null)
+  const [savedRecap, setSavedRecap] = useState<{ id: string; winnerId?: number } | null>(null)
+  const submittingRecap = useRef(false)
   const [winnerId, setWinnerId] = useState<number | undefined>(undefined)
   const [podName, setPodName] = useState('')
   const [commanders, setCommanders] = useState<Record<number, string>>({})
@@ -880,95 +1013,59 @@ function ActiveTracker({
     return mySeat?.seatId ?? null
   }, [sync.session, sync.isHost, sync.deviceId, sync.seats])
 
-  /**
-   * Centralized update — every player mutation routes through here so the
-   * game log captures life / cmd / poison deltas. Other counters (mana,
-   * energy, experience) are not part of the recap v1.
-   */
-  function update(id: number, patch: Partial<Player>) {
-    setPlayers((prev) => {
-      const next = prev.map((p) => (p.id === id ? { ...p, ...patch } : p))
-      const before = prev.find((p) => p.id === id)
-      const after = next.find((p) => p.id === id)
-      if (before && after) {
-        if (typeof patch.life === 'number' && after.life !== before.life) {
-          const delta = after.life - before.life
-          log.life(id, delta, after.life)
-          sync.emit({ type: 'life', seatId: id, delta })
-        }
-        if (typeof patch.poison === 'number' && after.poison !== before.poison) {
-          const delta = after.poison - before.poison
-          log.poison(id, delta, after.poison)
-          sync.emit({ type: 'counter', seatId: id, counter: 'poison', delta })
-        }
-        if (typeof patch.mana === 'number' && after.mana !== before.mana) {
-          sync.emit({
-            type: 'counter',
-            seatId: id,
-            counter: 'mana',
-            delta: after.mana - before.mana,
-          })
-        }
-        if (typeof patch.energy === 'number' && after.energy !== before.energy) {
-          sync.emit({
-            type: 'counter',
-            seatId: id,
-            counter: 'energy',
-            delta: after.energy - before.energy,
-          })
-        }
-        if (
-          typeof patch.experience === 'number' &&
-          after.experience !== before.experience
-        ) {
-          sync.emit({
-            type: 'counter',
-            seatId: id,
-            counter: 'experience',
-            delta: after.experience - before.experience,
-          })
-        }
-        if (typeof patch.name === 'string' && after.name !== before.name) {
-          sync.emit({ type: 'rename', seatId: id, name: after.name })
-        }
-      }
-      return next
-    })
+  const playersRef = useRef(players)
+  playersRef.current = players
+  const canControl = (id: number) => {
+    if (!sync.session) return true
+    if (sync.status === 'ended') return false
+    const owner = sync.seats.find(seat => seat.seatId === id)?.ownerDeviceId
+    return owner === sync.deviceId || (sync.isHost && !owner)
   }
 
-  /**
-   * Bump per-opponent commander damage by a delta. Reads from the freshest
-   * setPlayers prev state to avoid stale closures on rapid clicks. Also
-   * derives the legacy cmd value as the max single-source amount and logs a
-   * commander_damage event with the source player id for the recap.
-   */
+  // Event handlers run once. React is free to replay state updaters, so
+  // network writes and game-log appends must stay outside those updaters.
+  function update(id: number, change: Partial<Player> | ((p: Player) => Partial<Player>)) {
+    if (!canControl(id)) return
+    const before = playersRef.current.find(p => p.id === id)
+    if (!before) return
+    const patch = typeof change === 'function' ? change(before) : change
+    const after = { ...before, ...patch }
+    const next = playersRef.current.map(p => p.id === id ? after : p)
+    playersRef.current = next
+    setPlayers(next)
+    if (after.life !== before.life) {
+      log.life(id, after.life - before.life, after.life)
+      sync.emit({ type: 'life', seatId: id, delta: after.life - before.life })
+    }
+    for (const counter of ['poison', 'mana', 'energy', 'experience'] as const) {
+      const delta = after[counter] - before[counter]
+      if (!delta) continue
+      if (counter === 'poison') log.poison(id, delta, after.poison)
+      sync.emit({ type: 'counter', seatId: id, counter, delta })
+    }
+    if (after.name !== before.name) sync.emit({ type: 'rename', seatId: id, name: after.name })
+  }
+
   function bumpCmdFrom(targetId: number, sourceId: number, delta: number) {
-    setPlayers((prev) => {
-      const before = prev.find((p) => p.id === targetId)
-      if (!before) return prev
-      const beforeAmt = before.cmdFrom?.[sourceId] ?? 0
-      const afterAmt = Math.max(0, beforeAmt + delta)
-      if (afterAmt === beforeAmt) return prev
-      const nextCmdFrom = { ...(before.cmdFrom ?? {}), [sourceId]: afterAmt }
-      const nextCmd = maxCmdFrom(nextCmdFrom)
-      const next = prev.map((p) =>
-        p.id === targetId ? { ...p, cmdFrom: nextCmdFrom, cmd: nextCmd } : p
-      )
-      const appliedDelta = afterAmt - beforeAmt
-      log.cmd(targetId, appliedDelta, nextCmd, sourceId)
-      sync.emit({
-        type: 'cmd_from',
-        seatId: targetId,
-        sourceId,
-        delta: appliedDelta,
-      })
-      return next
-    })
+    if (!canControl(targetId)) return
+    const before = playersRef.current.find(p => p.id === targetId)
+    if (!before) return
+    const amount = before.cmdFrom?.[sourceId] ?? 0
+    const after = Math.max(0, amount + delta)
+    if (after === amount) return
+    const cmdFrom = { ...before.cmdFrom, [sourceId]: after }
+    const cmd = maxCmdFrom(cmdFrom)
+    const next = playersRef.current.map(p => p.id === targetId ? { ...p, cmdFrom, cmd } : p)
+    playersRef.current = next
+    setPlayers(next)
+    log.cmd(targetId, after - amount, cmd, sourceId)
+    sync.emit({ type: 'cmd_from', seatId: targetId, sourceId, delta: after - amount })
   }
 
   const startLife = gameMode.name === 'Custom' ? customLife : gameMode.life
 
   function reset() {
+    if (sync.status === 'ended') return
     setPlayers((prev) =>
       prev.map((p) => ({ ...p, life: startLife, cmd: 0, cmdFrom: {}, poison: 0, mana: 0, energy: 0, experience: 0 }))
     )
@@ -986,68 +1083,67 @@ function ActiveTracker({
   const canEndGame = log.events.length > 1
 
   async function submitRecap() {
+    if (submittingRecap.current) return
+    submittingRecap.current = true
     setEndingGame(true)
     setEndError(null)
     try {
-      log.end(winnerId)
-      // Build the events array including the end event we just appended.
-      // Since setEvents is async, build the end event ourselves for the POST.
-      const events = [...log.events]
-      const endEvent = {
-        type: 'game_end' as const,
-        seq: events[events.length - 1]?.seq != null ? (events[events.length - 1]!.seq + 1) : events.length,
-        timestamp: Date.now(),
-        winnerId,
-      }
-      const finalPlayers: RecapPlayer[] = players.map((p) => ({
-        id: p.id,
-        name: p.name,
-        commander: commanders[p.id]?.trim() || undefined,
-      }))
-      const res = await fetch('/api/recap', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          podName: podName.trim() || undefined,
-          format: gameMode.name === 'Custom' ? `Custom (${customLife})` : gameMode.name,
-          startingLife: startLife,
-          players: finalPlayers,
+      let recap = savedRecap
+      if (!recap) {
+        const events = log.events.filter(event => event.type !== 'game_end')
+        const endEvent = {
+          type: 'game_end' as const,
+          seq: events[events.length - 1]?.seq != null ? (events[events.length - 1]!.seq + 1) : events.length,
+          timestamp: Date.now(),
           winnerId,
-          events: [...events, endEvent],
-        }),
-      })
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        throw new Error(body?.error || `Server returned ${res.status}`)
+        }
+        const finalPlayers: RecapPlayer[] = players.map((p) => ({
+          id: p.id,
+          name: p.name,
+          commander: commanders[p.id]?.trim() || undefined,
+        }))
+        const res = await fetch('/api/recap', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            podName: podName.trim() || undefined,
+            format: gameMode.name === 'Custom' ? `Custom (${customLife})` : gameMode.name,
+            startingLife: startLife,
+            players: finalPlayers,
+            winnerId,
+            events: [...events, endEvent],
+          }),
+        })
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}))
+          throw new Error(body?.error || `Server returned ${res.status}`)
+        }
+        const data = (await res.json()) as { id: string; url: string }
+        recap = { id: data.id, winnerId }
+        // A saved recap is immutable. Retrying the remaining sync step must
+        // reuse this receipt and the winner that was already recorded.
+        setSavedRecap(recap)
+        track('recap_created', {
+          players: players.length,
+          format: gameMode.name === 'Custom' ? `Custom (${customLife})` : gameMode.name,
+          events: events.length + 1,
+          had_winner: winnerId != null,
+        })
       }
-      const data = (await res.json()) as { id: string; url: string }
-      track('recap_created', {
-        players: players.length,
-        format: gameMode.name,
-        events: events.length + 1,
-        had_winner: winnerId != null,
-      })
-      sync.emit({ type: 'end_game', winnerSeatId: winnerId })
-      router.push(`/recap/${data.id}`)
+      if (sync.session && sync.status !== 'ended') {
+        sync.emit({ type: 'end_game', winnerSeatId: recap.winnerId })
+        if (!(await sync.flush())) throw new Error('Recap saved, but the table is still syncing. Reconnect before leaving.')
+      }
+      // Leave play before navigating so its persistence effect cannot recreate
+      // the completed game after its saved state has just been cleared.
+      onExit()
+      router.push(`/recap/${recap.id}`)
     } catch (err) {
       setEndError(err instanceof Error ? err.message : 'Could not save recap')
       setEndingGame(false)
+    } finally {
+      submittingRecap.current = false
     }
-  }
-
-  async function openShare() {
-    const state = encodeURIComponent(
-      JSON.stringify({
-        mode: gameMode.name,
-        life: startLife,
-        players: players.map((p) => ({ n: p.name, l: p.life, c: p.cmd, p: p.poison })),
-      })
-    )
-    const url = `${window.location.origin}/tracker?state=${state}`
-    const dataUrl = await QRCode.toDataURL(url, { color: { dark: '#d4a93a', light: '#0f1115' }, width: 320, margin: 1 })
-    setQrUrl(dataUrl)
-    setShareOpen(true)
-    track('tracker_share_opened', { players: players.length })
   }
 
   // Render a QR for the sync joinUrl whenever it changes. The QR encodes
@@ -1075,67 +1171,18 @@ function ActiveTracker({
     }
   }, [sync.joinUrl])
 
-  /**
-   * Reconcile local Player[] state from remote ops authored by other devices.
-   * Own-device ops are filtered out by useSync, so we only see ops from
-   * other seats here. Mirrors the server's applySyncOp logic but on the
-   * tracker's Player[] shape (life/cmd/poison/mana/energy/experience/name).
-   * Reset and end_game are surfaced too so non-host viewers see those.
-   */
-  useEffect(() => {
-    const unsub = sync.subscribeRemoteOps((env) => {
-      const op = env.op
-      if (op.type === 'life') {
-        setPlayers((prev) =>
-          prev.map((p) =>
-            p.id === op.seatId ? { ...p, life: p.life + op.delta } : p,
-          ),
-        )
-      } else if (op.type === 'counter') {
-        setPlayers((prev) =>
-          prev.map((p) => {
-            if (p.id !== op.seatId) return p
-            const cur = (p[op.counter] as number) ?? 0
-            const nextVal = Math.max(0, cur + op.delta)
-            return { ...p, [op.counter]: nextVal }
-          }),
-        )
-      } else if (op.type === 'cmd_from') {
-        setPlayers((prev) =>
-          prev.map((p) => {
-            if (p.id !== op.seatId) return p
-            const cmdFrom = { ...(p.cmdFrom ?? {}) }
-            const cur = cmdFrom[op.sourceId] ?? 0
-            const nextAmt = Math.max(0, cur + op.delta)
-            cmdFrom[op.sourceId] = nextAmt
-            return { ...p, cmdFrom, cmd: maxCmdFrom(cmdFrom) }
-          }),
-        )
-      } else if (op.type === 'rename') {
-        const trimmed = op.name.trim().slice(0, 32)
-        if (!trimmed) return
-        setPlayers((prev) =>
-          prev.map((p) => (p.id === op.seatId ? { ...p, name: trimmed } : p)),
-        )
-      } else if (op.type === 'reset') {
-        setPlayers((prev) =>
-          prev.map((p) => ({
-            ...p,
-            life: startLife,
-            cmd: 0,
-            cmdFrom: {},
-            poison: 0,
-            mana: 0,
-            energy: 0,
-            experience: 0,
-          })),
-        )
-      }
-      // end_game state surfaces via sync.status === 'ended'; tracker UI
-      // reads that to show the post-game summary. No local mutation needed.
-    })
-    return unsub
-  }, [sync, setPlayers, startLife])
+  // Keep recap history for remote players without applying their totals
+  // twice: the page renders the projected snapshot supplied by useSync.
+  const { subscribeRemoteOps } = sync
+  const { life: logLife, poison: logPoison, cmd: logCmd, start: logStart } = log
+  useEffect(() => subscribeRemoteOps(env => {
+    const op = env.op
+    const before = 'seatId' in op ? playersRef.current.find(p => p.id === op.seatId) : null
+    if (op.type === 'life' && before) logLife(op.seatId, op.delta, before.life + op.delta)
+    if (op.type === 'counter' && op.counter === 'poison' && before) logPoison(op.seatId, op.delta, Math.max(0, before.poison + op.delta))
+    if (op.type === 'cmd_from' && before) logCmd(op.seatId, op.delta, Math.max(0, (before.cmdFrom[op.sourceId] ?? 0) + op.delta), op.sourceId)
+    if (op.type === 'reset') logStart({ format: gameMode.name, startingLife: startLife, players: playersRef.current })
+  }), [subscribeRemoteOps, logLife, logPoison, logCmd, logStart, gameMode.name, startLife])
 
   const cols =
     players.length === 1
@@ -1151,7 +1198,7 @@ function ActiveTracker({
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div className="flex items-center gap-3">
           <button
-            onClick={onExit}
+            onClick={() => setConfirmAction('leave')}
             className="panel hover-elevate p-2 rounded-md"
             data-testid="button-exit-game"
             aria-label="Exit game"
@@ -1169,27 +1216,23 @@ function ActiveTracker({
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
           <button
+            disabled={!screenSupported}
+            aria-pressed={keepScreenOn}
             onClick={() => setKeepScreenOn(!keepScreenOn)}
-            className={`px-3 py-1.5 panel hover-elevate text-sm inline-flex items-center gap-2 ${
+            className={`min-h-11 px-3 py-2 panel hover-elevate text-sm inline-flex items-center gap-2 ${
               keepScreenOn ? 'text-primary' : 'text-muted-foreground'
             }`}
             data-testid="button-keep-screen-on"
           >
-            <Sun className={`w-4 h-4 ${keepScreenOn ? 'text-primary' : ''}`} /> Keep screen on
+            <Sun className={`w-4 h-4 ${keepScreenOn ? 'text-primary' : ''}`} /> {screenActive ? 'Screen awake' : keepScreenOn && screenSupported ? 'Keep awake enabled' : 'Keep screen on'}
           </button>
-          <button
-            onClick={openShare}
-            className="px-3 py-1.5 panel hover-elevate text-sm inline-flex items-center gap-2"
-            data-testid="button-share"
-          >
-            <Share2 className="w-4 h-4" /> Share
-          </button>
+          <Link href={`/dice?players=${encodeURIComponent(JSON.stringify(players.map(p => p.name)))}`} className="panel min-h-11 px-3 py-2 text-sm inline-flex items-center">Roll for first</Link>
           {players.length > 1 && (
             <button
               onClick={() => setSyncOpen(true)}
-              className={`px-3 py-1.5 panel hover-elevate text-sm inline-flex items-center gap-2 ${
+              className={`min-h-11 px-3 py-2 panel hover-elevate text-sm inline-flex items-center gap-2 ${
                 sync.status === 'active' ? 'text-primary' : ''
               } ${sync.status === 'offline' ? 'text-[hsl(42_75%_55%)]' : ''} ${
                 sync.status === 'ended' ? 'text-muted-foreground' : ''
@@ -1199,12 +1242,12 @@ function ActiveTracker({
             >
               <Wifi className={`w-4 h-4 ${sync.status === 'active' ? 'text-primary' : ''}`} />
               {sync.status === 'active'
-                ? 'Synced'
+                ? sync.pendingCount ? 'Saving…' : 'Invite players'
                 : sync.status === 'offline'
                 ? 'Reconnecting'
                 : sync.status === 'ended'
                 ? 'Ended'
-                : 'Sync'}
+                : 'Invite players'}
               {(sync.status === 'active' ||
                 sync.status === 'offline' ||
                 sync.status === 'ended') && (
@@ -1229,19 +1272,19 @@ function ActiveTracker({
               )}
             </button>
           )}
-          {canEndGame && (mySeatId === null || mySeatId === 'host') && (
+          {canEndGame && sync.status !== 'ended' && (!sync.session || sync.isHost) && (
             <button
               onClick={() => setEndOpen(true)}
-              className="px-3 py-1.5 bg-[hsl(42_75%_55%)] text-[hsl(220_15%_7%)] rounded-md hover-elevate text-sm inline-flex items-center gap-2 font-medium"
+              className="min-h-11 px-3 py-2 bg-[hsl(42_75%_55%)] text-[hsl(220_15%_7%)] rounded-md hover-elevate text-sm inline-flex items-center gap-2 font-medium"
               data-testid="button-end-game"
             >
               <Trophy className="w-4 h-4" /> End game
             </button>
           )}
-          {(mySeatId === null || mySeatId === 'host') && (
+          {sync.status !== 'ended' && (!sync.session || sync.isHost) && (
             <button
-              onClick={reset}
-              className="px-3 py-1.5 bg-destructive text-destructive-foreground rounded-md hover-elevate text-sm inline-flex items-center gap-2"
+              onClick={() => setConfirmAction('reset')}
+              className="min-h-11 px-3 py-2 bg-destructive text-destructive-foreground rounded-md hover-elevate text-sm inline-flex items-center gap-2"
               data-testid="button-reset"
             >
               <RotateCcw className="w-4 h-4" /> Reset
@@ -1250,6 +1293,14 @@ function ActiveTracker({
         </div>
       </div>
 
+      <div className="mb-4 panel border-primary/25 px-4 py-3 flex flex-wrap gap-3 items-center justify-between text-sm" role="status" aria-live="polite">
+        <div>
+          <span className="text-primary font-medium">{sync.session ? sync.status === 'ended' ? 'Table ended' : sync.status === 'offline' ? 'Reconnecting to your table' : sync.pendingCount ? 'Saving your changes' : 'Table connected' : 'Saved on this device'}</span>
+          <p className="text-muted-foreground text-xs mt-1">{sync.session ? `${sync.session.code.slice(0, 3)}-${sync.session.code.slice(3)} · ${sync.pendingCount ? `${sync.pendingCount} changes waiting to sync` : sync.isHost ? 'You host this table' : typeof mySeatId === 'number' ? `You control ${players.find(p => p.id === mySeatId)?.name}` : 'Watching this table'}` : 'Your life totals and counters return when you come back.'}</p>
+        </div>
+        {sync.session && sync.status !== 'ended' && <button onClick={() => void sync.reconnect()} className="panel min-h-11 px-3 text-xs">Reconnect</button>}
+        {sync.error && <p className="w-full text-amber-300 text-xs">{sync.error}</p>}
+      </div>
       <div className={`grid ${cols} gap-3 md:gap-4`}>
         {players.map((p) => (
           <PlayerPanel
@@ -1260,7 +1311,8 @@ function ActiveTracker({
             enabledCounters={enabledCounters}
             update={(patch) => update(p.id, patch)}
             bumpCmdFrom={(sourceId, delta) => bumpCmdFrom(p.id, sourceId, delta)}
-            readonly={mySeatId !== null && mySeatId !== 'host' && p.id !== mySeatId}
+            readonly={!canControl(p.id)}
+            isMine={!!sync.session && p.id === (mySeatId === 'host' ? sync.seats.find(seat => seat.ownerDeviceId === sync.deviceId)?.seatId : mySeatId)}
           />
         ))}
       </div>
@@ -1268,38 +1320,24 @@ function ActiveTracker({
       <Tip />
       <NameHint multi={players.length > 1} />
 
-      <AnimatePresence>
-        {shareOpen && (
-          <motion.div
-            className="fixed inset-0 z-50 grid place-items-center p-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setShareOpen(false)} />
-            <motion.div
-              className="relative panel-elevated arcane-glow-strong p-6 max-w-sm w-full text-center"
-              initial={{ scale: 0.95 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.95 }}
-            >
-              <button
-                onClick={() => setShareOpen(false)}
-                className="absolute right-3 top-3 p-1.5 rounded-md hover:bg-accent/40"
-                data-testid="button-close-share"
-              >
-                <X className="w-4 h-4 text-muted-foreground" />
-              </button>
-              <h3 className="font-display tracking-wide text-xl">Share game state</h3>
-              <p className="font-prose italic text-foreground/70 text-sm mt-1">Scan to load this table on another device.</p>
-              {qrUrl && <img src={qrUrl} alt="QR code" className="mx-auto mt-4 rounded-md border border-border" />}
-              <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mt-3">
-                Snapshot only — read-only on the receiving device.
-              </p>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {confirmAction && (
+        <div className="fixed inset-0 z-50 bg-black/75 grid place-items-center p-4" role="presentation">
+          <section role="dialog" aria-modal="true" aria-label={confirmAction === 'reset' ? 'Reset table?' : 'Leave table?'} className="panel-elevated p-6 max-w-sm w-full">
+            <DialogFocus onClose={() => setConfirmAction(null)} />
+            <h2 className="font-display text-2xl">{confirmAction === 'reset' ? 'Reset table?' : 'Leave table?'}</h2>
+            <p className="text-sm text-muted-foreground mt-3">{confirmAction === 'reset' ? 'Life and counters will return to their starting values for everyone.' : 'This removes the saved table from this device. Other players can keep playing.'}</p>
+            {sync.pendingCount > 0 && <p role="status" className="text-sm text-amber-300 mt-3">Waiting for {sync.pendingCount} changes to sync. Reconnect before continuing.</p>}
+            <div className="flex gap-3 mt-6">
+              <button autoFocus onClick={() => setConfirmAction(null)} className="panel px-4 min-h-11">Keep playing</button>
+              <button disabled={sync.pendingCount > 0} className="bg-destructive text-destructive-foreground px-4 min-h-11 rounded-md disabled:opacity-40" onClick={() => {
+                if (confirmAction === 'reset') reset()
+                else onExit()
+                setConfirmAction(null)
+              }}>{confirmAction === 'reset' ? 'Reset totals' : 'Leave table'}</button>
+            </div>
+          </section>
+        </div>
+      )}
 
       {/* Pod Sync modal */}
       <AnimatePresence>
@@ -1313,13 +1351,15 @@ function ActiveTracker({
           >
             <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setSyncOpen(false)} />
             <motion.div
-              className="relative panel-elevated arcane-glow-strong p-6 max-w-sm w-full text-center"
+              className="relative panel-elevated arcane-glow-strong p-6 max-w-sm w-full max-h-[85dvh] overflow-y-auto text-center"
               initial={{ scale: 0.95 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0.95 }}
               role="dialog"
               aria-label="Pod Sync"
+              aria-modal="true"
             >
+              <DialogFocus onClose={() => setSyncOpen(false)} />
               <button
                 onClick={() => setSyncOpen(false)}
                 className="absolute right-3 top-3 p-1.5 rounded-md hover:bg-accent/40"
@@ -1367,6 +1407,7 @@ function ActiveTracker({
                   </button>
                 </>
               )}
+              {sync.error && <p role="alert" className="mt-3 text-sm text-amber-300">{sync.error}</p>}
               {(sync.status === 'active' || sync.status === 'offline') && sync.session && (
                 <>
                   <p className="font-prose italic text-foreground/70 text-sm mt-1">
@@ -1396,6 +1437,12 @@ function ActiveTracker({
                       {sync.joinUrl}
                     </p>
                   )}
+                  {sync.joinUrl && <button className="mt-3 min-h-11 panel px-4 text-sm" onClick={async () => {
+                    try { await navigator.clipboard.writeText(sync.joinUrl!); setCopyStatus('Link copied') }
+                    catch { setCopyStatus('Select the link above to copy it') }
+                  }}>Copy invite link</button>}
+                  {copyStatus && <p role="status" className="text-xs text-primary mt-2">{copyStatus}</p>}
+                  <p className="text-xs text-muted-foreground mt-3">Your seat is remembered on this browser. Return to the tracker after your phone sleeps.</p>
                   {sync.isHost && sync.seats.length > 0 && (
                     <div className="mt-5 text-left" data-testid="sync-seat-roster">
                       <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-2">
@@ -1461,7 +1508,7 @@ function ActiveTracker({
                     />
                     <span data-testid="sync-status-label">
                       {sync.status === 'active'
-                        ? 'Live'
+                        ? sync.pendingCount ? 'Saving…' : 'Live'
                         : sync.status === 'offline'
                         ? 'Reconnecting…'
                         : 'Ended'}
@@ -1502,28 +1549,34 @@ function ActiveTracker({
           >
             <div
               className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-              onClick={() => !endingGame && setEndOpen(false)}
+              onClick={() => !endingGame && !savedRecap && setEndOpen(false)}
             />
             <motion.div
+              role="dialog" aria-modal="true" aria-label="End the game?"
               className="relative panel-elevated arcane-glow-strong p-6 max-w-md w-full max-h-[90vh] overflow-y-auto"
               initial={{ scale: 0.95 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0.95 }}
             >
+              <DialogFocus onClose={() => { if (!endingGame && !savedRecap) setEndOpen(false) }} />
               <button
-                onClick={() => !endingGame && setEndOpen(false)}
+                onClick={() => !endingGame && !savedRecap && setEndOpen(false)}
+                disabled={endingGame || !!savedRecap}
                 className="absolute right-3 top-3 p-1.5 rounded-md hover:bg-accent/40"
                 aria-label="Close"
                 data-testid="button-close-end-game"
               >
                 <X className="w-4 h-4 text-muted-foreground" />
               </button>
-              <h3 className="font-display tracking-wide text-xl text-center">End the game?</h3>
+              <h3 className="font-display tracking-wide text-xl text-center">{savedRecap ? 'Recap saved' : 'End the game?'}</h3>
               <p className="font-prose italic text-foreground/70 text-sm mt-1 text-center">
-                We&rsquo;ll save a shareable recap with the full life history. All fields below are optional.
+                {savedRecap ? 'Finish syncing the end of the game to your table. Your recap and its details are already saved.' : 'We’ll save a shareable recap of this device’s recorded history. All fields below are optional.'}
               </p>
+              {sync.session && <p className="text-xs text-muted-foreground mt-3 text-center">
+                Rejoining can leave gaps, and recorded edits may include changes later rejected by the table. Synced totals show the current game state.
+              </p>}
 
-              <div className="mt-5 space-y-4">
+              <fieldset disabled={endingGame || !!savedRecap} className="mt-5 space-y-4">
                 <div>
                   <label
                     htmlFor="recap-pod-name"
@@ -1595,7 +1648,7 @@ function ActiveTracker({
                     ))}
                   </div>
                 </div>
-              </div>
+              </fieldset>
 
               {endError && (
                 <p className="mt-4 text-sm text-destructive" role="alert" data-testid="text-recap-error">
@@ -1606,7 +1659,7 @@ function ActiveTracker({
               <div className="mt-6 grid grid-cols-2 gap-2">
                 <button
                   onClick={() => setEndOpen(false)}
-                  disabled={endingGame}
+                  disabled={endingGame || !!savedRecap}
                   className="panel hover-elevate text-sm py-2.5 text-muted-foreground disabled:opacity-50"
                   data-testid="button-cancel-end-game"
                 >
@@ -1618,7 +1671,7 @@ function ActiveTracker({
                   className="bg-[hsl(42_75%_55%)] text-[hsl(220_15%_7%)] rounded-md hover-elevate text-sm py-2.5 font-medium disabled:opacity-60"
                   data-testid="button-confirm-end-game"
                 >
-                  {endingGame ? 'Saving recap…' : 'End & save recap'}
+                  {savedRecap ? endingGame ? 'Finishing game…' : 'Finish syncing' : endingGame ? 'Saving recap…' : 'End & save recap'}
                 </button>
               </div>
               <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mt-3 text-center">
@@ -1648,14 +1701,16 @@ function PlayerPanel({
   update,
   bumpCmdFrom,
   readonly = false,
+  isMine = false,
 }: {
   player: Player
   opponents: Player[]
   startLife: number
   enabledCounters: Counter[]
-  update: (p: Partial<Player>) => void
+  update: (p: Partial<Player> | ((current: Player) => Partial<Player>)) => void
   bumpCmdFrom: (sourceId: number, delta: number) => void
   readonly?: boolean
+  isMine?: boolean
 }) {
   const [showBadge, setShowBadge] = useState<Counter | null>(null)
   const [lastDelta, setLastDelta] = useState<number>(0)
@@ -1691,8 +1746,7 @@ function PlayerPanel({
   const lifeCls = lifeColor(player.life, startLife)
 
   function bump(field: keyof Player, n: number, min = 0) {
-    const cur = player[field] as number
-    update({ [field]: Math.max(min, cur + n) } as any)
+    update(current => ({ [field]: Math.max(min, (current[field] as number) + n) }))
   }
 
   const badgeColor = (val: number, danger: number, warn: number) =>
@@ -1704,7 +1758,7 @@ function PlayerPanel({
 
   return (
     <div
-      className={`panel arcane-glow panel-gilded p-5 relative overflow-hidden ${
+      className={`panel arcane-glow panel-gilded p-3 sm:p-5 min-w-0 relative overflow-hidden ${
         lethalFromCmd
           ? 'ring-2 ring-destructive/70 shadow-[0_0_24px_hsl(0_70%_45%/0.45)]'
           : ''
@@ -1733,8 +1787,10 @@ function PlayerPanel({
           />
         )}
       </AnimatePresence>
-      <div className="flex items-center justify-between">
-        <div className="group relative flex items-center gap-1.5 min-w-0 flex-1 max-w-[180px]">
+      {isMine && <p className="text-[10px] uppercase tracking-widest text-primary mb-2">Your seat</p>}
+      {readonly && <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2">View only</p>}
+      <div className="flex flex-col gap-3">
+        <div className="group relative flex items-center gap-1.5 min-w-0 w-full">
           <input
             value={player.name}
             onChange={(e) => !readonly && update({ name: e.target.value })}
@@ -1744,7 +1800,8 @@ function PlayerPanel({
               }
             }}
             placeholder={defaultName}
-            aria-label="Player name (tap to rename)"
+            aria-label={`Player ${player.id} name (tap to rename)`}
+            maxLength={32}
             readOnly={readonly}
             className={`font-display tracking-wide text-base bg-transparent outline-none w-full pb-0.5 border-b transition-colors placeholder:text-[hsl(38_30%_88%/0.4)] ${
               readonly
@@ -1790,7 +1847,8 @@ function PlayerPanel({
                   ? 'text-[hsl(200_60%_60%)] border-[hsl(200_60%_50%/0.4)] bg-[hsl(200_60%_50%/0.10)]'
                   : 'text-muted-foreground border-border bg-muted'
               }`}
-              data-testid={`badge-mana-${player.id}`}
+              aria-label={`Mana pool: ${player.mana}`}
+            data-testid={`badge-mana-${player.id}`}
             >
               <Droplet className="w-3.5 h-3.5" />
             </button>
@@ -1803,7 +1861,8 @@ function PlayerPanel({
                   ? 'text-[hsl(50_75%_60%)] border-[hsl(50_75%_50%/0.4)] bg-[hsl(50_75%_50%/0.10)]'
                   : 'text-muted-foreground border-border bg-muted'
               }`}
-              data-testid={`badge-energy-${player.id}`}
+              aria-label={`Energy: ${player.energy}`}
+            data-testid={`badge-energy-${player.id}`}
             >
               <Zap className="w-3.5 h-3.5" />
             </button>
@@ -1816,7 +1875,8 @@ function PlayerPanel({
                   ? 'text-[hsl(270_50%_70%)] border-[hsl(270_40%_55%/0.4)] bg-[hsl(270_40%_55%/0.10)]'
                   : 'text-muted-foreground border-border bg-muted'
               }`}
-              data-testid={`badge-exp-${player.id}`}
+              aria-label={`Experience: ${player.experience}`}
+            data-testid={`badge-exp-${player.id}`}
             >
               <Sparkles className="w-3.5 h-3.5" />
             </button>
@@ -1832,7 +1892,7 @@ function PlayerPanel({
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: lastDelta < 0 ? 14 : -14, opacity: 0, scale: 0.95 }}
             transition={{ type: 'spring', stiffness: 380, damping: 22, mass: 0.7 }}
-            className={`font-display text-7xl md:text-8xl tabular-nums ${lifeCls}`}
+            className={`font-display text-6xl sm:text-7xl md:text-8xl tabular-nums ${lifeCls}`}
             data-testid={`life-${player.id}`}
           >
             {player.life}
@@ -1906,8 +1966,8 @@ function PlayerPanel({
                   opponents.length <= 1
                     ? 'grid-cols-1'
                     : opponents.length === 2
-                    ? 'grid-cols-2'
-                    : 'grid-cols-2 sm:grid-cols-3'
+                    ? 'grid-cols-1 sm:grid-cols-2'
+                    : 'grid-cols-1 sm:grid-cols-3'
                 }`}
               >
                 {opponents.map((opp) => {
@@ -1940,7 +2000,7 @@ function PlayerPanel({
                         <div className="flex items-center gap-1.5 mt-0.5">
                           <button
                             onClick={() => bumpCmdFrom(opp.id, -1)}
-                            className="w-7 h-7 grid place-items-center panel hover-elevate active-elevate-2"
+                            className="w-11 h-11 grid place-items-center panel hover-elevate active-elevate-2"
                             data-testid={`cmd-minus-${player.id}-from-${opp.id}`}
                             aria-label={`Decrease commander damage from ${opp.name}`}
                             disabled={amt <= 0}
@@ -1949,7 +2009,7 @@ function PlayerPanel({
                           </button>
                           <button
                             onClick={() => bumpCmdFrom(opp.id, +1)}
-                            className="w-7 h-7 grid place-items-center panel hover-elevate active-elevate-2"
+                            className="w-11 h-11 grid place-items-center panel hover-elevate active-elevate-2"
                             data-testid={`cmd-plus-${player.id}-from-${opp.id}`}
                             aria-label={`Increase commander damage from ${opp.name}`}
                           >
@@ -1979,7 +2039,7 @@ function PlayerPanel({
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden mt-3"
           >
-            <div className="panel p-3 flex items-center justify-between">
+            <div className="panel p-2 flex flex-wrap gap-2 items-center justify-between">
               <div className="text-sm">
                 <div className="font-display tracking-wide capitalize">{showBadge}</div>
                 {!readonly && (
@@ -1990,7 +2050,8 @@ function PlayerPanel({
                 {!readonly && (
                   <button
                     onClick={() => bump(showBadge as keyof Player, -1)}
-                    className="w-8 h-8 grid place-items-center panel hover-elevate active-elevate-2"
+                    className="w-11 h-11 grid place-items-center panel hover-elevate active-elevate-2"
+                    aria-label={`Decrease ${showBadge} for ${player.name}`}
                     data-testid={`${showBadge}-minus-${player.id}`}
                   >
                     <Minus className="w-3.5 h-3.5" />
@@ -2000,7 +2061,8 @@ function PlayerPanel({
                 {!readonly && (
                   <button
                     onClick={() => bump(showBadge as keyof Player, +1)}
-                    className="w-8 h-8 grid place-items-center panel hover-elevate active-elevate-2"
+                    className="w-11 h-11 grid place-items-center panel hover-elevate active-elevate-2"
+                    aria-label={`Increase ${showBadge} for ${player.name}`}
                     data-testid={`${showBadge}-plus-${player.id}`}
                   >
                     <Plus className="w-3.5 h-3.5" />

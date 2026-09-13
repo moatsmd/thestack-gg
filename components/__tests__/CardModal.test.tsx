@@ -4,7 +4,43 @@ import { CardModal } from '../CardModal'
 import { ScryfallCard } from '@/types/scryfall'
 
 const mockCard: ScryfallCard = {
+  object: 'card',
   id: '1',
+  lang: 'en',
+  released_at: '1993-08-05',
+  uri: 'https://api.scryfall.com/cards/1',
+  scryfall_uri: 'https://scryfall.com/card/lea/1',
+  layout: 'normal',
+  highres_image: true,
+  image_status: 'highres_scan',
+  cmc: 1,
+  color_identity: ['R'],
+  keywords: [],
+  games: ['paper'],
+  reserved: false,
+  foil: false,
+  nonfoil: true,
+  finishes: ['nonfoil'],
+  oversized: false,
+  promo: false,
+  reprint: false,
+  variation: false,
+  set_id: 'lea',
+  set_type: 'core',
+  set_uri: 'https://api.scryfall.com/sets/lea',
+  set_search_uri: 'https://api.scryfall.com/cards/search?q=set:lea',
+  scryfall_set_uri: 'https://scryfall.com/sets/lea',
+  rulings_uri: 'https://api.scryfall.com/cards/1/rulings',
+  prints_search_uri: 'https://api.scryfall.com/cards/search?q=Lightning+Bolt',
+  collector_number: '1',
+  digital: false,
+  border_color: 'black',
+  frame: '1993',
+  full_art: false,
+  textless: false,
+  booster: true,
+  story_spotlight: false,
+  related_uris: {},
   name: 'Lightning Bolt',
   type_line: 'Instant',
   mana_cost: '{R}',
@@ -29,7 +65,7 @@ const mockCard: ScryfallCard = {
     commander: 'legal',
     standard: 'not_legal',
   },
-} as ScryfallCard
+}
 
 describe('CardModal', () => {
   it('renders modal when open', () => {

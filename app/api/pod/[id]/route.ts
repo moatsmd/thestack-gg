@@ -9,8 +9,8 @@ import { buildHeadline } from '@/lib/recap-analysis'
 import type { PodWithRecaps } from '@/types/pod'
 
 /** GET /api/pod/[id]  \u2014 pod doc + linked recap summaries. */
-export async function GET(_: Request, { params }: { params: { id: string } }) {
-  const pod = await getPod(params.id)
+export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
+  const pod = await getPod((await params).id)
   if (!pod) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
@@ -29,7 +29,7 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
 /** PATCH /api/pod/[id]  \u2014 attach a recap. */
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   let body: unknown
   try {
@@ -48,7 +48,7 @@ export async function PATCH(
   if (!recap) {
     return NextResponse.json({ error: 'Recap not found' }, { status: 404 })
   }
-  const updated = await attachRecapToPod(params.id, recap)
+  const updated = await attachRecapToPod((await params).id, recap)
   if (!updated) {
     return NextResponse.json({ error: 'Pod not found' }, { status: 404 })
   }

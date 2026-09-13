@@ -1,128 +1,67 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { getDeviceId } from '@/lib/device-id'
 import { applySyncOp, cloneSnapshot } from '@/lib/sync-apply'
+import {
+  newSyncOpId, readSyncRecovery, summarizeRecovery, writeSyncRecovery,
+  type PendingSyncOp, type SavedSyncSession, type SyncRecovery,
+} from '@/lib/sync-recovery'
 import type {
-  SyncCounter,
-  SyncGameMode,
-  SyncOp,
-  SyncOpEnvelope,
-  SyncPlayer,
-  SyncSeat,
-  SyncSessionMeta,
-  SyncSnapshot,
+  SyncCounter, SyncGameMode, SyncOp, SyncOpEnvelope, SyncPlayer, SyncSeat,
+  SyncSessionMeta, SyncSnapshot,
 } from '@/types/sync'
 
-/**
- * useSync — read + write hook for Pod Sync (PRs #20–#21 of 4).
- *
- * Write path (PR #20): each tracker mutation is emitted as an op, queued
- * serially, and POSTed with an idempotent opId.
- *
- * Read path (PR #21): when a session is active, a 1.5s poller fetches
- * /since?seq=N and applies any new ops to a local copy of the snapshot.
- * Polling pauses when the document is hidden and resumes on visibility.
- * The hook exposes a `remoteOps` callback that fires for ops authored by
- * other devices; the tracker uses this to reconcile its local Player[]
- * state. Ops authored by this device are filtered out of the callback to
- * avoid double-applying our own writes.
- *
- * Future PRs add:
- *   - PR #22: QR modal + join flow + seat picker.
- *
- * The hook is intentionally permissive: when no session is active, emit()
- * is a no-op so wiring it into the tracker has zero behaviour change in
- * single-device mode.
- */
-
 export type SyncStatus = 'idle' | 'creating' | 'active' | 'offline' | 'ended'
-
 export type CreateInput = {
   players: SyncPlayer[]
   gameMode: SyncGameMode
   customLife: number
   enabledCounters: SyncCounter[]
 }
-
-type QueueItem = {
-  opId: string
-  op: SyncOp
-  attempts: number
-}
-
-type CreateResponse = {
-  id: string
-  code: string
-  joinUrl: string
-  session: SyncSessionMeta
-  snapshot: SyncSnapshot
-  seats: SyncSeat[]
-  expiresInMs: number
-}
-
 type JoinResponse = {
   id: string
   session: SyncSessionMeta
   snapshot: SyncSnapshot
   seats: SyncSeat[]
 }
-
-const BACKOFF_MS = [500, 1_000, 2_000, 4_000, 8_000, 16_000, 30_000]
-const backoffFor = (attempts: number) =>
-  BACKOFF_MS[Math.min(attempts, BACKOFF_MS.length - 1)]
-
-/** Callback invoked for each remote op (excludes ops authored by this device). */
+type CreateResponse = JoinResponse & { code: string; joinUrl: string; expiresInMs: number }
 export type RemoteOpHandler = (envelope: SyncOpEnvelope) => void
-
 export type UseSyncResult = {
   status: SyncStatus
   deviceId: string | null
   session: SyncSessionMeta | null
   seats: SyncSeat[]
+  /** Server state plus this device's pending changes. Safe to render directly. */
   snapshot: SyncSnapshot | null
   joinUrl: string | null
-  /** True iff we are the host device. */
   isHost: boolean
-  /** Pending ops not yet acknowledged by server. */
   pendingCount: number
-  /** Latest seq the client has applied. */
   appliedSeq: number
-  /** Create a new sync session from the current tracker state. */
+  savedSession: SavedSyncSession | null
+  error: string | null
+  lastSyncedAt: number | null
   createSession: (input: CreateInput) => Promise<CreateResponse | null>
-  /**
-   * Join an existing sync session by its sharable code. Resolves the code
-   * to a session id, hydrates local snapshot/seats from the server, and
-   * starts polling. The user must then call claimSeat() to take a seat.
-   * Returns the joined session payload, or null if the code didn't resolve.
-   */
   joinSession: (code: string) => Promise<JoinResponse | null>
-  /**
-   * Claim a seat on the active session. Posts to /api/sync/[id]/seat with
-   * the current deviceId. On success, mirrors the new seats array locally.
-   * Returns the new seats on success, or null on failure (already taken,
-   * not found, or no active session).
-   */
+  /** Restore the same session, seat, and pending operations after a reload. */
+  resumeSession: () => Promise<JoinResponse | null>
+  /** Immediately flush pending writes and fetch updates. Safe to call repeatedly. */
+  reconnect: () => Promise<void>
+  /** Wait for queued writes. False on network failure, rejection, or teardown. */
+  flush: () => Promise<boolean>
   claimSeat: (seatId: number) => Promise<SyncSeat[] | null>
-  /**
-   * Host-only: release a previously-claimed seat back to the unclaimed pool.
-   * Used when a returning player's device id was lost (iOS Safari ITP
-   * eviction etc.) and they need their seat freed so they can re-claim it.
-   * Returns the new seats on success, or null on failure / not-host.
-   */
   releaseSeat: (seatId: number) => Promise<SyncSeat[] | null>
-  /** Emit an op. No-op when no session is active. */
   emit: (op: SyncOp) => void
-  /**
-   * Subscribe to remote ops. The handler is called once per envelope authored
-   * by another device, in seq order, after the snapshot has been mutated.
-   * Returns an unsubscribe function. Safe to call repeatedly — only the
-   * latest registered handler fires.
-   */
   subscribeRemoteOps: (handler: RemoteOpHandler | null) => () => void
-  /** Tear down — used on Exit/End. Does not delete server state. */
+  /** Explicit leave: forget recovery. Unmount alone keeps it. */
   teardown: () => void
 }
+
+const POLL_MS = 1_500
+const REQUEST_TIMEOUT_MS = 12_000
+const BACKOFF_MS = [500, 1_000, 2_000, 4_000, 8_000, 16_000, 30_000]
+const STORAGE_ERROR = 'Browser storage is unavailable. Keep this page open to retain your seat and unsent changes.'
+const inviteUrlFor = (code: string) => `${window.location.origin}/tracker?join=${encodeURIComponent(code)}`
 
 export function useSync(): UseSyncResult {
   const [deviceId, setDeviceId] = useState<string | null>(null)
@@ -132,416 +71,454 @@ export function useSync(): UseSyncResult {
   const [snapshot, setSnapshot] = useState<SyncSnapshot | null>(null)
   const [joinUrl, setJoinUrl] = useState<string | null>(null)
   const [pendingCount, setPendingCount] = useState(0)
+  const [appliedSeq, setAppliedSeq] = useState(0)
+  const [savedSession, setSavedSession] = useState<SavedSyncSession | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null)
 
-  // Resolve deviceId on mount (SSR-safe).
-  useEffect(() => {
-    const id = getDeviceId()
-    if (id) setDeviceId(id)
+  const mounted = useRef(true)
+  const generation = useRef(0)
+  const device = useRef<string | null>(null)
+  const meta = useRef<SyncSessionMeta | null>(null)
+  const seatState = useRef<SyncSeat[]>([])
+  const seatRevision = useRef(0)
+  const canonical = useRef<SyncSnapshot | null>(null)
+  const cursor = useRef(0)
+  const queue = useRef<PendingSyncOp[]>([])
+  const recovery = useRef<SyncRecovery | null>(null)
+  const currentStatus = useRef<SyncStatus>('idle')
+  const visibleSession = useRef(false)
+  const writeFailed = useRef(false)
+  const batchRejected = useRef(false)
+  const remoteHandler = useRef<RemoteOpHandler | null>(null)
+  const controllers = useRef(new Set<AbortController>())
+  const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const polling = useRef(false)
+  const pollJob = useRef<Promise<void> | null>(null)
+  const drainJob = useRef<Promise<void> | null>(null)
+
+  const setSyncStatus = useCallback((next: SyncStatus) => {
+    currentStatus.current = next
+    setStatus(next)
+  }, [])
+  const isCurrent = useCallback((epoch: number) => mounted.current && generation.current === epoch, [])
+
+  const cancelWork = useCallback(() => {
+    generation.current += 1
+    polling.current = false
+    if (pollTimer.current) clearTimeout(pollTimer.current)
+    if (retryTimer.current) clearTimeout(retryTimer.current)
+    pollTimer.current = retryTimer.current = null
+    controllers.current.forEach((controller) => controller.abort())
+    controllers.current.clear()
+    pollJob.current = drainJob.current = null
   }, [])
 
-  // Refs survive re-renders; queue/draining state lives outside React state
-  // to avoid render-loop churn on every op.
-  const queueRef = useRef<QueueItem[]>([])
-  const drainingRef = useRef(false)
-  const opCounterRef = useRef(0)
-  const sessionIdRef = useRef<string | null>(null)
-  const statusRef = useRef<SyncStatus>('idle')
-  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  // Read-path refs (PR #21).
-  const appliedSeqRef = useRef(0)
-  const [appliedSeq, setAppliedSeq] = useState(0)
-  const remoteHandlerRef = useRef<RemoteOpHandler | null>(null)
-  const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const pollingRef = useRef(false)
-  const deviceIdRef = useRef<string | null>(null)
-
-  useEffect(() => {
-    sessionIdRef.current = session?.id ?? null
-  }, [session?.id])
-
-  useEffect(() => {
-    statusRef.current = status
-  }, [status])
-
-  useEffect(() => {
-    deviceIdRef.current = deviceId
-  }, [deviceId])
-
-  useEffect(() => {
-    return () => {
-      if (retryTimerRef.current) clearTimeout(retryTimerRef.current)
-      if (pollTimerRef.current) clearTimeout(pollTimerRef.current)
+  const request = useCallback(async (url: string, init: RequestInit = {}) => {
+    const controller = new AbortController()
+    controllers.current.add(controller)
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+    try {
+      return await fetch(url, {
+        ...init, cache: 'no-store', signal: controller.signal,
+        headers: { ...init.headers, 'X-Sync-Device-Id': device.current ?? '' },
+      })
+    } finally {
+      clearTimeout(timeout)
+      controllers.current.delete(controller)
     }
   }, [])
 
-  const drain = useCallback(async () => {
-    if (drainingRef.current) return
-    if (!sessionIdRef.current) return
-    if (!deviceId) return
-    drainingRef.current = true
-    try {
-      while (queueRef.current.length > 0) {
-        const head = queueRef.current[0]
+  const persist = useCallback(() => {
+    if (!meta.current || !device.current) return
+    const value: SyncRecovery | null = currentStatus.current === 'ended' ? null : {
+      version: 1, deviceId: device.current, session: meta.current,
+      seats: seatState.current, queue: queue.current, savedAt: Date.now(),
+    }
+    recovery.current = value
+    setSavedSession(summarizeRecovery(value))
+    if (!writeSyncRecovery(value)) setError(STORAGE_ERROR)
+  }, [])
+
+  const publish = useCallback(() => {
+    if (!visibleSession.current || !canonical.current) return
+    const next = cloneSnapshot(canonical.current)
+    for (const item of queue.current) applySyncOp(next, item.op)
+    setSnapshot(next)
+    setPendingCount(queue.current.length)
+    setAppliedSeq(cursor.current)
+    setSeats(seatState.current)
+    persist()
+  }, [persist])
+
+  const endSession = useCallback((message?: string) => {
+    if (queue.current.length || message) batchRejected.current = true
+    queue.current = []
+    writeFailed.current = false
+    polling.current = false
+    if (retryTimer.current) clearTimeout(retryTimer.current)
+    if (pollTimer.current) clearTimeout(pollTimer.current)
+    retryTimer.current = pollTimer.current = null
+    setSyncStatus('ended')
+    if (message) setError(message)
+    publish()
+    persist()
+  }, [persist, publish, setSyncStatus])
+
+  const drain = useCallback((): Promise<void> => {
+    if (drainJob.current) return drainJob.current
+    if (!meta.current || !device.current || currentStatus.current === 'ended') return Promise.resolve()
+    const epoch = generation.current
+    const id = meta.current.id
+    const stillActive = () => isCurrent(epoch) && currentStatus.current !== 'ended'
+    const job = (async () => {
+      while (isCurrent(epoch) && queue.current.length && currentStatus.current !== 'ended') {
+        const head = queue.current[0]
         try {
-          const res = await fetch(`/api/sync/${sessionIdRef.current}/op`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              deviceId,
-              opId: head.opId,
-              op: head.op,
-            }),
+          const response = await request(`/api/sync/${id}/op`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ deviceId: device.current, opId: head.opId, op: head.op }),
           })
-          if (res.status === 409) {
-            // game_ended — stop queue, mark ended, drop pending writes.
-            queueRef.current = []
-            setPendingCount(0)
-            setStatus('ended')
+          if (!stillActive()) return
+          if (response.status === 409 || response.status === 404) {
+            endSession(response.status === 404 ? 'This table has expired.' : 'The host has ended this game.')
             return
           }
-          if (res.status === 403 || res.status === 400) {
-            // Authority/validation rejection. Drop this op (we can't fix
-            // it by retrying) and continue.
-            queueRef.current.shift()
-            setPendingCount(queueRef.current.length)
+          if ([400, 403, 413, 422].includes(response.status)) {
+            batchRejected.current = true
+            queue.current = queue.current.filter((item) => item.opId !== head.opId)
+            setError(response.status === 403
+              ? 'That change was not saved: this device no longer controls that seat.'
+              : 'That change was not saved. The table has been restored to its latest state.')
+            writeFailed.current = false
+            publish()
+            persist()
             continue
           }
-          if (!res.ok) {
-            throw new Error(`HTTP ${res.status}`)
+          if (!response.ok) throw new Error(`HTTP ${response.status}`)
+          const data = await response.json() as { snapshot?: SyncSnapshot; envelope?: SyncOpEnvelope }
+          if (!stillActive()) return
+          const stillPending = queue.current.some((item) => item.opId === head.opId)
+          queue.current = queue.current.filter((item) => item.opId !== head.opId)
+          if (data.snapshot && (!canonical.current || data.snapshot.seq >= canonical.current.seq)) {
+            canonical.current = cloneSnapshot(data.snapshot)
+          } else if (!data.snapshot && stillPending && canonical.current) {
+            // Compatibility with older servers; current servers send a snapshot.
+            applySyncOp(canonical.current, head.op)
+            canonical.current.seq = Math.max(canonical.current.seq, data.envelope?.seq ?? canonical.current.seq)
           }
-          // Success — drop the op, keep status active.
-          queueRef.current.shift()
-          setPendingCount(queueRef.current.length)
-          if (statusRef.current === 'offline') setStatus('active')
+          writeFailed.current = false
+          setLastSyncedAt(Date.now())
+          if (currentStatus.current !== 'creating') setSyncStatus('active')
+          setError((previous) => previous?.startsWith('Connection') ? null : previous)
+          publish()
+          persist()
+          if (canonical.current?.endedAt) { endSession(); return }
         } catch {
-          // Network error or 5xx — schedule a retry.
+          if (!stillActive()) return
           head.attempts += 1
-          setStatus('offline')
-          drainingRef.current = false
-          if (retryTimerRef.current) clearTimeout(retryTimerRef.current)
-          retryTimerRef.current = setTimeout(() => {
+          writeFailed.current = true
+          if (currentStatus.current !== 'creating') setSyncStatus('offline')
+          setError('Connection lost. Your changes are queued and will retry automatically.')
+          persist()
+          if (retryTimer.current) clearTimeout(retryTimer.current)
+          retryTimer.current = setTimeout(() => {
+            retryTimer.current = null
             void drain()
-          }, backoffFor(head.attempts))
+          }, BACKOFF_MS[Math.min(head.attempts - 1, BACKOFF_MS.length - 1)])
           return
         }
       }
-    } finally {
-      drainingRef.current = false
-    }
-  }, [deviceId])
+      if (queue.current.length === 0) writeFailed.current = false
+    })()
+    drainJob.current = job
+    void job.finally(() => { if (drainJob.current === job) drainJob.current = null })
+    return job
+  }, [endSession, isCurrent, persist, publish, request, setSyncStatus])
 
-  const emit = useCallback(
-    (op: SyncOp) => {
-      if (!sessionIdRef.current) return
-      if (!deviceId) return
-      const opId = `${deviceId}:${opCounterRef.current++}`
-      queueRef.current.push({ opId, op, attempts: 0 })
-      setPendingCount(queueRef.current.length)
-      void drain()
-    },
-    [deviceId, drain],
-  )
-
-  const createSession = useCallback(
-    async (input: CreateInput): Promise<CreateResponse | null> => {
-      if (!deviceId) return null
-      if (sessionIdRef.current) {
-        // Already active — don't double-create. Return current state.
-        return null
-      }
-      setStatus('creating')
+  const pollOnce = useCallback((): Promise<void> => {
+    if (pollJob.current) return pollJob.current
+    if (!meta.current || currentStatus.current === 'ended' || document.hidden) return Promise.resolve()
+    const id = meta.current.id
+    const epoch = generation.current
+    const seatsAtRequest = seatRevision.current
+    const job = (async () => {
       try {
-        const res = await fetch('/api/sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            hostDeviceId: deviceId,
-            players: input.players,
-            gameMode: input.gameMode,
-            customLife: input.customLife,
-            enabledCounters: input.enabledCounters,
-          }),
-        })
-        if (!res.ok) {
-          setStatus('idle')
-          return null
+        const response = await request(`/api/sync/${id}/since?seq=${cursor.current}`)
+        if (!isCurrent(epoch)) return
+        if (response.status === 404) { endSession('This table has expired.'); return }
+        if (!response.ok) throw new Error(`HTTP ${response.status}`)
+        const data = await response.json() as {
+          ops: SyncOpEnvelope[]; seq: number; seats?: SyncSeat[]; snapshot?: SyncSnapshot
         }
-        const data: CreateResponse = await res.json()
-        setSession(data.session)
-        setSeats(data.seats)
-        setSnapshot(data.snapshot)
-        setJoinUrl(data.joinUrl)
-        sessionIdRef.current = data.id
-        appliedSeqRef.current = data.snapshot.seq
-        setAppliedSeq(data.snapshot.seq)
-        setStatus('active')
-        startPolling()
-        return data
+        if (!isCurrent(epoch) || currentStatus.current === 'ended') return
+        const newOps = (data.ops ?? []).filter((env) => env.seq > cursor.current).sort((a, b) => a.seq - b.seq)
+        if (data.snapshot && (!canonical.current || data.snapshot.seq >= canonical.current.seq)) {
+          canonical.current = cloneSnapshot(data.snapshot)
+        }
+        for (const envelope of newOps) {
+          queue.current = queue.current.filter((item) => item.opId !== envelope.opId)
+          if (canonical.current && envelope.seq > canonical.current.seq) {
+            applySyncOp(canonical.current, envelope.op, seatState.current)
+            canonical.current.seq = envelope.seq
+          }
+          if (envelope.deviceId !== device.current) remoteHandler.current?.(envelope)
+        }
+        cursor.current = Math.max(cursor.current, data.seq)
+        if (data.seats && seatRevision.current === seatsAtRequest) seatState.current = data.seats
+        else seatState.current = seatState.current.map((seat) => ({
+          ...seat, name: canonical.current?.players.find((player) => player.id === seat.seatId)?.name ?? seat.name,
+        }))
+        if (!queue.current.length) writeFailed.current = false
+        setLastSyncedAt(Date.now())
+        if (!writeFailed.current) {
+          setSyncStatus('active')
+          setError((previous) => previous?.startsWith('Connection') ? null : previous)
+        }
+        if (canonical.current?.endedAt || newOps.some((env) => env.op.type === 'end_game')) endSession()
+        else publish()
       } catch {
-        setStatus('idle')
-        return null
+        if (!isCurrent(epoch)) return
+        setSyncStatus('offline')
+        setError('Connection lost. Reconnecting to your table automatically.')
       }
-    },
-    [deviceId, /* startPolling captured via closure; see read-path block below */],
-  )
-
-  // ── Read path: poll /since?seq=N at 1.5s and apply remote ops ──────
-  const POLL_INTERVAL_MS = 1_500
-
-  const pollOnce = useCallback(async () => {
-    const id = sessionIdRef.current
-    if (!id) return
-    if (statusRef.current === 'ended') return
-    // Skip polling while a tab is hidden — saves battery and avoids the
-    // backlog effect when laptops sleep.
-    if (typeof document !== 'undefined' && document.hidden) return
-
-    try {
-      const res = await fetch(`/api/sync/${id}/since?seq=${appliedSeqRef.current}`)
-      if (!res.ok) {
-        if (res.status === 404) {
-          // Session expired or was never there — give up cleanly.
-          setStatus('ended')
-          return
-        }
-        // 5xx — keep status, just wait for next tick.
-        if (statusRef.current === 'active') setStatus('offline')
-        return
-      }
-      const data = (await res.json()) as {
-        ops: SyncOpEnvelope[]
-        seq: number
-      }
-      // Recover from offline if a successful read came through.
-      if (statusRef.current === 'offline') setStatus('active')
-      if (!data.ops || data.ops.length === 0) {
-        // Even with no new ops, mirror the head seq so a later POST
-        // doesn't ask for a stale floor.
-        appliedSeqRef.current = Math.max(appliedSeqRef.current, data.seq)
-        setAppliedSeq(appliedSeqRef.current)
-        return
-      }
-      // Apply ops in seq order. We compute the new seq + side effects
-      // synchronously here (not inside a functional setSnapshot callback)
-      // so the ref is correctly advanced before any subsequent reads.
-      const newOps = data.ops.filter((env) => env.seq > appliedSeqRef.current)
-      for (const env of newOps) {
-        appliedSeqRef.current = env.seq
-        if (
-          env.deviceId !== deviceIdRef.current &&
-          remoteHandlerRef.current
-        ) {
-          remoteHandlerRef.current(env)
-        }
-        if (env.op.type === 'end_game') {
-          setStatus('ended')
-        }
-      }
-      // Then mutate snapshot (which may be null if we haven't seeded yet).
-      setSnapshot((prev) => {
-        if (!prev) return prev
-        let next = cloneSnapshot(prev)
-        for (const env of newOps) {
-          next = applySyncOp(next, env.op, undefined)
-        }
-        next.seq = appliedSeqRef.current
-        return next
-      })
-      // Mirror seats too — rename ops update seat name through a separate
-      // path; we sync from snapshot.players to keep them consistent.
-      setSeats((prevSeats) => {
-        if (prevSeats.length === 0) return prevSeats
-        let changed = false
-        const out = prevSeats.map((s) => {
-          // Find the matching player on the latest applied snapshot. Reading
-          // the closed-over snapshot would be stale, so we look up by seatId.
-          const renames = data.ops.filter(
-            (o) => o.op.type === 'rename' && o.op.seatId === s.seatId,
-          )
-          if (renames.length === 0) return s
-          const latest = renames[renames.length - 1]
-          if (latest.op.type !== 'rename') return s
-          const trimmed = latest.op.name.trim().slice(0, 32)
-          if (!trimmed || trimmed === s.name) return s
-          changed = true
-          return { ...s, name: trimmed }
-        })
-        return changed ? out : prevSeats
-      })
-      setAppliedSeq(appliedSeqRef.current)
-    } catch {
-      if (statusRef.current === 'active') setStatus('offline')
-    }
-  }, [])
+    })()
+    pollJob.current = job
+    void job.finally(() => { if (pollJob.current === job) pollJob.current = null })
+    return job
+  }, [endSession, isCurrent, publish, request, setSyncStatus])
 
   const startPolling = useCallback(() => {
-    if (pollingRef.current) return
-    pollingRef.current = true
-    const tick = () => {
-      if (!pollingRef.current) return
-      void pollOnce().finally(() => {
-        if (!pollingRef.current) return
-        pollTimerRef.current = setTimeout(tick, POLL_INTERVAL_MS)
-      })
+    if (polling.current) return
+    polling.current = true
+    const epoch = generation.current
+    const tick = async () => {
+      if (!isCurrent(epoch) || !polling.current) return
+      await pollOnce()
+      if (isCurrent(epoch) && polling.current) pollTimer.current = setTimeout(() => { void tick() }, POLL_MS)
     }
-    tick()
-  }, [pollOnce])
+    void tick()
+  }, [isCurrent, pollOnce])
 
-  const stopPolling = useCallback(() => {
-    pollingRef.current = false
-    if (pollTimerRef.current) {
-      clearTimeout(pollTimerRef.current)
-      pollTimerRef.current = null
+  const reconnect = useCallback(async () => {
+    if (!meta.current || currentStatus.current === 'ended' || currentStatus.current === 'creating') return
+    if (retryTimer.current) clearTimeout(retryTimer.current)
+    retryTimer.current = null
+    await drain()
+    await pollOnce()
+  }, [drain, pollOnce])
+
+  const flush = useCallback(async () => {
+    const epoch = generation.current
+    if (retryTimer.current) clearTimeout(retryTimer.current)
+    retryTimer.current = null
+    await drain()
+    return isCurrent(epoch) && queue.current.length === 0 && !writeFailed.current && !batchRejected.current
+  }, [drain, isCurrent])
+
+  useEffect(() => {
+    mounted.current = true
+    const id = getDeviceId()
+    device.current = id
+    setDeviceId(id)
+    recovery.current = id ? readSyncRecovery(id) : null
+    setSavedSession(summarizeRecovery(recovery.current))
+    return () => { mounted.current = false; cancelWork() }
+  }, [cancelWork])
+
+  useEffect(() => {
+    const wake = () => { if (!document.hidden) void reconnect() }
+    const offline = () => {
+      if (meta.current && currentStatus.current !== 'ended' && currentStatus.current !== 'creating') {
+        setSyncStatus('offline')
+        setError('Connection lost. Your changes stay queued until you reconnect.')
+      }
     }
+    document.addEventListener('visibilitychange', wake)
+    window.addEventListener('online', wake)
+    window.addEventListener('focus', wake)
+    window.addEventListener('pageshow', wake)
+    window.addEventListener('offline', offline)
+    return () => {
+      document.removeEventListener('visibilitychange', wake)
+      window.removeEventListener('online', wake)
+      window.removeEventListener('focus', wake)
+      window.removeEventListener('pageshow', wake)
+      window.removeEventListener('offline', offline)
+    }
+  }, [reconnect, setSyncStatus])
+
+  const activate = useCallback((data: JoinResponse) => {
+    meta.current = data.session
+    seatState.current = data.seats
+    canonical.current = cloneSnapshot(data.snapshot)
+    cursor.current = data.snapshot.seq
+    visibleSession.current = true
+    setSession(data.session)
+    setJoinUrl(inviteUrlFor(data.session.code))
+    setLastSyncedAt(Date.now())
+    setSyncStatus(data.snapshot.endedAt || data.session.endedAt ? 'ended' : 'active')
+    publish()
+    if (currentStatus.current === 'ended') endSession()
+    else startPolling()
+  }, [endSession, publish, setSyncStatus, startPolling])
+
+  const createSession = useCallback(async (input: CreateInput): Promise<CreateResponse | null> => {
+    if (!device.current || meta.current || currentStatus.current === 'creating') return null
+    const epoch = generation.current
+    setSyncStatus('creating')
+    setError(null)
+    try {
+      const response = await request('/api/sync', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hostDeviceId: device.current, ...input }),
+      })
+      if (!isCurrent(epoch)) return null
+      if (!response.ok) throw new Error('create failed')
+      const data = await response.json() as CreateResponse
+      if (!isCurrent(epoch)) return null
+      // The server may see a wildcard bind address or proxy origin. Invite
+      // from the origin that this browser actually used to reach the table.
+      data.joinUrl = inviteUrlFor(data.session.code)
+      queue.current = []
+      activate(data)
+      return data
+    } catch {
+      if (isCurrent(epoch)) { setSyncStatus('idle'); setError('Could not open a shared table. Check your connection and try again.') }
+      return null
+    }
+  }, [activate, isCurrent, request, setSyncStatus])
+
+  const joinSession = useCallback(async (code: string): Promise<JoinResponse | null> => {
+    if (!device.current || meta.current || currentStatus.current === 'creating') return null
+    const normalized = code.replace(/[^A-Za-z0-9]/g, '').toUpperCase()
+    if (!normalized) return null
+    const epoch = generation.current
+    setSyncStatus('creating')
+    setError(null)
+    const saved = recovery.current?.session.code.replace(/[^A-Za-z0-9]/g, '').toUpperCase() === normalized
+      ? recovery.current : null
+    try {
+      const response = await request(`/api/sync/by-code/${normalized}`)
+      if (!isCurrent(epoch)) return null
+      if (!response.ok) {
+        if (response.status === 404 && saved) {
+          recovery.current = null
+          setSavedSession(null)
+          writeSyncRecovery(null)
+        }
+        setSyncStatus('idle')
+        setError(response.status === 404 ? 'That table was not found or has expired.' : 'Could not reach that table. Try again when connected.')
+        return null
+      }
+      let data = await response.json() as JoinResponse
+      if (!isCurrent(epoch)) return null
+      queue.current = saved?.session.id === data.id ? saved.queue.map((item) => ({ ...item })) : []
+      // Flush saved operations with their original IDs before exposing the
+      // server snapshot: a lost acknowledgement must not double a life change.
+      meta.current = data.session
+      seatState.current = data.seats
+      canonical.current = cloneSnapshot(data.snapshot)
+      if (queue.current.length && !data.snapshot.endedAt && !data.session.endedAt) {
+        await drain()
+        if (!isCurrent(epoch)) return null
+        if (queue.current.length) {
+          cancelWork()
+          meta.current = null
+          canonical.current = null
+          setSyncStatus('idle')
+          return null
+        }
+        data = { ...data, snapshot: cloneSnapshot(canonical.current!) }
+      }
+      activate(data)
+      return data
+    } catch {
+      if (isCurrent(epoch)) {
+        meta.current = null
+        canonical.current = null
+        setSyncStatus('idle')
+        setError('Could not reconnect to your table. Your saved seat and pending changes are still here.')
+      }
+      return null
+    }
+  }, [activate, cancelWork, drain, isCurrent, request, setSyncStatus])
+
+  const resumeSession = useCallback(() => recovery.current
+    ? joinSession(recovery.current.session.code) : Promise.resolve(null), [joinSession])
+
+  const emit = useCallback((op: SyncOp) => {
+    if (!meta.current || !device.current || !visibleSession.current || currentStatus.current === 'ended') return
+    // Retrying the finish button must retry the original receipt, not append
+    // a second end operation that the first acknowledgement will invalidate.
+    if (op.type === 'end_game' && queue.current.some(item => item.op.type === 'end_game')) {
+      void drain()
+      return
+    }
+    if (!queue.current.length) batchRejected.current = false
+    queue.current.push({ opId: newSyncOpId(), op, attempts: 0 })
+    publish() // Persist before network I/O, including before the browser can sleep.
+    void drain()
+  }, [drain, publish])
+
+  const changeSeat = useCallback(async (seatId: number, method: 'POST' | 'DELETE'): Promise<SyncSeat[] | null> => {
+    if (!meta.current || !device.current || currentStatus.current === 'ended') return null
+    const epoch = generation.current
+    try {
+      const response = await request(`/api/sync/${meta.current.id}/seat`, {
+        method, headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deviceId: device.current, seatId }),
+      })
+      if (!isCurrent(epoch)) return null
+      if (!response.ok) { setError('Could not update that seat. It may already be claimed.'); return null }
+      const data = await response.json() as { seats: SyncSeat[] }
+      if (!isCurrent(epoch)) return null
+      seatState.current = data.seats
+      seatRevision.current += 1
+      publish()
+      return data.seats
+    } catch {
+      if (isCurrent(epoch)) setError('Could not update that seat. Check your connection and try again.')
+      return null
+    }
+  }, [isCurrent, publish, request])
+  const claimSeat = useCallback((seatId: number) => changeSeat(seatId, 'POST'), [changeSeat])
+  const releaseSeat = useCallback((seatId: number) => changeSeat(seatId, 'DELETE'), [changeSeat])
+  const subscribeRemoteOps = useCallback((handler: RemoteOpHandler | null) => {
+    remoteHandler.current = handler
+    return () => { if (remoteHandler.current === handler) remoteHandler.current = null }
   }, [])
 
-  // Visibility-aware: pause when tab hides, resume on visible.
-  useEffect(() => {
-    if (typeof document === 'undefined') return
-    const onVis = () => {
-      if (document.hidden) return
-      if (sessionIdRef.current && statusRef.current !== 'ended') {
-        // Force one immediate fetch to catch up after a hide period.
-        void pollOnce()
-      }
-    }
-    document.addEventListener('visibilitychange', onVis)
-    return () => document.removeEventListener('visibilitychange', onVis)
-  }, [pollOnce])
-
-  const subscribeRemoteOps = useCallback(
-    (handler: RemoteOpHandler | null) => {
-      remoteHandlerRef.current = handler
-      return () => {
-        if (remoteHandlerRef.current === handler) {
-          remoteHandlerRef.current = null
-        }
-      }
-    },
-    [],
-  )
-
   const teardown = useCallback(() => {
-    queueRef.current = []
-    setPendingCount(0)
+    cancelWork()
+    meta.current = null
+    canonical.current = null
+    seatState.current = []
+    queue.current = []
+    recovery.current = null
+    visibleSession.current = false
+    writeFailed.current = false
+    batchRejected.current = false
+    cursor.current = 0
+    writeSyncRecovery(null)
     setSession(null)
     setSeats([])
     setSnapshot(null)
     setJoinUrl(null)
-    sessionIdRef.current = null
-    setStatus('idle')
-    appliedSeqRef.current = 0
+    setPendingCount(0)
     setAppliedSeq(0)
-    stopPolling()
-    if (retryTimerRef.current) {
-      clearTimeout(retryTimerRef.current)
-      retryTimerRef.current = null
-    }
-  }, [stopPolling])
-
-  const isHost = useMemo(
-    () => !!session && !!deviceId && session.hostDeviceId === deviceId,
-    [session, deviceId],
-  )
-
-  const joinSession = useCallback(
-    async (code: string): Promise<JoinResponse | null> => {
-      if (!deviceId) return null
-      if (sessionIdRef.current) {
-        // Already in a session — caller should teardown first.
-        return null
-      }
-      const normalized = code.replace(/[^A-Za-z0-9]/g, '').toUpperCase()
-      if (!normalized) return null
-      setStatus('creating')
-      try {
-        const res = await fetch(`/api/sync/by-code/${normalized}`)
-        if (!res.ok) {
-          setStatus('idle')
-          return null
-        }
-        const data = (await res.json()) as JoinResponse
-        setSession(data.session)
-        setSeats(data.seats)
-        setSnapshot(data.snapshot)
-        setJoinUrl(
-          typeof window !== 'undefined'
-            ? `${window.location.origin}/tracker?join=${data.session.code}`
-            : null,
-        )
-        sessionIdRef.current = data.id
-        appliedSeqRef.current = data.snapshot.seq
-        setAppliedSeq(data.snapshot.seq)
-        setStatus('active')
-        startPolling()
-        return data
-      } catch {
-        setStatus('idle')
-        return null
-      }
-    },
-    [deviceId, startPolling],
-  )
-
-  const claimSeat = useCallback(
-    async (seatId: number): Promise<SyncSeat[] | null> => {
-      const id = sessionIdRef.current
-      if (!id || !deviceId) return null
-      try {
-        const res = await fetch(`/api/sync/${id}/seat`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ deviceId, seatId }),
-        })
-        if (!res.ok) return null
-        const data = (await res.json()) as { seats: SyncSeat[] }
-        setSeats(data.seats)
-        return data.seats
-      } catch {
-        return null
-      }
-    },
-    [deviceId],
-  )
-
-  const releaseSeat = useCallback(
-    async (seatId: number): Promise<SyncSeat[] | null> => {
-      const id = sessionIdRef.current
-      if (!id || !deviceId) return null
-      try {
-        const res = await fetch(`/api/sync/${id}/seat`, {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ deviceId, seatId }),
-        })
-        if (!res.ok) return null
-        const data = (await res.json()) as { seats: SyncSeat[] }
-        setSeats(data.seats)
-        return data.seats
-      } catch {
-        return null
-      }
-    },
-    [deviceId],
-  )
+    setSavedSession(null)
+    setError(null)
+    setLastSyncedAt(null)
+    setSyncStatus('idle')
+  }, [cancelWork, setSyncStatus])
 
   return {
-    status,
-    deviceId,
-    session,
-    seats,
-    snapshot,
-    joinUrl,
-    isHost,
-    pendingCount,
-    appliedSeq,
-    createSession,
-    joinSession,
-    claimSeat,
-    releaseSeat,
-    emit,
-    subscribeRemoteOps,
-    teardown,
+    status, deviceId, session, seats, snapshot, joinUrl,
+    isHost: !!session && session.hostDeviceId === deviceId,
+    pendingCount, appliedSeq, savedSession, error, lastSyncedAt,
+    createSession, joinSession, resumeSession, reconnect, flush, claimSeat, releaseSeat,
+    emit, subscribeRemoteOps, teardown,
   }
 }

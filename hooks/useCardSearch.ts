@@ -14,7 +14,7 @@ export interface UseCardSearchResult {
   setQuery: (query: string) => void
   selectCard: (card: ScryfallCard) => void
   clearSelection: () => void
-  search: () => Promise<void>
+  search: (query?: string) => Promise<void>
   loadMore: () => Promise<void>
 }
 
@@ -28,11 +28,20 @@ export function useCardSearch(): UseCardSearchResult {
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(false)
-  const [nextPage, setNextPage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
   const loadingRef = useRef(false)
+  const queryRef = useRef('')
+  const generationRef = useRef(0)
+  const autocompleteGenerationRef = useRef(0)
+  const autocompleteEnabledRef = useRef(true)
+  const nextPageRef = useRef<string | null>(null)
+
+  useEffect(() => () => {
+    generationRef.current += 1
+    autocompleteGenerationRef.current += 1
+  }, [])
 
   // Debounced autocomplete
   useEffect(() => {
@@ -42,17 +51,21 @@ export function useCardSearch(): UseCardSearchResult {
     }
 
     // Don't autocomplete for empty queries
-    if (!query.trim()) {
+    if (!query.trim() || !autocompleteEnabledRef.current) {
       setSuggestions([])
       return
     }
 
     // Set new timer
+    const generation = autocompleteGenerationRef.current
+    let cancelled = false
     debounceTimerRef.current = setTimeout(async () => {
       try {
         const results = await autocomplete(query)
+        if (cancelled || generation !== autocompleteGenerationRef.current) return
         setSuggestions(results)
       } catch (err) {
+        if (cancelled || generation !== autocompleteGenerationRef.current) return
         // Silently fail autocomplete - it's not critical
         console.error('Autocomplete error:', err)
         setSuggestions([])
@@ -61,6 +74,7 @@ export function useCardSearch(): UseCardSearchResult {
 
     // Cleanup
     return () => {
+      cancelled = true
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current)
       }
@@ -68,71 +82,113 @@ export function useCardSearch(): UseCardSearchResult {
   }, [query])
 
   const setQuery = useCallback((newQuery: string) => {
+    if (queryRef.current === newQuery) return
+    queryRef.current = newQuery
+    generationRef.current += 1
+    autocompleteGenerationRef.current += 1
+    autocompleteEnabledRef.current = true
+    nextPageRef.current = null
+    loadingRef.current = false
     setQueryState(newQuery)
+    setSuggestions([])
+    setResults([])
+    setSelectedCard(null)
+    setHasMore(false)
+    setIsLoading(false)
+    setIsLoadingMore(false)
     setError(null)
   }, [])
 
-  const search = useCallback(async () => {
-    if (!query.trim()) {
+  const search = useCallback(async (requestedQuery?: string) => {
+    if (requestedQuery !== undefined) setQuery(requestedQuery)
+    const searchQuery = queryRef.current.trim()
+    if (!searchQuery) {
       return
     }
 
+    const generation = ++generationRef.current
+    autocompleteGenerationRef.current += 1
+    autocompleteEnabledRef.current = false
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current)
+    nextPageRef.current = null
+    loadingRef.current = false
+    setSuggestions([])
+    setResults([])
+    setSelectedCard(null)
+    setHasMore(false)
     setIsLoading(true)
     setIsLoadingMore(false)
     setError(null)
 
     try {
-      const response = await searchCards(query)
-      setResults(response.data)
+      const response = await searchCards(searchQuery)
+      if (generation !== generationRef.current) return
+      // Scryfall's word search can put "Solemn Offering" before "Sol Ring".
+      // Prefer the exact requested name without changing advanced query syntax.
+      const normalizedQuery = searchQuery.toLowerCase().replace(/\s+/g, ' ')
+      const exactMatch = response.data.find((card) => card.name.toLowerCase().replace(/\s+/g, ' ') === normalizedQuery)
+      const cards = exactMatch ? [exactMatch, ...response.data.filter((card) => card !== exactMatch)] : response.data
+      setResults(cards)
       setHasMore(response.has_more)
-      setNextPage(response.next_page || null)
+      nextPageRef.current = response.next_page || null
 
       // Automatically select the first result
-      if (response.data.length > 0) {
-        setSelectedCard(response.data[0])
+      if (cards.length > 0) {
+        setSelectedCard(cards[0])
         setSuggestions([])
       } else {
         setSelectedCard(null)
         setError('No cards found matching your search')
       }
     } catch (err) {
+      if (generation !== generationRef.current) return
       const message = err instanceof Error ? err.message : 'Search failed'
       setError(message)
       setResults([])
       setSelectedCard(null)
       setHasMore(false)
-      setNextPage(null)
+      nextPageRef.current = null
     } finally {
-      setIsLoading(false)
+      if (generation === generationRef.current) setIsLoading(false)
     }
-  }, [query])
+  }, [setQuery])
 
   const loadMore = useCallback(async () => {
     // Don't load if there's no more data, no next page URL, or already loading
-    if (!hasMore || !nextPage || loadingRef.current) {
+    const nextPage = nextPageRef.current
+    if (!nextPage || loadingRef.current) {
       return
     }
 
     loadingRef.current = true
+    const generation = generationRef.current
     setIsLoadingMore(true)
 
     try {
       const response = await fetchSearchPage(nextPage)
+      if (generation !== generationRef.current) return
       // Append new results to existing results
       setResults(prev => [...prev, ...response.data])
       setHasMore(response.has_more)
-      setNextPage(response.next_page || null)
+      nextPageRef.current = response.next_page || null
     } catch (err) {
+      if (generation !== generationRef.current) return
       const message = err instanceof Error ? err.message : 'Failed to load more results'
       setError(message)
       setHasMore(false)
+      nextPageRef.current = null
     } finally {
-      setIsLoadingMore(false)
-      loadingRef.current = false
+      if (generation === generationRef.current) {
+        setIsLoadingMore(false)
+        loadingRef.current = false
+      }
     }
-  }, [hasMore, nextPage])
+  }, [])
 
   const selectCard = useCallback((card: ScryfallCard) => {
+    autocompleteGenerationRef.current += 1
+    autocompleteEnabledRef.current = false
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current)
     setSelectedCard(card)
     setSuggestions([])
   }, [])

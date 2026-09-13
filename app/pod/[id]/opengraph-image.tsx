@@ -8,8 +8,8 @@ export const contentType = 'image/png'
 export const size = { width: 1200, height: 630 }
 export const alt = 'TheStack.gg pod profile'
 
-export default async function OG({ params }: { params: { id: string } }) {
-  const pod = await getPod(params.id)
+export default async function OG({ params }: { params: Promise<{ id: string }> }) {
+  const pod = await getPod((await params).id)
 
   if (!pod) {
     return new ImageResponse(

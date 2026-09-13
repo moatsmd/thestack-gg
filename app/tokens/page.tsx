@@ -37,6 +37,7 @@ export default function TokensPage() {
       <div className="panel p-4 space-y-4">
         <input
           type="text"
+          aria-label="Search tokens"
           placeholder="Search tokens, abilities, or cards that make them…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -52,7 +53,7 @@ export default function TokensPage() {
                 key={color}
                 type="button"
                 onClick={() => toggleColor(color)}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-display tracking-wider border transition ${active ? 'bg-primary text-primary-foreground border-primary' : 'panel hover-elevate text-[hsl(38_15%_60%)]'}`}
+                className={`min-h-11 flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-display tracking-wider border transition ${active ? 'bg-primary text-primary-foreground border-primary' : 'panel hover-elevate text-[hsl(38_15%_60%)]'}`}
                 data-testid={`color-filter-${color}`}
                 aria-pressed={active}
               >
@@ -71,7 +72,7 @@ export default function TokensPage() {
                 key={type}
                 type="button"
                 onClick={() => toggleType(type)}
-                className={`px-3 py-1 rounded-full text-xs font-display tracking-wider border transition ${active ? 'bg-primary text-primary-foreground border-primary' : 'panel hover-elevate text-[hsl(38_15%_60%)]'}`}
+                className={`min-h-11 px-3 py-1 rounded-full text-xs font-display tracking-wider border transition ${active ? 'bg-primary text-primary-foreground border-primary' : 'panel hover-elevate text-[hsl(38_15%_60%)]'}`}
                 data-testid={`type-filter-${type}`}
                 aria-pressed={active}
               >
@@ -82,7 +83,7 @@ export default function TokensPage() {
         </div>
       </div>
 
-      <p className="text-sm text-[hsl(38_15%_60%)] mt-4 mb-4">
+      <p role="status" className="text-sm text-[hsl(38_15%_60%)] mt-4 mb-4">
         Showing {filteredTokens.length} token{filteredTokens.length !== 1 ? 's' : ''}
       </p>
 

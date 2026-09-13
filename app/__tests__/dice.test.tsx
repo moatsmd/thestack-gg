@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { DiceRoller } from '@/components/DiceRoller'
 import { DarkModeProvider } from '@/contexts/DarkModeContext'
@@ -6,6 +6,7 @@ import { DarkModeProvider } from '@/contexts/DarkModeContext'
 const renderDice = () => render(<DarkModeProvider><DiceRoller /></DarkModeProvider>)
 
 describe('DiceRoller', () => {
+  beforeEach(() => { localStorage.clear() })
   it('renders all 7 die buttons', () => {
     renderDice()
     expect(screen.getByTestId('die-d4')).toBeInTheDocument()
@@ -80,5 +81,42 @@ describe('DiceRoller', () => {
     }
     const history = screen.getAllByTestId('history-entry')
     expect(history.length).toBeLessThanOrEqual(10)
+  })
+
+  it('still rolls on an HTTP origin without randomUUID support', async () => {
+    const user = userEvent.setup()
+    const original = crypto.randomUUID
+    Object.defineProperty(crypto, 'randomUUID', { configurable: true, value: undefined })
+    try {
+      renderDice()
+      await user.click(screen.getByTestId('die-d6'))
+      expect(screen.getByTestId('history-entry')).toBeInTheDocument()
+    } finally { Object.defineProperty(crypto, 'randomUUID', { configurable: true, value: original }) }
+  })
+
+  it('settles immediately for reduced motion users', async () => {
+    const original = window.matchMedia
+    Object.defineProperty(window, 'matchMedia', { configurable: true, value: () => ({ matches: true, addEventListener() {}, removeEventListener() {} }) })
+    try {
+      const user = userEvent.setup()
+      renderDice()
+      await user.click(screen.getByTestId('die-d20'))
+      expect(screen.getByTestId('roll-result')).not.toHaveTextContent('…')
+      expect(screen.getByRole('status')).toHaveTextContent('Rolled d20:')
+    } finally { Object.defineProperty(window, 'matchMedia', { configurable: true, value: original }) }
+  })
+
+  it('keeps the outcome out of history until the animated throw settles', async () => {
+    const original = window.matchMedia
+    Object.defineProperty(window, 'matchMedia', { configurable: true, value: () => ({ matches: false, addEventListener() {}, removeEventListener() {} }) })
+    jest.useFakeTimers()
+    try {
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime })
+      renderDice()
+      await user.click(screen.getByTestId('die-d20'))
+      expect(screen.queryByTestId('history-entry')).not.toBeInTheDocument()
+      act(() => jest.advanceTimersByTime(2100))
+      expect(screen.getByTestId('history-entry')).toBeInTheDocument()
+    } finally { jest.useRealTimers(); Object.defineProperty(window, 'matchMedia', { configurable: true, value: original }) }
   })
 })

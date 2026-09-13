@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useDarkMode } from '@/contexts/DarkModeContext'
@@ -115,13 +115,48 @@ function NavIcon({ icon, className }: { icon: string; className?: string }) {
 
 export function BottomNavBar() {
   const [isMoreOpen, setIsMoreOpen] = useState(false)
+  const moreButtonRef = useRef<HTMLButtonElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
   const { isDarkMode, toggleDarkMode } = useDarkMode()
-  const { isSupported: isWakeLockSupported, isActive: isWakeLockActive, toggle: toggleWakeLock } = useWakeLock()
+  const { isSupported: isWakeLockSupported, isActive: isWakeLockActive, isEnabled: isWakeLockEnabled, toggle: toggleWakeLock } = useWakeLock()
+
+  useEffect(() => {
+    if (!isMoreOpen) return
+    const menu = menuRef.current
+    const trigger = moreButtonRef.current
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    menu?.querySelector<HTMLElement>('button, a[href]')?.focus()
+
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        setIsMoreOpen(false)
+      }
+      if (event.key !== 'Tab' || !menu) return
+      const focusable = Array.from(menu.querySelectorAll<HTMLElement>('a[href], button:not([disabled])'))
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (event.shiftKey && (document.activeElement === first || !menu.contains(document.activeElement))) {
+        event.preventDefault()
+        last?.focus()
+      } else if (!event.shiftKey && (document.activeElement === last || !menu.contains(document.activeElement))) {
+        event.preventDefault()
+        first?.focus()
+      }
+    }
+    document.addEventListener('keydown', handleKey)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      document.removeEventListener('keydown', handleKey)
+      trigger?.focus()
+    }
+  }, [isMoreOpen])
 
   const isActive = (href: string) => {
     if (href === '/') return pathname === '/'
-    return pathname.startsWith(href)
+    return pathname === href || pathname.startsWith(href + '/')
   }
 
   const isMoreActive = moreItems.some((item) => isActive(item.href))
@@ -137,14 +172,24 @@ export function BottomNavBar() {
             data-testid="more-menu-backdrop"
           />
           <div
-            className="fixed bottom-16 left-0 right-0 mx-4 mb-2 bg-[var(--surface-1)] border border-[var(--ink)]/10 rounded-2xl shadow-2xl z-50 overflow-hidden"
+            ref={menuRef}
+            id="more-tools-menu"
+            role="dialog"
+            aria-modal="true"
+            aria-label="More tools and settings"
+            className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] left-0 right-0 mx-auto w-[calc(100%-2rem)] max-w-lg mb-2 max-h-[calc(100dvh-6rem-env(safe-area-inset-bottom))] bg-[var(--surface-1)] border border-[var(--ink)]/10 rounded-2xl shadow-2xl z-50 overflow-y-auto"
             data-testid="more-menu"
           >
+            <div className="flex items-center justify-between gap-4 px-6 pt-3 pb-1">
+              <h2 className="font-display text-sm tracking-widest text-[var(--muted)]">Tools &amp; settings</h2>
+              <button type="button" onClick={() => setIsMoreOpen(false)} aria-label="Close menu" className="w-11 h-11 text-xl text-[var(--ink)] hover:bg-[var(--surface-2)]">×</button>
+            </div>
             <div className="p-2">
               {moreItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
+                  aria-current={isActive(item.href) ? 'page' : undefined}
                   onClick={() => setIsMoreOpen(false)}
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl transition ${
                     isActive(item.href)
@@ -161,6 +206,7 @@ export function BottomNavBar() {
               <button
                 type="button"
                 onClick={toggleDarkMode}
+                aria-pressed={isDarkMode}
                 className="flex items-center justify-between w-full px-4 py-3 rounded-xl text-[var(--ink)] hover:bg-[var(--surface-2)] transition"
                 data-testid="dark-mode-toggle"
               >
@@ -186,21 +232,25 @@ export function BottomNavBar() {
                 <button
                   type="button"
                   onClick={toggleWakeLock}
+                  aria-pressed={isWakeLockEnabled}
                   className="flex items-center justify-between w-full px-4 py-3 rounded-xl text-[var(--ink)] hover:bg-[var(--surface-2)] transition"
                   data-testid="wake-lock-toggle"
                 >
                   <span className="flex items-center gap-3">
                     <NavIcon icon="screen" />
-                    <span className="font-medium">Keep Screen On</span>
+                    <span className="text-left">
+                      <span className="block font-medium">Keep Screen On</span>
+                      {isWakeLockEnabled && !isWakeLockActive && <span className="block text-xs text-[var(--muted)]">Waiting for screen lock permission</span>}
+                    </span>
                   </span>
                   <div
                     className={`relative w-10 h-5 rounded-full transition ${
-                      isWakeLockActive ? 'bg-[var(--accent-1)]' : 'bg-[var(--muted)]'
+                      isWakeLockEnabled ? 'bg-[var(--accent-1)]' : 'bg-[var(--muted)]'
                     }`}
                   >
                     <div
                       className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
-                        isWakeLockActive ? 'translate-x-5' : 'translate-x-0'
+                        isWakeLockEnabled ? 'translate-x-5' : 'translate-x-0'
                       }`}
                     />
                   </div>
@@ -213,6 +263,7 @@ export function BottomNavBar() {
 
       {/* Bottom Navigation Bar */}
       <nav
+        aria-label="Tools"
         className="fixed bottom-0 left-0 right-0 z-30 bg-[var(--surface-1)] border-t border-[var(--ink)]/10 safe-area-pb bottom-nav"
         data-testid="bottom-nav"
       >
@@ -221,6 +272,7 @@ export function BottomNavBar() {
             <Link
               key={item.href}
               href={item.href}
+              aria-current={isActive(item.href) ? 'page' : undefined}
               className={`flex flex-col items-center justify-center flex-1 h-full py-1 transition ${
                 isActive(item.href)
                   ? 'text-[var(--accent-1)]'
@@ -234,6 +286,7 @@ export function BottomNavBar() {
 
           {/* More Button */}
           <button
+            ref={moreButtonRef}
             type="button"
             onClick={() => setIsMoreOpen(!isMoreOpen)}
             className={`flex flex-col items-center justify-center flex-1 h-full py-1 transition ${
@@ -243,6 +296,8 @@ export function BottomNavBar() {
             }`}
             aria-label="More options"
             aria-expanded={isMoreOpen}
+            aria-controls={isMoreOpen ? 'more-tools-menu' : undefined}
+            aria-haspopup="dialog"
             data-testid="more-button"
           >
             <NavIcon icon="more" className={isMoreOpen ? 'scale-110' : ''} />

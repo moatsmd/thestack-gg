@@ -48,7 +48,8 @@ export default function GlossaryPage() {
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setType('all')}
-            className={`px-3 py-1 rounded-full text-xs font-display tracking-wider border transition ${selectedType === 'all' ? 'bg-primary text-primary-foreground border-primary' : 'panel hover-elevate text-[hsl(38_15%_60%)]'}`}
+            aria-pressed={selectedType === 'all'}
+            className={`min-h-11 px-3 py-1 rounded-full text-xs font-display tracking-wider border transition ${selectedType === 'all' ? 'bg-primary text-primary-foreground border-primary' : 'panel hover-elevate text-[hsl(38_15%_60%)]'}`}
             data-testid="filter-all"
           >
             All
@@ -57,7 +58,8 @@ export default function GlossaryPage() {
             <button
               key={t}
               onClick={() => setType(t)}
-              className={`px-3 py-1 rounded-full text-xs font-display tracking-wider border transition ${selectedType === t ? 'bg-primary text-primary-foreground border-primary' : 'panel hover-elevate text-[hsl(38_15%_60%)]'}`}
+              aria-pressed={selectedType === t}
+              className={`min-h-11 px-3 py-1 rounded-full text-xs font-display tracking-wider border transition ${selectedType === t ? 'bg-primary text-primary-foreground border-primary' : 'panel hover-elevate text-[hsl(38_15%_60%)]'}`}
               data-testid={`filter-${t}`}
             >
               {t === 'ability' ? 'Abilities' : t === 'action' ? 'Actions' : 'Mechanics'}
@@ -72,7 +74,7 @@ export default function GlossaryPage() {
               <button
                 key={tier}
                 onClick={() => toggleTier(tier)}
-                className={`px-3 py-1 rounded-full text-xs font-display tracking-wider border transition ${active ? 'bg-primary text-primary-foreground border-primary' : 'panel hover-elevate text-[hsl(38_15%_60%)]'}`}
+                className={`min-h-11 px-3 py-1 rounded-full text-xs font-display tracking-wider border transition ${active ? 'bg-primary text-primary-foreground border-primary' : 'panel hover-elevate text-[hsl(38_15%_60%)]'}`}
                 data-testid={testId}
                 aria-pressed={active}
               >
@@ -83,7 +85,7 @@ export default function GlossaryPage() {
         </div>
       </div>
 
-      <p className="text-sm text-[hsl(38_15%_60%)] mt-4 mb-4">
+      <p role="status" className="text-sm text-[hsl(38_15%_60%)] mt-4 mb-4">
         Showing {filteredKeywords.length} keyword{filteredKeywords.length !== 1 ? 's' : ''}
       </p>
 

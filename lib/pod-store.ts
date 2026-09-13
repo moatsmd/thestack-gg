@@ -19,8 +19,12 @@ import type { Recap } from '@/types/replay'
 const POD_TTL_MS = 90 * 24 * 60 * 60 * 1000
 const POD_TTL_SEC = Math.floor(POD_TTL_MS / 1000)
 
-const podStore = new Map<string, Pod>()
-const viewerStore = new Map<string, string[]>()
+const podGlobal = globalThis as typeof globalThis & {
+  __theStackPods?: { pods: Map<string, Pod>; viewers: Map<string, string[]> }
+}
+const podMemory = podGlobal.__theStackPods ??= { pods: new Map(), viewers: new Map() }
+const podStore = podMemory.pods
+const viewerStore = podMemory.viewers
 
 const cleanupExpired = () => {
   const now = Date.now()

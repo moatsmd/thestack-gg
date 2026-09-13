@@ -9,9 +9,10 @@
  *     not yet claimed by another device, and is the only one allowed to
  *     emit `reset` and `end_game` ops.
  *
- * Transport: 1.5s polling. Each op is appended to a Redis list; clients
- * pull by `sinceSeq`. The server also keeps a coalesced snapshot for
- * fresh-join bootstrapping.
+ * Transport: 1.5s polling over a bounded Redis JSON operation log. Clients
+ * pull by `sinceSeq`; the server provides a coalesced snapshot for joining
+ * or recovering a cursor outside retained history. Separate receipts keep
+ * retries idempotent after older operations leave the polling log.
  *
  * TTL: 24h.
  */
@@ -95,7 +96,7 @@ export type SyncOpEnvelope = {
 /** Seats binding: who owns which player id. */
 export type SyncSeat = {
   seatId: number
-  /** The deviceId that has claimed this seat; null = unclaimed (host owns). */
+  /** Own deviceId or an opaque public owner marker; null = unclaimed (host owns). */
   ownerDeviceId: string | null
   /** Display name as last-known; mirrors player.name for the lobby. */
   name: string
@@ -105,6 +106,7 @@ export type SyncSessionMeta = {
   id: string
   /** Short human-readable code for verbal sharing (e.g. "K7M-X9P"). */
   code: string
+  /** Own deviceId for the host, opaque public marker for other readers. */
   hostDeviceId: string
   createdAt: number
   /** Latest applied seq (mirrors snapshot.seq, but stored separately for fast HEAD). */
@@ -117,4 +119,13 @@ export type SyncJoinResponse = {
   session: SyncSessionMeta
   snapshot: SyncSnapshot
   seats: SyncSeat[]
+}
+
+export type SyncPollResponse = {
+  ops: SyncOpEnvelope[]
+  seq: number
+  /** Seat changes do not advance the game-op cursor. */
+  seats: SyncSeat[]
+  /** Present when the requested cursor cannot be replayed from retained ops. */
+  snapshot?: SyncSnapshot
 }

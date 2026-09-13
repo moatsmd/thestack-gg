@@ -12,6 +12,7 @@ describe('KeywordTooltip', () => {
   const mockKeyword: KeywordDefinition = {
     keyword: 'Flying',
     type: 'ability',
+    tier: 'evergreen',
     definition: 'This creature can only be blocked by creatures with flying or reach.',
     reminder: "This creature can't be blocked except by creatures with flying and/or reach.",
   }
@@ -181,6 +182,7 @@ describe('KeywordTooltip', () => {
     const keywordWithoutReminder: KeywordDefinition = {
       keyword: 'Test',
       type: 'action',
+      tier: 'evergreen',
       definition: 'Test definition',
     }
 

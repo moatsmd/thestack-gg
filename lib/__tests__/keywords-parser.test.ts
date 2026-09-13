@@ -10,26 +10,31 @@ describe('parseOracleTextForKeywords', () => {
     {
       keyword: 'Flying',
       type: 'ability',
+      tier: 'evergreen',
       definition: 'This creature can only be blocked by creatures with flying or reach.',
     },
     {
       keyword: 'First Strike',
       type: 'ability',
+      tier: 'evergreen',
       definition: 'This creature deals combat damage before creatures without first strike.',
     },
     {
       keyword: 'Trample',
       type: 'ability',
+      tier: 'evergreen',
       definition: 'This creature can deal excess combat damage to the player.',
     },
     {
       keyword: 'Flash',
       type: 'ability',
+      tier: 'evergreen',
       definition: 'You may cast this spell any time you could cast an instant.',
     },
     {
       keyword: 'Flashback',
       type: 'mechanic',
+      tier: 'returning',
       definition: 'You may cast this card from your graveyard for its flashback cost.',
     },
   ]
