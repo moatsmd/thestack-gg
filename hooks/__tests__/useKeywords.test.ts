@@ -2,12 +2,14 @@ import { renderHook, act } from '@testing-library/react'
 import { useKeywords } from '../useKeywords'
 import { KEYWORDS } from '@/lib/keywords-data'
 
-// The hook defaults to ['evergreen', 'returning'] tier filter
-const defaultKeywords = KEYWORDS.filter((kw) =>
-  ['evergreen', 'returning'].includes(kw.tier)
-)
+const defaultKeywords = KEYWORDS
 
 describe('useKeywords', () => {
+  it('finds retired mechanics without making the reader discover a hidden default filter', () => {
+    const { result } = renderHook(() => useKeywords())
+    act(() => result.current.setQuery('banding'))
+    expect(result.current.filteredKeywords.some(kw => kw.keyword === 'Banding')).toBe(true)
+  })
   it('returns all keywords by default', () => {
     const { result } = renderHook(() => useKeywords())
 

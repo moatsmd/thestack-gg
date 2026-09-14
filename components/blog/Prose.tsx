@@ -10,7 +10,7 @@ import type { ReactNode } from 'react'
 
 export function Lede({ children }: { children: ReactNode }) {
   return (
-    <p className="drop-cap font-prose text-lg md:text-xl leading-snug text-[hsl(38_30%_88%)]/90">
+    <p className="drop-cap font-prose text-lg md:text-xl leading-snug text-foreground/90">
       {children}
     </p>
   )
@@ -18,7 +18,7 @@ export function Lede({ children }: { children: ReactNode }) {
 
 export function P({ children }: { children: ReactNode }) {
   return (
-    <p className="font-prose text-base md:text-lg leading-relaxed text-[hsl(38_30%_88%)]/85 mt-4">
+    <p className="font-prose text-base md:text-lg leading-relaxed text-foreground/85 mt-4">
       {children}
     </p>
   )
@@ -34,7 +34,7 @@ export function H2({ children }: { children: ReactNode }) {
 
 export function H3({ children }: { children: ReactNode }) {
   return (
-    <h3 className="font-display text-[hsl(38_30%_88%)] text-xl md:text-2xl tracking-wide mt-7 mb-2">
+    <h3 className="font-display text-foreground text-xl md:text-2xl tracking-wide mt-7 mb-2">
       {children}
     </h3>
   )
@@ -42,7 +42,7 @@ export function H3({ children }: { children: ReactNode }) {
 
 export function UL({ children }: { children: ReactNode }) {
   return (
-    <ul className="font-prose text-base md:text-lg leading-relaxed text-[hsl(38_30%_88%)]/85 mt-3 space-y-1.5 pl-5 list-disc marker:text-primary/70">
+    <ul className="font-prose text-base md:text-lg leading-relaxed text-foreground/85 mt-3 space-y-1.5 pl-5 list-disc marker:text-primary/70">
       {children}
     </ul>
   )
@@ -50,7 +50,7 @@ export function UL({ children }: { children: ReactNode }) {
 
 export function OL({ children }: { children: ReactNode }) {
   return (
-    <ol className="font-prose text-base md:text-lg leading-relaxed text-[hsl(38_30%_88%)]/85 mt-3 space-y-1.5 pl-5 list-decimal marker:text-primary/70 marker:font-display">
+    <ol className="font-prose text-base md:text-lg leading-relaxed text-foreground/85 mt-3 space-y-1.5 pl-5 list-decimal marker:text-primary/70 marker:font-display">
       {children}
     </ol>
   )
@@ -63,11 +63,11 @@ export function LI({ children }: { children: ReactNode }) {
 export function Quote({ children, attribution }: { children: ReactNode; attribution?: string }) {
   return (
     <blockquote className="my-6 panel p-5 md:p-6 border-l-2 border-primary/40">
-      <p className="font-prose italic text-base md:text-lg leading-relaxed text-[hsl(38_30%_88%)]/90">
+      <p className="font-prose italic text-base md:text-lg leading-relaxed text-foreground/90">
         {children}
       </p>
       {attribution && (
-        <footer className="font-display tracking-[0.14em] uppercase text-xs text-[hsl(38_15%_60%)] mt-3">
+        <footer className="font-display tracking-[0.14em] uppercase text-xs text-muted-foreground mt-3">
           — {attribution}
         </footer>
       )}
@@ -99,7 +99,7 @@ export function ToolCTA({
         <h4 className="font-display text-gold-gradient text-lg md:text-xl tracking-wide mt-1">
           {title}
         </h4>
-        <p className="font-prose text-sm md:text-base text-[hsl(38_30%_88%)]/80 mt-1">
+        <p className="font-prose text-sm md:text-base text-foreground/80 mt-1">
           {body}
         </p>
       </div>

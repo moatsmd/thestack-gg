@@ -38,7 +38,7 @@ const post: BlogPost = {
         for tired hands. A history log so a misclick does not become a fight.
         Player count from one to six without a paywall. Commander damage
         tracked per opponent, not just a single number. Persistent state across
-        accidental refreshes. Works offline because the venue's WiFi is bad and
+        accidental refreshes. Works offline because the venue&apos;s WiFi is bad and
         always will be.
       </P>
 
@@ -60,7 +60,7 @@ const post: BlogPost = {
 
       <H3>The official companion app</H3>
       <P>
-        Wizards' own MTG Companion does the job in tournaments, but for casual
+        Wizards&apos; own MTG Companion does the job in tournaments, but for casual
         Commander it is overbuilt. It assumes you want a sanctioned match
         record. Joining a pod requires every player to install the app and pair.
         Friends who play once a month are not going to install an app for a
@@ -69,7 +69,7 @@ const post: BlogPost = {
 
       <H3>The big mobile counters</H3>
       <P>
-        TappedOut's old companion, MTG Familiar, Lotus, MTG Life — these are
+        TappedOut&apos;s old companion, MTG Familiar, Lotus, MTG Life — these are
         venerable Android and iOS apps with strong feature sets. The catch is
         always the same: one phone, one tracker. Pass-the-phone in a four-player
         pod is fine for a turn or two and tedious by turn six. Most also bury
@@ -98,16 +98,13 @@ const post: BlogPost = {
         Every player tile shows the highest single-commander damage total as a
         chip on the front of the card. Tap it to expand a per-opponent grid
         on the tile itself — one cell per other player at the table, with the
-        opponent's name and inline +/- buttons. Any single cell hitting 21
+        opponent&apos;s name and inline +/- buttons. Any single cell hitting 21
         turns that cell red and rings the whole tile in red so the loss is
         visible across the table. Fourteen lights up the cell as a yellow
         warning shot.
       </P>
 
-      <Quote attribution="Pod feedback, March 2026">
-        The first time the chip turned red on someone else's board and we
-        actually noticed before they swung again, the tracker earned its keep.
-      </Quote>
+
 
       <H3>Other small lessons</H3>
       <UL>
@@ -132,16 +129,16 @@ const post: BlogPost = {
 
       <H2>The honest pitch for TheStack.gg</H2>
       <P>
-        TheStack.gg's <A href="/tracker">life tracker</A> is free, browser-based,
+        TheStack.gg&apos;s <A href="/tracker">life tracker</A> is free, browser-based,
         no account, and built for the Commander table specifically. The
         highest commander-damage source is on the front of every player tile,
         and the per-opponent grid is one tap away, inline on the tile. Poison, monarch,
         initiative, and the rest sit alongside it. State persists through
-        refreshes. It is a PWA so it works offline after the first load. It is
+        refreshes. An already-loaded local game can keep counts offline; joining and syncing a shared table require a connection. It is
         one of several tools on the same site —{' '}
         <A href="/stack">a stack explainer</A>,{' '}
         <A href="/glossary">a keyword glossary</A>, and a{' '}
-        <A href="/tokens">token generator</A> — but the tracker is the piece
+        <A href="/tokens">token reference and tray</A> — but the tracker is the piece
         most pods will use first.
       </P>
       <P>

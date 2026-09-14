@@ -153,7 +153,7 @@ export function DiceRoller() {
               <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">{announcement}</div>
               {mode === 'dice' ? (
                 <div aria-hidden="true" className="flex items-center justify-between gap-4">
-                  <div><p className="text-[10px] font-display uppercase tracking-[0.2em] text-amber-100/50">{results.length > 1 ? 'Combined total' : results.length ? `d${results[0].die} result` : 'The table is yours'}</p><p className="font-prose text-lg text-amber-50/70 mt-1">{isRolling ? 'Let the dice settle…' : results.length > 1 ? results.map(({ die, result }) => `d${die}: ${result}`).join(' · ') : results[0]?.die === 100 ? 'Percentile dice · 00 + 0 means 100' : 'Tap a die below to cast again.'}</p></div>
+                  <div><p className="text-[10px] font-display uppercase tracking-[0.2em] text-amber-100/50">{results.length > 1 ? 'Combined total' : results.length ? `d${results[0].die} result` : 'The table is yours'}</p><p className="font-prose text-lg text-amber-50/70 mt-1">{isRolling ? 'Let the dice settle…' : results.length > 1 ? results.map(({ die, result }) => `d${die}: ${result}`).join(' · ') : results[0]?.die === 100 ? 'Percentile dice · 00 + 0 means 100' : 'Choose a die to cast again.'}</p></div>
                   <span data-testid="roll-result" className="font-display text-5xl md:text-6xl tabular-nums text-amber-100">{isRolling ? '…' : results.length ? total : '—'}</span>
                 </div>
               ) : (

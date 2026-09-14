@@ -19,7 +19,7 @@ export interface UseKeywordsResult {
 export function useKeywords(): UseKeywordsResult {
   const [query, setQuery] = useState('')
   const [selectedType, setSelectedType] = useState<KeywordDefinition['type'] | 'all'>('all')
-  const [selectedTiers, setSelectedTiers] = useState<KeywordTier[]>(['evergreen', 'returning'])
+  const [selectedTiers, setSelectedTiers] = useState<KeywordTier[]>(['evergreen', 'returning', 'retired'])
 
   const filteredKeywords = useMemo(() => {
     let results = query.trim() ? searchKeywords(query) : KEYWORDS

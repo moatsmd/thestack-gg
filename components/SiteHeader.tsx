@@ -32,7 +32,7 @@ export function SiteHeader() {
     <header
       className={`sticky top-0 z-40 backdrop-blur-md transition-colors ${
         scrolled
-          ? 'bg-[hsl(220_15%_7%/0.85)] border-b border-[hsl(40_30%_20%/0.6)]'
+          ? 'bg-background/90 border-b border-border'
           : 'bg-transparent'
       }`}
     >
@@ -44,11 +44,11 @@ export function SiteHeader() {
           data-testid="link-home"
         >
           <Logo size={26} />
-          <span className="font-display text-base tracking-wide hidden sm:inline text-[hsl(38_30%_88%)]">
+          <span className="font-display text-base tracking-wide hidden sm:inline text-foreground">
             TheStack<span className="text-[hsl(42_75%_55%/0.7)]">.gg</span>
           </span>
         </Link>
-        <nav aria-label="Main navigation" className="hidden lg:flex items-center gap-1 text-sm text-[hsl(38_15%_60%)]">
+        <nav aria-label="Main navigation" className="hidden lg:flex items-center gap-1 text-sm text-muted-foreground">
           {desktopNav.map((item) => {
             const active =
               item.href === '/'
@@ -59,7 +59,7 @@ export function SiteHeader() {
                 key={item.href}
                 href={item.href}
                 aria-current={active ? 'page' : undefined}
-                className={`px-3 py-1.5 rounded-md transition-colors hover:text-[hsl(38_30%_88%)] hover:bg-[hsl(220_15%_13%/0.7)] ${
+                className={`px-3 py-1.5 rounded-md transition-colors hover:text-foreground hover:bg-[hsl(220_15%_13%/0.7)] ${
                   active ? 'text-[hsl(42_75%_65%)]' : ''
                 }`}
                 data-testid={`nav-${item.label.toLowerCase()}`}

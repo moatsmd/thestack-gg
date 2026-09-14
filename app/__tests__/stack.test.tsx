@@ -10,6 +10,15 @@ const renderStack = () =>
   )
 
 describe('StackPage (animated demo)', () => {
+  it('starts paused and leaves the last result visible until replay', () => {
+    renderStack()
+    expect(screen.getByRole('button', { name: 'Play' })).toBeInTheDocument()
+    for (let i = 0; i < 6; i++) fireEvent.click(screen.getByRole('button', { name: 'Next step' }))
+    expect(screen.getByRole('button', { name: 'Next step' })).toBeDisabled()
+    expect(screen.getByRole('status')).toHaveTextContent('17')
+    fireEvent.click(screen.getByRole('button', { name: 'Previous step' }))
+    expect(screen.getByTestId('stack-top')).toHaveTextContent('Lightning Bolt')
+  })
   it('places the newest spell on top and empties after final resolution', () => {
     renderStack()
     fireEvent.click(screen.getByRole('button', { name: 'Next step' }))

@@ -16,6 +16,14 @@ export function parseComprehensiveRules(text: string): ComprehensiveRuleSection[
     if (!trimmed) {
       continue
     }
+    // The document repeats headings in its contents and ends with a glossary
+    // containing quoted rule numbers. Neither belongs to the last rule body.
+    if (current && /^(Glossary|Credits)$/i.test(trimmed)) break
+    if (/^\d{1,3}\.\s+/.test(trimmed)) {
+      if (current) sections.push(current)
+      current = null
+      continue
+    }
 
     const match = trimmed.match(RULE_LINE_REGEX)
     if (match) {
@@ -48,7 +56,7 @@ export function searchComprehensiveRules(
   sections: ComprehensiveRuleSection[],
   query: string
 ): ComprehensiveRuleSection[] {
-  const trimmed = query.trim().toLowerCase()
+  const trimmed = query.trim().toLowerCase().replace(/^(?:rule\s+)?(\d{3}(?:\.\d+[a-z]?)?)\.?$/, '$1')
   if (!trimmed) {
     return []
   }
@@ -56,14 +64,17 @@ export function searchComprehensiveRules(
   const scored = sections
     .map((section) => {
       const idMatch = section.id.toLowerCase() === trimmed
+      const childMatch = /^\d{3}(?:\.\d+)?$/.test(trimmed) && (
+        trimmed.includes('.') ? new RegExp(`^${trimmed.replace('.', '\\.')}[a-z]$`).test(section.id) : section.id.startsWith(trimmed + '.')
+      )
       const titleMatch = section.title.toLowerCase().includes(trimmed)
       const bodyMatch = section.body.toLowerCase().includes(trimmed)
 
-      if (!idMatch && !titleMatch && !bodyMatch) {
+      if (!idMatch && !childMatch && !titleMatch && !bodyMatch) {
         return null
       }
 
-      const score = (idMatch ? 3 : 0) + (titleMatch ? 2 : 0) + (bodyMatch ? 1 : 0)
+      const score = (idMatch ? 100 : 0) + (childMatch ? 50 : 0) + (titleMatch ? 2 : 0) + (bodyMatch ? 1 : 0)
       return { section, score }
     })
     .filter((entry): entry is { section: ComprehensiveRuleSection; score: number } => entry !== null)

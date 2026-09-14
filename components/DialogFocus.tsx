@@ -2,6 +2,21 @@
 
 import { useEffect, useRef } from 'react'
 
+// Nested dialogs can unmount in either order during navigation.
+let scrollLocks = 0
+let originalOverflow = ''
+function lockScroll() {
+  if (scrollLocks === 0) {
+    originalOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+  }
+  scrollLocks += 1
+  return () => {
+    scrollLocks -= 1
+    if (scrollLocks === 0) document.body.style.overflow = originalOverflow
+  }
+}
+
 /** Focus containment and return for the surrounding modal dialog. */
 export function DialogFocus({ onClose }: { onClose: () => void }) {
   const marker = useRef<HTMLSpanElement>(null)
@@ -16,9 +31,12 @@ export function DialogFocus({ onClose }: { onClose: () => void }) {
     )).filter(element => !element.hidden)
     const first = focusable()[0]
     first?.focus()
-    const overflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
+    const unlockScroll = lockScroll()
     const keydown = (event: KeyboardEvent) => {
+      // A zoomed image can sit inside a card-detail dialog. Only the topmost
+      // modal handles Escape/Tab; the underlying dialog keeps its focus state.
+      const dialogs = document.querySelectorAll('[role="dialog"][aria-modal="true"]')
+      if (dialogs.length && dialogs[dialogs.length - 1] !== dialog) return
       if (event.key === 'Escape') { event.preventDefault(); close.current(); return }
       if (event.key !== 'Tab') return
       const items = focusable()
@@ -33,7 +51,7 @@ export function DialogFocus({ onClose }: { onClose: () => void }) {
     document.addEventListener('keydown', keydown)
     return () => {
       document.removeEventListener('keydown', keydown)
-      document.body.style.overflow = overflow
+      unlockScroll()
       if (previous?.isConnected) previous.focus()
     }
   }, [])

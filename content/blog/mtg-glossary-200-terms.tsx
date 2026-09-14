@@ -4,7 +4,7 @@ import { ManaSymbol } from '@/components/ManaSymbol'
 
 const post: BlogPost = {
   slug: 'mtg-glossary-200-terms',
-  title: 'Magic the Gathering Glossary: 150+ Terms Players Use',
+  title: 'Magic the Gathering Glossary: Keywords and Table Terms',
   description:
     'A practical Magic: The Gathering glossary covering the keywords, abilities, and slang players actually use \u2014 with reminder text and rules references.',
   date: '2026-05-08',
@@ -33,7 +33,7 @@ const post: BlogPost = {
       </P>
       <UL>
         <LI><Em>Deathtouch</Em> — any damage from this creature is enough to destroy.</LI>
-        <LI><Em>Defender</Em> — can't attack.</LI>
+        <LI><Em>Defender</Em> — can&apos;t attack.</LI>
         <LI><Em>Double strike</Em> — deals first-strike and regular damage.</LI>
         <LI><Em>Enchant</Em> — what an Aura attaches to.</LI>
         <LI><Em>Equip</Em> — attach an Equipment to a creature you control.</LI>
@@ -41,14 +41,14 @@ const post: BlogPost = {
         <LI><Em>Flash</Em> — cast at instant speed.</LI>
         <LI><Em>Flying</Em> — can only be blocked by flying or reach.</LI>
         <LI><Em>Haste</Em> — ignores summoning sickness.</LI>
-        <LI><Em>Hexproof</Em> — can't be the target of opponents' spells or abilities.</LI>
-        <LI><Em>Indestructible</Em> — damage and &ldquo;destroy&rdquo; effects don't kill it.</LI>
+        <LI><Em>Hexproof</Em> — can&apos;t be the target of opponents&apos; spells or abilities.</LI>
+        <LI><Em>Indestructible</Em> — damage and &ldquo;destroy&rdquo; effects don&apos;t kill it.</LI>
         <LI><Em>Lifelink</Em> — damage dealt also gains the controller life.</LI>
-        <LI><Em>Menace</Em> — can't be blocked by fewer than two creatures.</LI>
-        <LI><Em>Protection</Em> — can't be blocked by, targeted by, dealt damage by, or attached by the named quality.</LI>
+        <LI><Em>Menace</Em> — can&apos;t be blocked by fewer than two creatures.</LI>
+        <LI><Em>Protection</Em> — can&apos;t be blocked by, targeted by, dealt damage by, or attached by the named quality.</LI>
         <LI><Em>Reach</Em> — can block flying creatures.</LI>
         <LI><Em>Trample</Em> — excess damage carries over to the defending player or planeswalker.</LI>
-        <LI><Em>Vigilance</Em> — doesn't tap to attack.</LI>
+        <LI><Em>Vigilance</Em> — doesn&apos;t tap to attack.</LI>
         <LI><Em>Ward</Em> — opponents pay an extra cost to target this permanent.</LI>
       </UL>
 
@@ -61,7 +61,7 @@ const post: BlogPost = {
 
       <H2>Returning mechanics worth knowing</H2>
       <P>
-        These show up across multiple sets and you'll see them in older cards
+        These show up across multiple sets and you&apos;ll see them in older cards
         from a long history of printings.
       </P>
       <UL>
@@ -104,14 +104,14 @@ const post: BlogPost = {
         <LI><Em>Treasure / Clue / Food / Blood / Map token</Em> — see the <A href="/blog/mtg-token-generator-every-set">token guide</A>.</LI>
       </UL>
 
-      <H2>Mechanic terms that don't appear on cards</H2>
+      <H2>Mechanic terms that don&apos;t appear on cards</H2>
       <P>
         These show up in articles, on streams, and at the table — but you
-        won't find them in the rules text.
+        won&apos;t find them in the rules text.
       </P>
       <UL>
-        <LI><Em>Blowout</Em> — a play that wrecks an opponent's plan in one move.</LI>
-        <LI><Em>Bounce</Em> — return a permanent to its owner's hand.</LI>
+        <LI><Em>Blowout</Em> — a play that wrecks an opponent&apos;s plan in one move.</LI>
+        <LI><Em>Bounce</Em> — return a permanent to its owner&apos;s hand.</LI>
         <LI><Em>Cantrip</Em> — a spell that draws a card on top of its main effect.</LI>
         <LI><Em>Card advantage</Em> — drawing or making more cards than your opponent.</LI>
         <LI><Em>Combo</Em> — two or more cards that together create a winning interaction.</LI>
@@ -122,7 +122,7 @@ const post: BlogPost = {
         <LI><Em>Hate</Em> — a card aimed at disrupting a specific strategy (graveyard hate, artifact hate).</LI>
         <LI><Em>Mulligan</Em> — redrawing your opening hand for a one-card penalty.</LI>
         <LI><Em>Ramp</Em> — accelerating mana production.</LI>
-        <LI><Em>Tempo</Em> — denying an opponent's effective turns.</LI>
+        <LI><Em>Tempo</Em> — denying an opponent&apos;s effective turns.</LI>
         <LI><Em>Tutor</Em> — a card that searches for a specific card.</LI>
         <LI><Em>Wheel</Em> — discard hand, draw seven (Wheel of Fortune-style).</LI>
         <LI><Em>Wrath</Em> — a board wipe (Wrath of God-style).</LI>
@@ -135,7 +135,7 @@ const post: BlogPost = {
         <LI><Em>Commander damage</Em> — 21 from a single commander kills the player. See the <A href="/blog/commander-damage-tracker-21-rule">21-rule guide</A>.</LI>
         <LI><Em>Partner</Em> — a keyword letting two specific commanders share the role.</LI>
         <LI><Em>Background</Em> — Choose a Background pairs a commander with a Background enchantment for color identity.</LI>
-        <LI><Em>Friends forever / Doctor's companion</Em> — partner-style mechanics tied to flavor.</LI>
+        <LI><Em>Friends forever / Doctor&apos;s companion</Em> — partner-style mechanics tied to flavor.</LI>
         <LI><Em>cEDH</Em> — competitive Commander, optimized to win as fast as possible.</LI>
       </UL>
 

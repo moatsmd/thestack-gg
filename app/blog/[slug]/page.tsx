@@ -96,7 +96,7 @@ export default async function BlogPostPage({ params }: { params: Promise<Params>
       <nav className="mb-6">
         <Link
           href="/blog"
-          className="font-display tracking-[0.14em] uppercase text-xs text-[hsl(38_15%_60%)] hover:text-primary transition-colors"
+          className="font-display tracking-[0.14em] uppercase text-xs text-muted-foreground hover:text-primary transition-colors"
         >
           ← The Codex
         </Link>
@@ -106,13 +106,13 @@ export default async function BlogPostPage({ params }: { params: Promise<Params>
         <div className="flex items-center justify-center">
           <GoldRule />
         </div>
-        <p className="font-display tracking-[0.16em] uppercase text-xs text-[hsl(38_15%_60%)] mt-3">
+        <p className="font-display tracking-[0.16em] uppercase text-xs text-muted-foreground mt-3">
           {post.category}
         </p>
         <h1 className="font-display text-gold-gradient text-3xl md:text-5xl mt-3 tracking-wide leading-tight">
           {post.title}
         </h1>
-        <div className="flex items-center justify-center gap-3 mt-5 font-display tracking-[0.12em] uppercase text-[10px] md:text-xs text-[hsl(38_15%_60%)]">
+        <div className="flex items-center justify-center gap-3 mt-5 font-display tracking-[0.12em] uppercase text-[10px] md:text-xs text-muted-foreground">
           <time dateTime={post.date}>{formatDate(post.date)}</time>
           {post.updated && post.updated !== post.date && (
             <>
@@ -134,7 +134,7 @@ export default async function BlogPostPage({ params }: { params: Promise<Params>
 
       {related.length > 0 && (
         <section className="mt-12">
-          <p className="font-display tracking-[0.16em] uppercase text-xs text-[hsl(38_15%_60%)] text-center">
+          <p className="font-display tracking-[0.16em] uppercase text-xs text-muted-foreground text-center">
             Continue reading
           </p>
           <ul className="grid gap-5 md:grid-cols-2 mt-4">
@@ -147,10 +147,10 @@ export default async function BlogPostPage({ params }: { params: Promise<Params>
                   <p className="font-display tracking-[0.14em] uppercase text-[10px] text-primary/80">
                     {p.category}
                   </p>
-                  <h3 className="font-display text-[hsl(38_30%_88%)] text-lg tracking-wide mt-2">
+                  <h3 className="font-display text-foreground text-lg tracking-wide mt-2">
                     {p.title}
                   </h3>
-                  <p className="font-prose text-sm text-[hsl(38_30%_88%)]/75 mt-2">
+                  <p className="font-prose text-sm text-foreground/75 mt-2">
                     {p.excerpt}
                   </p>
                 </Link>

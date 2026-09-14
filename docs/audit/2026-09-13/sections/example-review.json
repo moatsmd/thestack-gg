@@ -1,0 +1,220 @@
+[
+  {
+    "keyword": "First Strike",
+    "example": "Benalish Marshal",
+    "found": true,
+    "oracle": "Other creatures you control get +1/+1.",
+    "source": "https://scryfall.com/card/gnt/8/benalish-marshal?utm_source=api"
+  },
+  {
+    "keyword": "Menace",
+    "example": "Goblin Heelcutter",
+    "found": true,
+    "oracle": "Whenever this creature attacks, target creature can't block this turn.\nDash {2}{R} (You may cast this spell for its dash cost. If you do, it gains haste, and it's returned from the battlefield to its owner's hand at the beginning of the next end step.)",
+    "source": "https://scryfall.com/card/frf/102/goblin-heelcutter?utm_source=api"
+  },
+  {
+    "keyword": "Ward",
+    "example": "Wandering Emperor",
+    "found": false,
+    "oracle": ""
+  },
+  {
+    "keyword": "Activate",
+    "example": "Prodigal Pyromancer",
+    "found": true,
+    "oracle": "{T}: This creature deals 1 damage to any target.",
+    "source": "https://scryfall.com/card/tsr/180/prodigal-pyromancer?utm_source=api"
+  },
+  {
+    "keyword": "Attach",
+    "example": "Bonesplitter",
+    "found": true,
+    "oracle": "Equipped creature gets +2/+0.\nEquip {1}",
+    "source": "https://scryfall.com/card/cmr/458/bonesplitter?utm_source=api"
+  },
+  {
+    "keyword": "Cast",
+    "example": "Lightning Bolt",
+    "found": true,
+    "oracle": "Lightning Bolt deals 3 damage to any target.",
+    "source": "https://scryfall.com/card/msc/806/lightning-bolt?utm_source=api"
+  },
+  {
+    "keyword": "Tap",
+    "example": "Llanowar Elves",
+    "found": true,
+    "oracle": "{T}: Add {G}.",
+    "source": "https://scryfall.com/card/fdn/227/llanowar-elves?utm_source=api"
+  },
+  {
+    "keyword": "Kicker",
+    "example": "Hallar, the Firefletcher",
+    "found": true,
+    "oracle": "Trample\nWhenever you cast a spell, if that spell was kicked, put a +1/+1 counter on Hallar, then Hallar deals damage equal to the number of +1/+1 counters on it to each opponent.",
+    "source": "https://scryfall.com/card/dom/196/hallar-the-firefletcher?utm_source=api"
+  },
+  {
+    "keyword": "Disturb",
+    "example": "Lunarch Veteran",
+    "found": false,
+    "oracle": ""
+  },
+  {
+    "keyword": "Toxic",
+    "example": "Venomous Bruiser",
+    "found": false,
+    "oracle": ""
+  },
+  {
+    "keyword": "Rad",
+    "example": "Rads of Doom",
+    "found": false,
+    "oracle": ""
+  },
+  {
+    "keyword": "Blitz",
+    "example": "Goblin Anarchomancer",
+    "found": true,
+    "oracle": "Each spell you cast that's red or green costs {1} less to cast.",
+    "source": "https://scryfall.com/card/mh2/200/goblin-anarchomancer?utm_source=api"
+  },
+  {
+    "keyword": "Connive",
+    "example": "Wingshield Agent",
+    "found": true,
+    "oracle": "This creature enters with a shield counter on it. (If it would be dealt damage or destroyed, remove a shield counter from it instead.)\nWhenever this creature attacks, up to one other target creature gains flying until end of turn.",
+    "source": "https://scryfall.com/card/snc/64/wingshield-agent?utm_source=api"
+  },
+  {
+    "keyword": "Backup",
+    "example": "Backup Agent",
+    "found": true,
+    "oracle": "When this creature enters, put a +1/+1 counter on target creature.",
+    "source": "https://scryfall.com/card/snc/2/backup-agent?utm_source=api"
+  },
+  {
+    "keyword": "Foray",
+    "example": "Roving Keep",
+    "found": true,
+    "oracle": "Defender\n{7}: This creature gets +2/+0 and gains trample until end of turn. It can attack this turn as though it didn't have defender.",
+    "source": "https://scryfall.com/card/jmp/480/roving-keep?utm_source=api"
+  },
+  {
+    "keyword": "Spree",
+    "example": "Pick Your Poison",
+    "found": true,
+    "oracle": "Choose one —\n• Each opponent sacrifices an artifact of their choice.\n• Each opponent sacrifices an enchantment of their choice.\n• Each opponent sacrifices a creature with flying of their choice.",
+    "source": "https://scryfall.com/card/mkm/170/pick-your-poison?utm_source=api"
+  },
+  {
+    "keyword": "Learn",
+    "example": "Environmental Sciences",
+    "found": true,
+    "oracle": "Search your library for a basic land card, reveal it, put it into your hand, then shuffle. You gain 2 life.",
+    "source": "https://scryfall.com/card/stx/1/environmental-sciences?utm_source=api"
+  },
+  {
+    "keyword": "Plot",
+    "example": "Slick Sequence",
+    "found": true,
+    "oracle": "Slick Sequence deals 2 damage to any target. If you've cast another spell this turn, draw a card.",
+    "source": "https://scryfall.com/card/otj/233/slick-sequence?utm_source=api"
+  },
+  {
+    "keyword": "Daybound",
+    "example": "Tovolar, Dire Overlord",
+    "found": false,
+    "oracle": ""
+  },
+  {
+    "keyword": "Nightbound",
+    "example": "Tovolar's Magehunter",
+    "found": false,
+    "oracle": ""
+  },
+  {
+    "keyword": "Formidable",
+    "example": "Epic Confrontation",
+    "found": true,
+    "oracle": "Target creature you control gets +1/+2 until end of turn. It fights target creature you don't control. (Each deals damage equal to its power to the other.)",
+    "source": "https://scryfall.com/card/bro/176/epic-confrontation?utm_source=api"
+  },
+  {
+    "keyword": "Undergrowth",
+    "example": "Glowspore Shaman",
+    "found": true,
+    "oracle": "When this creature enters, mill three cards. You may put a land card from your graveyard on top of your library. (To mill a card, put the top card of your library into your graveyard.)",
+    "source": "https://scryfall.com/card/rvr/184/glowspore-shaman?utm_source=api"
+  },
+  {
+    "keyword": "Shroud",
+    "example": "Troll Ascetic",
+    "found": true,
+    "oracle": "Hexproof (This creature can't be the target of spells or abilities your opponents control.)\n{1}{G}: Regenerate this creature.",
+    "source": "https://scryfall.com/card/cm2/146/troll-ascetic?utm_source=api"
+  },
+  {
+    "keyword": "Intimidate",
+    "example": "Barony Vampire",
+    "found": true,
+    "oracle": "",
+    "source": "https://scryfall.com/card/m20/85/barony-vampire?utm_source=api"
+  },
+  {
+    "keyword": "Phasing",
+    "example": "Teferi's Veil",
+    "found": true,
+    "oracle": "Whenever a creature you control attacks, it phases out at end of combat. (While it's phased out, it's treated as though it doesn't exist. It phases in before you untap during your next untap step.)",
+    "source": "https://scryfall.com/card/wth/53/teferis-veil?utm_source=api"
+  },
+  {
+    "keyword": "Haunt",
+    "example": "Souls of the Faultless",
+    "found": true,
+    "oracle": "Defender (This creature can't attack.)\nWhenever this creature is dealt combat damage, you gain that much life and attacking player loses that much life.",
+    "source": "https://scryfall.com/card/gpt/131/souls-of-the-faultless?utm_source=api"
+  },
+  {
+    "keyword": "Recover",
+    "example": "Martyr of Bones",
+    "found": true,
+    "oracle": "{1}, Reveal X black cards from your hand, Sacrifice this creature: Exile up to X target cards from a single graveyard.",
+    "source": "https://scryfall.com/card/csp/65/martyr-of-bones?utm_source=api"
+  },
+  {
+    "keyword": "Provoke",
+    "example": "Trained Armodon",
+    "found": true,
+    "oracle": "",
+    "source": "https://scryfall.com/card/tpr/200/trained-armodon?utm_source=api"
+  },
+  {
+    "keyword": "Absorb",
+    "example": "Soulgorger Orgg",
+    "found": true,
+    "oracle": "Trample\nWhen this creature enters, you lose all but 1 life.\nWhen this creature leaves the battlefield, you gain life equal to the life you lost when it entered.",
+    "source": "https://scryfall.com/card/jud/99/soulgorger-orgg?utm_source=api"
+  },
+  {
+    "keyword": "Enchant World",
+    "example": "Concordant Crossroads",
+    "found": true,
+    "oracle": "All creatures have haste.",
+    "source": "https://scryfall.com/card/2x2/141/concordant-crossroads?utm_source=api"
+  },
+  {
+    "keyword": "Substance",
+    "example": "Gleemax",
+    "found": true,
+    "oracle": "You choose all targets for all spells and abilities.",
+    "source": "https://scryfall.com/card/unh/121/gleemax?utm_source=api"
+  },
+  {
+    "keyword": "Bands with Others",
+    "example": "Aysen Crusader",
+    "found": true,
+    "oracle": "Aysen Crusader's power and toughness are each equal to 2 plus the number of Soldiers and Warriors you control.",
+    "source": "https://scryfall.com/card/me2/7/aysen-crusader?utm_source=api"
+  }
+]

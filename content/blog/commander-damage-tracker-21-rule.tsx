@@ -15,7 +15,7 @@ const post: BlogPost = {
   body: (
     <>
       <Lede>
-        Commander damage is the format's signature win condition and the
+        Commander damage is the format&apos;s signature win condition and the
         statistic groups most often track wrong. The rule is short — a player
         who has been dealt 21 or more combat damage by the same commander loses
         the game — but the edge cases around partners, voltron equipment,
@@ -45,7 +45,7 @@ const post: BlogPost = {
         A player with two partner commanders has two damage tallies against
         each opponent. Either partner reaching 21 against an opponent kills
         them. This means the player on partners is effectively running two
-        voltron threats from the table's perspective, and each needs its own
+        voltron threats from the table&apos;s perspective, and each needs its own
         line on the tracker.
       </P>
 
@@ -54,7 +54,7 @@ const post: BlogPost = {
         Trample damage that lands on the player counts as commander damage.
         Damage from a commander with infect goes to the player as poison
         counters, not as life loss — but combat damage is combat damage, so
-        infect damage from a commander still adds to that commander's total
+        infect damage from a commander still adds to that commander&apos;s total
         toward the 21 threshold. A player can theoretically lose to ten
         infect-damage hits and a single normal-damage hit from the same infect
         commander.
@@ -65,7 +65,7 @@ const post: BlogPost = {
         Fiendish Hunter-style replacement effects (&ldquo;deals double
         damage&rdquo;) modify the damage event before it happens. The result
         is what counts. A 7/7 commander with a damage-doubler attached deals
-        14 damage on a connect, all of which counts toward the commander's
+        14 damage on a connect, all of which counts toward the commander&apos;s
         total.
       </P>
 
@@ -99,8 +99,8 @@ const post: BlogPost = {
       </P>
       <UL>
         <LI><Em>The shared notepad</Em> — one player tracking damage for everyone, scribbling tallies in the margin. Works until they make a mistake nobody can audit.</LI>
-        <LI><Em>The dice tower</Em> — using d20s on each player's mat to track damage from each opponent. Falls apart when someone bumps the table.</LI>
-        <LI><Em>The honor system</Em> — &ldquo;I think I'm at like fifteen?&rdquo; — fine for casual, terrible for cEDH or any game where commander damage is a real win condition.</LI>
+        <LI><Em>The dice tower</Em> — using d20s on each player&apos;s mat to track damage from each opponent. Falls apart when someone bumps the table.</LI>
+        <LI><Em>The honor system</Em> — &ldquo;I think I&apos;m at like fifteen?&rdquo; — fine for casual, terrible for cEDH or any game where commander damage is a real win condition.</LI>
       </UL>
 
       <H2>What a tracker should actually do</H2>
@@ -114,10 +114,10 @@ const post: BlogPost = {
 
       <H3>Why we built a per-opponent grid into the tile</H3>
       <P>
-        TheStack.gg's <A href="/tracker">life tracker</A> puts a CMD chip on
+        TheStack.gg&apos;s <A href="/tracker">life tracker</A> puts a CMD chip on
         every player tile showing the highest single-source total. Tap the
         chip and the tile expands an inline grid — one cell per other player
-        at the table, with the opponent's name and inline +/- buttons. A
+        at the table, with the opponent&apos;s name and inline +/- buttons. A
         4-player pod gets three cells per tile, a 5-player pod gets four,
         and so on. Any single cell hitting 21 flips that cell red and rings
         the whole tile in red so the loss is visible across the table. The

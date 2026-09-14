@@ -17,14 +17,14 @@ describe('ViewModeToggle', () => {
     const gridButton = screen.getByRole('button', { name: /grid view/i })
 
     // Single mode active
-    expect(singleButton).toHaveClass('bg-[var(--accent-4)]')
-    expect(gridButton).not.toHaveClass('bg-[var(--accent-4)]')
+    expect(singleButton).toHaveClass('bg-primary')
+    expect(gridButton).not.toHaveClass('bg-primary')
 
     // Switch to grid mode
     rerender(<ViewModeToggle mode="grid" onModeChange={() => {}} />)
 
-    expect(singleButton).not.toHaveClass('bg-[var(--accent-4)]')
-    expect(gridButton).toHaveClass('bg-[var(--accent-4)]')
+    expect(singleButton).not.toHaveClass('bg-primary')
+    expect(gridButton).toHaveClass('bg-primary')
   })
 
   it('calls onModeChange when button clicked', async () => {

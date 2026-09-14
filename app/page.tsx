@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { motion, useReducedMotion } from 'framer-motion'
 import { Fleuron, GoldRule } from '@/components/Fleuron'
 import { useNews } from '@/hooks/useNews'
@@ -52,15 +53,15 @@ const tools = [
     title: 'Tokens',
     kind: 'Reference',
     accent: 'teal',
-    blurb: 'Common token reference with power, toughness, and color identity.',
+    blurb: 'Find common tokens and keep their quantities in a saved tray.',
     icon: 'coins',
   },
   {
     href: '/new-players',
-    title: 'New Players',
+    title: 'Learn Magic',
     kind: 'Learn',
     accent: 'purple',
-    blurb: 'A guided primer on turn flow, combat, and the stack.',
+    blurb: 'Six interactive chapters, from your first spell to your first table.',
     icon: 'sparkles',
   },
   {
@@ -68,7 +69,7 @@ const tools = [
     title: 'Dice',
     kind: 'Utility',
     accent: 'crimson',
-    blurb: 'All seven faces of fate. Tap to roll, with a tasteful history.',
+    blurb: 'Cinematic dice rolls and a group d20 to choose who starts.',
     icon: 'dice',
   },
 ] as const
@@ -158,46 +159,10 @@ function ToolIcon({ name }: { name: string }) {
 }
 
 function StackingCardsBg() {
-  const reducedMotion = useReducedMotion()
-  return (
-    <div
-      className="pointer-events-none absolute -right-10 top-1/2 -translate-y-1/2 hidden md:block opacity-[0.35]"
-      aria-hidden
-    >
-      <svg width="420" height="320" viewBox="0 0 420 320" fill="none">
-        <defs>
-          <linearGradient id="cg" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="hsl(45 80% 75%)" stopOpacity="0.6" />
-            <stop offset="100%" stopColor="hsl(38 65% 45%)" stopOpacity="0.6" />
-          </linearGradient>
-        </defs>
-        {[0, 1, 2].map((i) => (
-          <motion.rect
-            key={i}
-            x={120 + i * 14}
-            y={80 - i * 18}
-            width={170}
-            height={230}
-            rx={8}
-            stroke="url(#cg)"
-            strokeWidth="1.2"
-            fill="hsl(220 15% 10%)"
-            initial={false}
-            animate={reducedMotion ? { opacity: 1 } : {
-              y: [80 - i * 18, 70 - i * 18, 80 - i * 18],
-              opacity: 1,
-            }}
-            transition={reducedMotion ? { duration: 0 } : {
-              duration: 6 + i,
-              delay: i * 0.5,
-              repeat: Infinity,
-              ease: 'easeInOut',
-            }}
-          />
-        ))}
-      </svg>
-    </div>
-  )
+  return <div className="pointer-events-none absolute right-8 top-1/2 -translate-y-1/2 hidden lg:block w-64 h-80" aria-hidden="true">
+    <Image src="/learn/forest.jpg" alt="" width={188} height={262} className="absolute left-0 top-0 w-44 rounded-lg shadow-xl -rotate-12" />
+    <Image src="/learn/bears.jpg" alt="" width={188} height={262} className="absolute right-0 top-10 w-44 rounded-lg shadow-xl rotate-6" />
+  </div>
 }
 
 function formatNewsDate(iso: string) {
@@ -224,7 +189,7 @@ export default function Home() {
       <section className="relative max-w-6xl mx-auto px-4 md:px-8 pt-8 md:pt-16">
         <div className="panel codex-glow panel-gilded relative overflow-hidden p-6 sm:p-8 md:p-14">
           <StackingCardsBg />
-          <div className="relative">
+          <div className="relative lg:max-w-[65%]">
             <div className="flex items-center gap-3 text-[10px] md:text-xs font-display tracking-[0.32em] uppercase text-[hsl(38_15%_60%/0.8)]">
               <GoldRule />
               <span>Vault of the Stack</span>
@@ -243,7 +208,7 @@ export default function Home() {
                 Command your table.
               </span>
             </div>
-            <p className="font-prose text-[hsl(38_30%_88%/0.85)] text-lg md:text-xl max-w-2xl leading-snug">
+            <p className="font-prose text-foreground/90 text-lg md:text-xl max-w-2xl leading-snug">
               Track life, share a table across phones, and settle the next rules
               question. Everything your pod needs, right at hand.
             </p>
@@ -258,7 +223,7 @@ export default function Home() {
               </Link>
               <Link
                 href="/toolkit"
-                className="px-5 py-2.5 panel-elevated rounded-md text-[hsl(38_30%_88%)] hover-elevate inline-flex items-center gap-2"
+                className="px-5 py-2.5 panel-elevated rounded-md text-foreground hover-elevate inline-flex items-center gap-2"
                 data-testid="button-hero-cards"
               >
                 <ToolIcon name="search" />
@@ -278,10 +243,10 @@ export default function Home() {
       <section className="max-w-6xl mx-auto px-4 md:px-8 mt-12 md:mt-20">
         <div className="text-center">
           <Fleuron />
-          <h2 className="font-display tracking-[0.18em] uppercase text-xs text-[hsl(38_15%_60%)]">
+          <h2 className="font-display tracking-[0.18em] uppercase text-xs text-muted-foreground">
             The Toolkit
           </h2>
-          <p className="font-prose italic text-2xl md:text-3xl mt-2 text-[hsl(38_30%_88%/0.9)]">
+          <p className="font-prose italic text-2xl md:text-3xl mt-2 text-foreground/90">
             Eight instruments. One obsidian console.
           </p>
         </div>
@@ -309,11 +274,11 @@ export default function Home() {
                     {tool.kind}
                   </span>
                 </div>
-                <h3 className="font-display tracking-wide text-2xl mt-6 text-[hsl(38_30%_88%)] group-hover:text-[hsl(42_75%_65%)] transition-colors">
+                <h3 className="font-display tracking-wide text-2xl mt-6 text-foreground group-hover:text-[hsl(42_75%_65%)] transition-colors">
                   {tool.title}
                 </h3>
                 <span className="block w-7 h-px bg-[hsl(42_75%_55%/0.4)] mt-2" />
-                <p className="font-prose text-[hsl(38_30%_88%/0.8)] text-base leading-snug mt-3">
+                <p className="font-prose text-foreground/90 text-base leading-snug mt-3">
                   {tool.blurb}
                 </p>
                 <div className="mt-5 inline-flex items-center gap-1.5 text-[hsl(42_75%_65%)] text-sm">
@@ -333,10 +298,10 @@ export default function Home() {
           <p className="font-display tracking-[0.18em] uppercase text-xs text-[hsl(42_75%_65%)]">
             Pod Sync · Available now
           </p>
-          <h2 id="pod-sync-heading" className="font-display text-3xl md:text-4xl mt-3 text-[hsl(38_30%_88%)]">
+          <h2 id="pod-sync-heading" className="font-display text-3xl md:text-4xl mt-3 text-foreground">
             Your phones. One table.
           </h2>
-          <p className="font-prose text-xl mt-3 text-[hsl(38_30%_88%/0.8)]">
+          <p className="font-prose text-xl mt-3 text-foreground/90">
             Keep the whole pod in the game with a shared life tracker.
             A table code is all you need to join.
           </p>
@@ -347,10 +312,10 @@ export default function Home() {
               <span aria-hidden="true" className="font-display text-sm text-[hsl(42_75%_65%)]">
                 0{index + 1}
               </span>
-              <h3 className="font-display text-xl mt-2 text-[hsl(38_30%_88%)]">
+              <h3 className="font-display text-xl mt-2 text-foreground">
                 {step.title}
               </h3>
-              <p className="font-prose text-lg text-[hsl(38_30%_88%/0.8)] mt-2 leading-snug">
+              <p className="font-prose text-lg text-foreground/90 mt-2 leading-snug">
                 {step.desc}
               </p>
             </li>
@@ -368,14 +333,14 @@ export default function Home() {
       <section className="max-w-6xl mx-auto px-4 md:px-8 mt-16 md:mt-24 mb-12">
         <div className="flex items-end justify-between gap-4">
           <div>
-            <div className="flex items-center gap-3 text-xs font-display tracking-[0.22em] uppercase text-[hsl(38_15%_60%)]">
+            <div className="flex items-center gap-3 text-xs font-display tracking-[0.22em] uppercase text-muted-foreground">
               <span className="text-[hsl(42_75%_65%/0.7)]">◆</span> Mana Feed
             </div>
-            <h2 className="font-display text-3xl md:text-4xl text-[hsl(38_30%_88%)] mt-2 tracking-wide">
+            <h2 className="font-display text-3xl md:text-4xl text-foreground mt-2 tracking-wide">
               Dispatches.
             </h2>
           </div>
-          <span className="text-sm text-[hsl(38_15%_60%)]">Updated daily</span>
+          <span className="text-sm text-muted-foreground">Updated daily</span>
         </div>
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
           {isLoading && (
@@ -411,7 +376,7 @@ export default function Home() {
                     {formatNewsDate(post.pubDate)}
                   </span>
                 </div>
-                <h3 className="font-display text-lg mt-3 text-[hsl(38_30%_88%)] leading-snug">
+                <h3 className="font-display text-lg mt-3 text-foreground leading-snug">
                   {post.title}
                 </h3>
                 {post.description && (

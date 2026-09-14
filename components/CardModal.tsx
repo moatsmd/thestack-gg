@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { DialogFocus } from './DialogFocus'
 import { ScryfallCard } from '@/types/scryfall'
 import { CardDisplay } from './CardDisplay'
 
@@ -11,33 +11,6 @@ interface CardModalProps {
 }
 
 export function CardModal({ card, isOpen, onClose }: CardModalProps) {
-  // Close on Escape key
-  useEffect(() => {
-    if (!isOpen) return
-
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose()
-      }
-    }
-
-    document.addEventListener('keydown', handleEscape)
-    return () => document.removeEventListener('keydown', handleEscape)
-  }, [isOpen, onClose])
-
-  // Prevent body scroll when modal open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
-
-    return () => {
-      document.body.style.overflow = ''
-    }
-  }, [isOpen])
-
   if (!isOpen) return null
 
   return (
@@ -49,6 +22,7 @@ export function CardModal({ card, isOpen, onClose }: CardModalProps) {
       aria-modal="true"
       aria-labelledby="modal-title"
     >
+      <DialogFocus onClose={onClose} />
       <div
         className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-transparent"
         data-testid="modal-content"
@@ -58,7 +32,6 @@ export function CardModal({ card, isOpen, onClose }: CardModalProps) {
         <button
           type="button"
           onClick={onClose}
-          autoFocus
           className="absolute top-2 right-2 z-10 bg-black/70 hover:bg-black/80 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
           aria-label="Close modal"
         >
@@ -67,7 +40,7 @@ export function CardModal({ card, isOpen, onClose }: CardModalProps) {
 
         {/* Card display */}
         <div id="modal-title">
-          <CardDisplay card={card} />
+          <CardDisplay key={card.id} card={card} />
         </div>
       </div>
     </div>

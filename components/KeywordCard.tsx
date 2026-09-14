@@ -16,7 +16,7 @@ const typeBadge: Record<KeywordDefinition['type'], string> = {
 const tierStyle: Record<KeywordDefinition['tier'], string> = {
   evergreen: 'text-primary border-primary/40 bg-primary/5',
   returning: 'text-[hsl(170_50%_60%)] border-[hsl(170_50%_45%/0.3)]',
-  retired: 'text-[hsl(38_15%_60%)] border-[hsl(40_30%_18%)]',
+  retired: 'text-muted-foreground border-border',
 }
 
 const tierLabel: Record<KeywordDefinition['tier'], string> = {
@@ -29,7 +29,7 @@ export function KeywordCard({ keyword }: KeywordCardProps) {
   return (
     <article className="panel codex-glow p-5" data-testid="keyword-card">
       <div className="flex items-start justify-between gap-2">
-        <h3 className="font-display text-xl tracking-wide text-[hsl(38_30%_88%)]">{keyword.keyword}</h3>
+        <h3 className="font-display text-xl tracking-wide text-foreground">{keyword.keyword}</h3>
         <span
           className={`text-[10px] uppercase tracking-wider font-display px-2 py-0.5 rounded border ${tierStyle[keyword.tier]}`}
           data-testid="tier-badge"
@@ -43,14 +43,14 @@ export function KeywordCard({ keyword }: KeywordCardProps) {
         </span>
       </div>
 
-      <p className="text-sm mt-3 text-[hsl(38_30%_88%)]/90 leading-snug">{keyword.definition}</p>
+      <p className="text-base mt-3 text-foreground/90 leading-snug">{keyword.definition}</p>
 
       {keyword.reminder && (
-        <p className="font-prose italic text-[hsl(38_30%_88%)]/70 text-sm mt-2">“{keyword.reminder}”</p>
+        <p className="font-prose italic text-foreground/70 text-sm mt-2">“{keyword.reminder}”</p>
       )}
 
       {(keyword.example || keyword.introduced) && (
-        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[hsl(38_15%_60%)]">
+        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
           {keyword.example && (
             <div>
               <span className="font-display tracking-[0.18em] uppercase text-[10px]">e.g.</span>{' '}
@@ -60,7 +60,7 @@ export function KeywordCard({ keyword }: KeywordCardProps) {
           {keyword.introduced && (
             <div>
               <span className="font-display tracking-[0.18em] uppercase text-[10px]">Since</span>{' '}
-              <span className="text-[hsl(38_30%_88%)]/80">{keyword.introduced}</span>
+              <span className="text-foreground/80">{keyword.introduced}</span>
             </div>
           )}
         </div>
@@ -69,7 +69,7 @@ export function KeywordCard({ keyword }: KeywordCardProps) {
       {keyword.scryfallQuery && (
         <Link
           href={`/toolkit?q=${encodeURIComponent(keyword.scryfallQuery)}`}
-          className="inline-block mt-3 text-xs text-[hsl(42_75%_65%)] hover:text-[hsl(42_75%_55%)] hover:underline"
+          className="inline-flex min-h-11 items-center mt-3 text-sm text-primary hover:text-[hsl(42_75%_55%)] hover:underline"
           data-testid="scryfall-link"
         >
           See cards →

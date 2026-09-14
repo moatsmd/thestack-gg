@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
+import { DialogFocus } from './DialogFocus'
 import { ScryfallCard } from '@/types/scryfall'
 import { CardLegalityDisplay } from './CardLegalityDisplay'
 import { OracleTextWithKeywords } from './OracleTextWithKeywords'
@@ -27,9 +29,9 @@ export function CardDisplay({ card, source = 'card-display' }: CardDisplayProps)
 
   // Get card properties - prefer current face if available
   const name = currentFace?.name || card.name
-  const manaCost = currentFace?.mana_cost || card.mana_cost
+  const manaCost = currentFace?.mana_cost ?? card.mana_cost
   const typeLine = currentFace?.type_line || card.type_line
-  const oracleText = currentFace?.oracle_text || card.oracle_text
+  const oracleText = currentFace?.oracle_text ?? card.oracle_text
 
   // Format price
   const price = card.prices.usd
@@ -47,22 +49,22 @@ export function CardDisplay({ card, source = 'card-display' }: CardDisplayProps)
   return (
     <>
       <div
-        className="rounded-lg bg-white dark:bg-[var(--surface-1)] shadow-lg overflow-hidden border border-white/10"
+        className="card-detail panel shadow-lg overflow-hidden"
         data-testid="card-display"
       >
         {/* Card Image */}
         {imageUri ? (
-          <div className="relative">
+          <div className="card-detail-art relative">
             <button
               type="button"
               onClick={() => setIsModalOpen(true)}
-              className="w-full focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
               aria-label="Expand card image"
             >
               <img
                 src={imageUri}
                 alt={name}
-                className="w-full h-auto"
+                className="w-full h-auto rounded-lg"
                 data-testid="card-image"
               />
             </button>
@@ -78,13 +80,13 @@ export function CardDisplay({ card, source = 'card-display' }: CardDisplayProps)
             )}
           </div>
         ) : (
-          <div className="w-full aspect-[5/7] bg-gray-200 dark:bg-gray-900 flex items-center justify-center" data-testid="no-image">
+          <div className="card-detail-art aspect-[5/7] bg-secondary flex items-center justify-center" data-testid="no-image">
             <span className="text-gray-500 dark:text-gray-400">No image available</span>
           </div>
         )}
 
         {/* Card Details */}
-        <div className="p-4 space-y-4">
+        <div className="min-w-0 p-5 md:p-6 space-y-4">
           {/* Card Header */}
           <div data-testid="card-header">
             <div className="flex items-start justify-between gap-2 mb-1">
@@ -140,6 +142,7 @@ export function CardDisplay({ card, source = 'card-display' }: CardDisplayProps)
 
           {/* Buy links — affiliate-tagged when env vars are set, clean otherwise */}
           <BuyLinks card={card} from={source} />
+          <Link href={`/rules?q=${encodeURIComponent(card.name)}`} className="inline-flex min-h-11 items-center text-primary underline underline-offset-4">Read card rulings →</Link>
         </div>
       </div>
 
@@ -149,7 +152,11 @@ export function CardDisplay({ card, source = 'card-display' }: CardDisplayProps)
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
           onClick={() => setIsModalOpen(false)}
           data-testid="card-image-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${name} fullscreen image`}
         >
+          <DialogFocus onClose={() => setIsModalOpen(false)} />
           <div className="relative max-w-4xl max-h-full">
             <button
               type="button"

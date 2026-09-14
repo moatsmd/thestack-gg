@@ -10,16 +10,16 @@ interface ViewModeToggleProps {
 export function ViewModeToggle({ mode, onModeChange }: ViewModeToggleProps) {
   return (
     <div
-      className="inline-flex rounded-lg border border-white/10 bg-[var(--surface-1)] p-1"
+      className="inline-flex rounded-lg border border-border bg-[var(--surface-1)] p-1"
       role="group"
       aria-label="View mode"
     >
       <button
         type="button"
         onClick={() => mode !== 'single' && onModeChange('single')}
-        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+        className={`min-h-11 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
           mode === 'single'
-            ? 'bg-[var(--accent-4)] text-white'
+            ? 'bg-primary text-primary-foreground'
             : 'text-[var(--muted)] hover:bg-white/5'
         }`}
         aria-label="Single card view"
@@ -42,9 +42,9 @@ export function ViewModeToggle({ mode, onModeChange }: ViewModeToggleProps) {
       <button
         type="button"
         onClick={() => mode !== 'grid' && onModeChange('grid')}
-        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+        className={`min-h-11 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
           mode === 'grid'
-            ? 'bg-[var(--accent-4)] text-white'
+            ? 'bg-primary text-primary-foreground'
             : 'text-[var(--muted)] hover:bg-white/5'
         }`}
         aria-label="Grid view"

@@ -8,6 +8,12 @@ const sampleRules = `
 `
 
 describe('parseComprehensiveRules', () => {
+  it('keeps section headings and the final glossary out of rule bodies', () => {
+    const sections = parseComprehensiveRules('100. General\n100.1. First rule.\nExample: A sample.\n101. Golden Rules\n101.1. Second rule.\nGlossary\nAbility\nA glossary entry.\n704.5z A quoted rule in the glossary.\nCredits\nSomeone')
+    expect(sections.map(s => s.id)).toEqual(['100.1', '101.1'])
+    expect(sections[0].body).toBe('First rule. Example: A sample.')
+    expect(sections[1].body).toBe('Second rule.')
+  })
   it('parses rule sections with ids and bodies', () => {
     const sections = parseComprehensiveRules(sampleRules)
 
@@ -24,6 +30,12 @@ describe('parseComprehensiveRules', () => {
 })
 
 describe('searchComprehensiveRules', () => {
+  it('ranks exact numbers above references and supports section numbers', () => {
+    const sections = parseComprehensiveRules('103.2b See rule 702.139 for companions.\n702.1. Keyword abilities.\n702.1a More about keywords.\n702.10a Haste.')
+    expect(searchComprehensiveRules(sections, '702.1')[0].id).toBe('702.1')
+    expect(searchComprehensiveRules(sections, '702.1.')[0].id).toBe('702.1')
+    expect(searchComprehensiveRules(sections, '702').slice(0, 3).map(s => s.id)).toEqual(['702.1', '702.1a', '702.10a'])
+  })
   it('returns matches ordered by relevance', () => {
     const sections = parseComprehensiveRules(sampleRules)
     const results = searchComprehensiveRules(sections, '603.1')

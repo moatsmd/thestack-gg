@@ -120,7 +120,7 @@ export function CardSearchInput({
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             placeholder="Search for a card..."
-            className="w-full min-h-[48px] px-4 py-3 text-base rounded-lg border border-white/10 bg-[var(--surface-1)] text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-2)] focus:border-transparent transition-colors"
+            className="w-full min-h-[48px] px-4 py-3 text-base rounded-lg border border-border bg-[var(--surface-1)] text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors"
             aria-label="Card search input"
             role="combobox"
             aria-expanded={isDropdownOpen && suggestions.length > 0}
@@ -134,7 +134,7 @@ export function CardSearchInput({
               ref={dropdownRef}
               id={suggestionsId}
               role="listbox"
-              className="absolute z-10 w-full mt-1 bg-[var(--surface-1)] border border-white/10 rounded-lg shadow-lg max-h-64 overflow-y-auto"
+              className="absolute z-10 w-full mt-1 bg-[var(--surface-1)] border border-border rounded-lg shadow-lg max-h-64 overflow-y-auto"
             >
               {suggestions.map((suggestion, index) => (
                 <button
@@ -161,7 +161,7 @@ export function CardSearchInput({
           type="button"
           onClick={handleSearch}
           disabled={isLoading}
-          className="min-h-[48px] px-6 bg-[var(--accent-2)] hover:bg-[var(--accent-2)]/90 disabled:bg-gray-600 text-gray-900 font-semibold rounded-lg transition"
+          className="min-h-[48px] px-6 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground font-semibold rounded-lg transition"
           aria-label="Search"
         >
           {isLoading ? (

@@ -23,15 +23,17 @@ export default function GlossaryPage() {
     { tier: 'returning', label: 'Returning', testId: 'filter-tier-returning' },
     { tier: 'retired', label: 'Retired', testId: 'filter-tier-retired' },
   ]
+  const resetFilters = () => { setDebouncedQuery(''); setQuery(''); setType('all'); tierConfig.forEach(({ tier }) => { if (!selectedTiers.includes(tier)) toggleTier(tier) }) }
 
   return (
     <div className="max-w-6xl mx-auto px-4 md:px-8 pt-6 md:pt-12">
       <header className="text-center mb-8" data-testid="glossary-header">
         <div className="flex items-center justify-center"><GoldRule /></div>
-        <p className="font-display tracking-[0.16em] uppercase text-xs text-[hsl(38_15%_60%)] mt-3">Codex of Keywords</p>
+        <p className="font-display tracking-[0.16em] uppercase text-xs text-muted-foreground mt-3">Codex of Keywords</p>
         <h1 className="font-display text-gold-gradient text-3xl md:text-5xl mt-3 tracking-wide">Glossary</h1>
-        <p className="font-prose italic text-[hsl(38_30%_88%)]/80 mt-1">Reminder text, rules text, and a name to remember.</p>
+        <p className="font-prose italic text-foreground/80 mt-1">Reminder text, rules text, and a name to remember.</p>
       </header>
+      <p className="text-muted-foreground text-sm mb-4">Search every era of Magic. The tier filters describe frequency, not format legality. Definitions are quick summaries; consult the official rules for edge cases.</p>
 
       <div className="panel p-4 space-y-4">
         <input
@@ -40,7 +42,7 @@ export default function GlossaryPage() {
           placeholder="Search keywords..."
           value={debouncedQuery}
           onChange={(e) => setDebouncedQuery(e.target.value)}
-          className="w-full px-4 py-2 rounded-md bg-transparent border border-[hsl(40_30%_18%)] text-[hsl(38_30%_88%)] focus:outline-none focus:ring-2 focus:ring-[hsl(42_75%_55%)]"
+          className="w-full px-4 py-2 rounded-md bg-transparent border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-[hsl(42_75%_55%)]"
           data-testid="keyword-search"
           aria-label="Search keywords"
         />
@@ -49,7 +51,7 @@ export default function GlossaryPage() {
           <button
             onClick={() => setType('all')}
             aria-pressed={selectedType === 'all'}
-            className={`min-h-11 px-3 py-1 rounded-full text-xs font-display tracking-wider border transition ${selectedType === 'all' ? 'bg-primary text-primary-foreground border-primary' : 'panel hover-elevate text-[hsl(38_15%_60%)]'}`}
+            className={`min-h-11 px-3 py-1 rounded-full text-xs font-display tracking-wider border transition ${selectedType === 'all' ? 'bg-primary text-primary-foreground border-primary' : 'panel hover-elevate text-muted-foreground'}`}
             data-testid="filter-all"
           >
             All
@@ -59,7 +61,7 @@ export default function GlossaryPage() {
               key={t}
               onClick={() => setType(t)}
               aria-pressed={selectedType === t}
-              className={`min-h-11 px-3 py-1 rounded-full text-xs font-display tracking-wider border transition ${selectedType === t ? 'bg-primary text-primary-foreground border-primary' : 'panel hover-elevate text-[hsl(38_15%_60%)]'}`}
+              className={`min-h-11 px-3 py-1 rounded-full text-xs font-display tracking-wider border transition ${selectedType === t ? 'bg-primary text-primary-foreground border-primary' : 'panel hover-elevate text-muted-foreground'}`}
               data-testid={`filter-${t}`}
             >
               {t === 'ability' ? 'Abilities' : t === 'action' ? 'Actions' : 'Mechanics'}
@@ -74,7 +76,7 @@ export default function GlossaryPage() {
               <button
                 key={tier}
                 onClick={() => toggleTier(tier)}
-                className={`min-h-11 px-3 py-1 rounded-full text-xs font-display tracking-wider border transition ${active ? 'bg-primary text-primary-foreground border-primary' : 'panel hover-elevate text-[hsl(38_15%_60%)]'}`}
+                className={`min-h-11 px-3 py-1 rounded-full text-xs font-display tracking-wider border transition ${active ? 'bg-primary text-primary-foreground border-primary' : 'panel hover-elevate text-muted-foreground'}`}
                 data-testid={testId}
                 aria-pressed={active}
               >
@@ -83,9 +85,10 @@ export default function GlossaryPage() {
             )
           })}
         </div>
+        <button onClick={resetFilters} className="min-h-11 text-primary underline text-sm">Clear search & filters</button>
       </div>
 
-      <p role="status" className="text-sm text-[hsl(38_15%_60%)] mt-4 mb-4">
+      <p role="status" className="text-sm text-muted-foreground mt-4 mb-4">
         Showing {filteredKeywords.length} keyword{filteredKeywords.length !== 1 ? 's' : ''}
       </p>
 
@@ -103,7 +106,7 @@ export default function GlossaryPage() {
           ))}
         </div>
       ) : (
-        <div className="panel p-8 text-center text-[hsl(38_15%_60%)] mt-2" data-testid="empty-state">
+        <div className="panel p-8 text-center text-muted-foreground mt-2" data-testid="empty-state">
           <p className="font-display text-lg mb-1">No keywords found</p>
           <p className="font-prose">Try adjusting your search or filter.</p>
         </div>

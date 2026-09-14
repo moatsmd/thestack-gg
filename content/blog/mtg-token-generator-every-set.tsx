@@ -4,9 +4,9 @@ import { ManaSymbol } from '@/components/ManaSymbol'
 
 const post: BlogPost = {
   slug: 'mtg-token-generator-every-set',
-  title: 'MTG Token Generator: Every Token, Every Set',
+  title: 'MTG Tokens: A Practical Guide for Your Table',
   description:
-    'A practical guide to MTG tokens — predefined and custom — across every set. How to track Treasures, Clues, Food, Blood, and the rest without losing the board.',
+    'A practical guide to common MTG tokens and their variants. How to track Treasures, Clues, Food, Blood, and the rest without losing the board.',
   date: '2026-05-08',
   category: 'Tools',
   readingTime: 7,
@@ -31,7 +31,7 @@ const post: BlogPost = {
       <H3>Treasure</H3>
       <P>
         A colorless artifact token with &ldquo;<ManaSymbol symbol="{T}" />, sacrifice this token:
-        Add one mana of any color.&rdquo; Treasures are the format's universal
+        Add one mana of any color.&rdquo; Treasures are the format&apos;s universal
         ramp and fixing — every artifact deck makes them, every reanimator
         deck loves them, and every cEDH game has a player at six Treasures
         looking dangerous. Track Treasures with a count, not individual
@@ -50,7 +50,7 @@ const post: BlogPost = {
       <P>
         A colorless artifact with &ldquo;<ManaSymbol symbol="{2}" />, <ManaSymbol symbol="{T}" />, sacrifice this
         token: You gain 3 life.&rdquo; Food shines in life-matters strategies
-        and as a chump-block-then-eat substitute. Tracking is similar to
+        and when you need life in a pinch. Ordinary Food tokens are not creatures and cannot block. Tracking is similar to
         Treasures and Clues — a single counter per player suffices unless
         Food synergies care about individual tokens.
       </P>
@@ -66,18 +66,18 @@ const post: BlogPost = {
 
       <H3>Map</H3>
       <P>
-        A colorless artifact that lets a creature scry and explore. Maps
+        A colorless artifact that lets a creature explore. Maps
         printed in Lost Caverns of Ixalan and follow-up sets read &ldquo;<ManaSymbol symbol="{1}" />,
         <ManaSymbol symbol="{T}" />, sacrifice this token: Target creature you control
-        explores.&rdquo; Track Maps individually only if you have an
+        explores. Activate only as a sorcery.&rdquo; Track Maps individually only if you have an
         explore-matters payoff. Otherwise a count works.
       </P>
 
       <ToolCTA
         href="/tokens"
-        title="Generate any token"
-        body="Filter by type \u2014 Treasure, Clue, Food, Blood, Map, Soldier, Zombie, and the rest. Drop the right token onto the table without leafing through a binder."
-        cta="Open token generator"
+        title="Find a token. Keep the count."
+        body="Browse common variants, check their source cards, and save quantities in a token tray on this browser."
+        cta="Open token tray"
       />
 
       <H2>Creature tokens worth knowing by sight</H2>
@@ -85,8 +85,8 @@ const post: BlogPost = {
         <LI><Em>Soldier</Em> — 1/1 white, the Magic baseline. Anointed Procession decks live here.</LI>
         <LI><Em>Spirit</Em> — 1/1 white flying, common in white-blue tempo and Orzhov go-wide.</LI>
         <LI><Em>Zombie</Em> — 2/2 black. Modern printings sometimes vary; check the source card.</LI>
-        <LI><Em>Beast</Em> — 3/3 green. Garruk, Avenger of Zendikar, every green deck.</LI>
-        <LI><Em>Plant</Em> — 0/2 green defender, mostly for chumping or sacrifice fodder.</LI>
+        <LI><Em>Beast</Em> — 3/3 green. Made by cards such as Garruk Wildspeaker.</LI>
+        <LI><Em>Plant</Em> — Often 0/1 green, as with Avenger of Zendikar. Check the source for other variants.</LI>
         <LI><Em>Goblin</Em> — 1/1 red, sometimes 1/1 with relevant text.</LI>
         <LI><Em>Knight</Em> — 2/2 white with vigilance, sometimes other variants.</LI>
         <LI><Em>Elemental</Em> — power and toughness vary wildly; always check the source.</LI>
@@ -102,49 +102,49 @@ const post: BlogPost = {
       <P>
         Gold tokens (older sets) and Treasure tokens (modern) both produce
         mana when sacrificed, but Gold reads &ldquo;sacrifice this artifact:
-        Add one mana of any color&rdquo; with no tap. Practically identical;
+        Add one mana of any color&rdquo; with no tap. The tap cost matters when a token is tapped or becomes a creature with summoning sickness; they are also
         legally distinct for things that care about &ldquo;Treasure
         token&rdquo; specifically.
       </P>
 
-      <H3>Spirit vs. Spirit-with-flying</H3>
+      <H3>Similar bodies, different creature types</H3>
       <P>
-        Older spirit tokens were 1/1 colorless. Most modern spirit tokens are
-        1/1 white with flying. If a card says &ldquo;create a Spirit token,&rdquo;
-        check the printing — it determines color and abilities.
+        Spirit tokens can differ in color, size, and abilities. Lingering Souls
+        creates 1/1 white Spirits with flying; Meloku the Clouded Mirror creates
+        1/1 blue Illusions with flying. Read the creating effect before grouping
+        similar-looking creatures together.
       </P>
 
       <H3>Copies are token copies</H3>
       <P>
-        A copy of a creature created by something like Esika's Chariot is a
-        token, even if it copies a non-token creature. It cares about
-        &ldquo;create a token&rdquo; effects (Doubling Season makes two) and
-        ceases to exist when it leaves the battlefield.
+        An effect that creates a token copy makes a token, even when the original
+        is a card. Follow its targeting restrictions: Esika&apos;s Chariot can
+        copy a token you control, not an arbitrary nontoken creature. A token
+        that leaves the battlefield ceases to exist the next time state-based
+        actions are checked.
       </P>
 
       <H2>How to actually track them at the table</H2>
       <OL>
         <LI><Em>Counters for stockpilers</Em> — Treasures, Clues, Food, Blood, Maps. A single number per player is faster than a heap of tokens.</LI>
         <LI><Em>Cards for combat tokens</Em> — Soldiers, Spirits, Beasts. You need to physically tap and untap them. Use real tokens or a stack of basic lands as proxies.</LI>
-        <LI><Em>One token, multiple purposes</Em> — a Beast and a Spirit are different. Don't share a single proxy for both.</LI>
-        <LI><Em>Note the printing</Em> — &ldquo;Spirit token from Spectral Procession&rdquo; vs. &ldquo;Spirit token from Lingering Souls&rdquo; can matter for triggers like &ldquo;each Spirit token enters with...&rdquo;.</LI>
+        <LI><Em>One token, multiple purposes</Em> — a Beast and a Spirit are different. Don&apos;t share a single proxy for both.</LI>
+        <LI><Em>Read the source</Em> — keep tokens with different colors, abilities, counters, or tapped states separate. A quantity alone cannot represent all of those differences.</LI>
       </OL>
 
       <H2>Why a token tool helps</H2>
       <P>
-        TheStack.gg's <A href="/tokens">token generator</A> filters by type
-        across every set so you can find the exact token a card produces
-        without flipping through binders. Useful at LGS nights when nobody
-        brought enough Treasures, in remote pods over webcam, and during
-        deck-building when you want to know whether your deck makes more
-        Spirits or more Soldiers and pick the synergy that supports it.
+        TheStack.gg&apos;s <A href="/tokens">token reference and tray</A> covers a
+        curated selection of common variants. Filter by name, color, or type,
+        then add quantities to your saved tray. Counts stay on this browser;
+        they are not shared with a tracker table. Use physical markers for
+        tapped state, counters, and distinct creatures.
       </P>
       <P>
-        For the printed-card list of every token a deck can produce,
-        Scryfall's <A href="https://scryfall.com" external>token search</A> is
-        the canonical reference. Our generator is built around tabletop play
-        — a faster path from &ldquo;I cast this&rdquo; to &ldquo;here is the
-        right token at the right size, on the table.&rdquo;
+        For variants outside this collection, use
+        {' '}<A href="https://scryfall.com/search?q=t%3Atoken" external>Scryfall&apos;s token search</A>
+        {' '}and the creating card&apos;s current Oracle text. The tray is a
+        quantity aid, not a complete catalog or printable token generator.
       </P>
     </>
   ),

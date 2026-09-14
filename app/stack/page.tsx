@@ -9,9 +9,9 @@ const sequence = [
   'Player A casts Lightning Bolt targeting Player B (3 dmg).',
   'Player B responds with Counterspell targeting Lightning Bolt.',
   'Player A responds with Red Elemental Blast targeting Counterspell.',
-  'Stack resolves top to bottom.',
+  'Everyone passes. Red Elemental Blast is ready to resolve.',
   'Red Elemental Blast resolves: Counterspell is countered.',
-  'Counterspell is removed without effect.',
+  'Players receive priority again. Lightning Bolt is still waiting.',
   'Lightning Bolt resolves: Player B takes 3 damage.',
 ]
 
@@ -19,15 +19,16 @@ type StackEntry = { id: number; text: string }
 
 export default function StackPage() {
   const [step, setStep] = useState(0)
-  const [playing, setPlaying] = useState(true)
+  const [playing, setPlaying] = useState(false)
   const reducedMotion = useReducedMotion()
   useEffect(() => { if (reducedMotion) setPlaying(false) }, [reducedMotion])
 
   useEffect(() => {
     if (!playing) return
-    const id = setInterval(() => setStep((s) => (s + 1) % sequence.length), 2200)
-    return () => clearInterval(id)
-  }, [playing])
+    if (step === sequence.length - 1) { setPlaying(false); return }
+    const id = setTimeout(() => setStep(s => s + 1), 4000)
+    return () => clearTimeout(id)
+  }, [playing, step])
 
   let stack: StackEntry[] = []
   if (step <= 3) {
@@ -47,34 +48,35 @@ export default function StackPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 md:px-8 pt-6 md:pt-12">
-      <Link href="/new-players/stack" className="inline-flex min-h-11 items-center text-sm text-[hsl(42_55%_65%)] underline underline-offset-4 mb-3">← Practice this in the Learn course</Link>
+      <Link href="/new-players/stack" className="inline-flex min-h-11 items-center text-sm text-primary underline underline-offset-4 mb-3">← Practice this in the Learn course</Link>
       <header className="text-center mb-8">
         <div className="flex items-center justify-center">
           <GoldRule />
         </div>
-        <h1 className="font-display tracking-[0.16em] uppercase text-xs text-[hsl(38_15%_60%)] mt-3">
+        <p className="font-display tracking-[0.16em] uppercase text-xs text-muted-foreground mt-3">
           Last In, First Out
-        </h1>
-        <p className="font-display text-gold-gradient text-3xl md:text-5xl mt-3 tracking-wide">
-          The Stack
         </p>
-        <p className="font-prose italic text-[hsl(38_30%_88%/0.85)] mt-1">
+        <h1 className="font-display text-gold-gradient text-3xl md:text-5xl mt-3 tracking-wide">
+          The Stack
+        </h1>
+        <p className="font-prose italic text-foreground/90 mt-1">
           Spells resolve in reverse — the last cast is the first to land.
         </p>
       </header>
 
-      <div className="grid md:grid-cols-[320px_1fr] gap-6">
+      <div className="grid md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] items-start gap-6">
         <div className="panel codex-glow panel-gilded p-6">
-          <div className="flex items-center justify-between mb-4">
-            <span className="font-display tracking-[0.18em] uppercase text-[10px] text-[hsl(38_15%_60%)]">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <span className="font-display tracking-[0.18em] uppercase text-[10px] text-muted-foreground">
               The Stack
             </span>
             <div className="flex items-center gap-1">
-              <button onClick={() => { setPlaying(false); setStep(s => (s + 1) % sequence.length) }} className="panel min-h-11 px-2 text-xs">Next step</button>
+              <button onClick={() => { setPlaying(false); setStep(s => Math.max(0, s - 1)) }} disabled={step === 0} aria-label="Previous step" className="panel min-h-11 min-w-11 text-sm disabled:opacity-40">←</button>
+              <button onClick={() => { setPlaying(false); setStep(s => Math.min(sequence.length - 1, s + 1)) }} disabled={step === sequence.length - 1} className="panel min-h-11 px-2 text-sm disabled:opacity-40">Next step</button>
               <button
                 type="button"
-                onClick={() => setPlaying((p) => !p)}
-                className="panel hover-elevate min-w-11 min-h-11 p-1.5 inline-flex items-center justify-center text-[hsl(38_30%_88%)]"
+                onClick={() => { if (step === sequence.length - 1) setStep(0); setPlaying(p => !p) }}
+                className="panel hover-elevate min-w-11 min-h-11 p-1.5 inline-flex items-center justify-center text-foreground"
                 aria-label={playing ? 'Pause' : 'Play'}
                 data-testid="button-play"
               >
@@ -109,8 +111,8 @@ export default function StackPage() {
               </button>
               <button
                 type="button"
-                onClick={() => setStep(0)}
-                className="panel hover-elevate min-w-11 min-h-11 p-1.5 inline-flex items-center justify-center text-[hsl(38_30%_88%)]"
+                onClick={() => { setPlaying(false); setStep(0) }}
+                className="panel hover-elevate min-w-11 min-h-11 p-1.5 inline-flex items-center justify-center text-foreground"
                 aria-label="Reset"
                 data-testid="button-reset-stack"
               >
@@ -131,12 +133,12 @@ export default function StackPage() {
             </div>
           </div>
 
-          <div className="relative h-72">
+          <div className="relative h-56">
             <AnimatePresence>
               {stack.length === 0 ? (
                 <motion.div
                   key="empty"
-                  className="absolute inset-0 grid place-items-center text-[hsl(38_15%_60%)] text-sm font-prose italic"
+                  className="absolute inset-0 grid place-items-center text-muted-foreground text-sm font-prose italic"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
@@ -146,22 +148,22 @@ export default function StackPage() {
               ) : (
                 stack.map((item, idx) => (
                   <motion.div
-                    key={`${step}-${item.id}`}
+                    key={item.id}
                     data-testid={idx === 0 ? "stack-top" : undefined}
-                    initial={{ opacity: 0, y: -20 }}
+                    initial={reducedMotion ? false : { opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: idx * 74 }}
                     exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.35 }}
+                    transition={{ duration: reducedMotion ? 0 : 0.35 }}
                     className={`absolute left-0 right-0 panel-elevated p-3 rounded-md border ${
                       idx === 0
                         ? 'border-[hsl(42_75%_55%/0.6)] codex-glow-strong'
                         : 'border-[hsl(40_30%_22%)]'
                     }`}
                   >
-                    <div className="font-display text-sm tracking-wide text-[hsl(38_30%_88%)]">
+                    <div className="font-display text-sm tracking-wide text-foreground">
                       {item.text}
                     </div>
-                    <div className="text-[10px] uppercase tracking-[0.2em] text-[hsl(38_15%_60%)] mt-0.5">
+                    <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mt-0.5">
                       {idx === 0
                         ? 'Top — resolves next'
                         : `Position ${stack.length - idx}`}
@@ -171,7 +173,12 @@ export default function StackPage() {
               )}
             </AnimatePresence>
           </div>
-          <div className="mt-3 flex items-center justify-center gap-2 text-xs text-[hsl(38_15%_60%)]">
+          <div role="status" aria-live={playing ? 'off' : 'polite'} aria-atomic="true" className="mt-4 border-t border-border pt-4">
+            <p className="text-xs text-muted-foreground">Step {step + 1} of {sequence.length}</p>
+            <p className="text-base mt-2 leading-relaxed">{sequence[step]}</p>
+            <p className="text-primary mt-3">Player B: {step === 6 ? '17' : '20'} life</p>
+          </div>
+          <div className="mt-3 flex items-center justify-center gap-2 text-xs text-muted-foreground">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="18 15 12 9 6 15"/></svg>
             Cast adds to top
             <span>·</span>
@@ -181,7 +188,7 @@ export default function StackPage() {
         </div>
 
         <div className="panel p-6" data-testid="priority-flow">
-          <h3 className="font-display text-lg tracking-wide text-[hsl(38_30%_88%)]">
+          <h3 className="font-display text-lg tracking-wide text-foreground">
             Sequence
           </h3>
           <span className="block w-7 h-px bg-[hsl(42_75%_55%/0.4)] mt-2 mb-4" />
@@ -192,18 +199,18 @@ export default function StackPage() {
                 className={`p-3 rounded-md border ${
                   i === step
                     ? 'border-[hsl(42_75%_55%/0.6)] bg-[hsl(42_75%_55%/0.05)]'
-                    : 'border-[hsl(40_30%_20%)] bg-[hsl(220_15%_10%/0.4)]'
+                    : 'border-border bg-secondary/30'
                 }`}
               >
                 <button onClick={() => { setStep(i); setPlaying(false) }} aria-current={i === step ? "step" : undefined} className="w-full text-left min-h-11">
-                <span className="font-display tracking-wider text-[10px] uppercase text-[hsl(38_15%_60%)] mr-2">
+                <span className="font-display tracking-wider text-[10px] uppercase text-muted-foreground mr-2">
                   {i + 1}
                 </span>
                 <span
                   className={
                     i === step
-                      ? 'text-[hsl(38_30%_88%)]'
-                      : 'text-[hsl(38_30%_88%/0.8)]'
+                      ? 'text-foreground'
+                      : 'text-foreground/90'
                   }
                 >
                   {s}
@@ -262,11 +269,11 @@ export default function StackPage() {
 function RuleCard({ title, body }: { title: string; body: string }) {
   return (
     <div className="panel p-5">
-      <h4 className="font-display text-base tracking-wide text-[hsl(38_30%_88%)]">
+      <h4 className="font-display text-base tracking-wide text-foreground">
         {title}
       </h4>
       <span className="block w-6 h-px bg-[hsl(42_75%_55%/0.4)] mt-1.5 mb-2" />
-      <p className="font-prose text-[hsl(38_30%_88%/0.85)] text-base leading-snug">
+      <p className="font-prose text-foreground/90 text-base leading-snug">
         {body}
       </p>
     </div>

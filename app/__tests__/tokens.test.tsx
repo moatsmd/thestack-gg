@@ -64,6 +64,21 @@ describe('searchTokens', () => {
 })
 
 describe('TokensPage', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('keeps tray counts while filtering and allows undoing a clear', async () => {
+    const user = userEvent.setup()
+    renderTokens()
+    await user.click(screen.getByRole('button', { name: 'Add Treasure to your tray' }))
+    await user.type(screen.getByTestId('token-search'), 'goblin')
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Add Treasure to your tray' })).not.toBeInTheDocument())
+    expect(screen.getByLabelText('Treasure count')).toHaveTextContent('1')
+    await user.click(screen.getByRole('button', { name: 'Clear tray' }))
+    expect(screen.queryByLabelText('Treasure count')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Undo clear tray' }))
+    expect(screen.getByLabelText('Treasure count')).toHaveTextContent('1')
+  })
+
   it('renders heading', () => {
     renderTokens()
     expect(screen.getByRole('heading', { name: /tokens/i })).toBeInTheDocument()

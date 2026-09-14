@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { CardDisplay } from '../CardDisplay'
+import { CardModal } from '../CardModal'
 import { ScryfallCard } from '@/types/scryfall'
 
 describe('CardDisplay', () => {
@@ -70,12 +71,59 @@ describe('CardDisplay', () => {
     image_status: 'highres_scan',
   }
 
+  it('restores the opener after closing a card dialog', async () => {
+    const user = userEvent.setup()
+    const { rerender } = render(<><button>Open details</button><CardModal card={mockCard} isOpen={false} onClose={() => {}} /></>)
+    const opener = screen.getByRole('button', { name: 'Open details' })
+    await user.click(opener)
+    rerender(<><button>Open details</button><CardModal card={mockCard} isOpen onClose={() => {}} /></>)
+    rerender(<><button>Open details</button><CardModal card={mockCard} isOpen={false} onClose={() => {}} /></>)
+    expect(opener).toHaveFocus()
+  })
+
+  it('restores scrolling when nested dialogs unmount together on navigation', async () => {
+    const user = userEvent.setup()
+    const { unmount } = render(<CardModal card={mockCard} isOpen onClose={() => {}} />)
+    await user.click(screen.getByRole('button', { name: 'Expand card image' }))
+    expect(document.body.style.overflow).toBe('hidden')
+    unmount()
+    expect(document.body.style.overflow).toBe('')
+  })
+
   it('renders card image', () => {
     render(<CardDisplay card={mockCard} />)
 
     const image = screen.getByTestId('card-image')
     expect(image).toHaveAttribute('src', 'https://example.com/normal.jpg')
     expect(image).toHaveAttribute('alt', 'Sol Ring')
+  })
+
+  it('closes the fullscreen image with Escape and returns focus', async () => {
+    const user = userEvent.setup()
+    render(<CardDisplay card={mockCard} />)
+    const expand = screen.getByRole('button', { name: 'Expand card image' })
+    await user.click(expand)
+    expect(screen.getByRole('dialog', { name: /Sol Ring/ })).toBeInTheDocument()
+    await user.keyboard('{Escape}')
+    expect(screen.queryByTestId('card-image-modal')).not.toBeInTheDocument()
+    expect(expand).toHaveFocus()
+  })
+
+  it('links directly to this card’s rulings', () => {
+    render(<CardDisplay card={mockCard} />)
+    expect(screen.getByRole('link', { name: /card rulings/i })).toHaveAttribute('href', '/rules?q=Sol%20Ring')
+  })
+
+  it('closes only the image when Escape is pressed inside a card detail dialog', async () => {
+    const user = userEvent.setup()
+    const close = jest.fn()
+    render(<CardModal card={mockCard} isOpen onClose={close} />)
+    await user.click(screen.getByRole('button', { name: 'Expand card image' }))
+    await user.keyboard('{Escape}')
+    expect(screen.queryByTestId('card-image-modal')).not.toBeInTheDocument()
+    expect(close).not.toHaveBeenCalled()
+    await user.keyboard('{Escape}')
+    expect(close).toHaveBeenCalledTimes(1)
   })
 
   it('renders card header with name, mana cost, and type line', () => {
@@ -324,11 +372,11 @@ describe('CardDisplay', () => {
     expect(screen.getByTestId('card-name')).toHaveTextContent('Delver of Secrets')
   })
 
-  it('applies white background with rounded corners and shadow', () => {
+  it('uses the shared theme-aware card panel', () => {
     const { container } = render(<CardDisplay card={mockCard} />)
 
     const cardDisplay = container.querySelector('[data-testid="card-display"]')
-    expect(cardDisplay).toHaveClass('rounded-lg', 'bg-white', 'shadow-lg')
+    expect(cardDisplay).toHaveClass('card-detail', 'panel')
   })
 
   it('does not show flip button for single-faced cards', () => {

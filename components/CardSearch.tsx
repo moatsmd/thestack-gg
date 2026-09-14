@@ -101,7 +101,7 @@ export function CardSearch({ initialQuery }: { initialQuery?: string }) {
       )}
 
       {/* Single Card View */}
-      {showSingleCard && <CardDisplay card={selectedCard} source="toolkit-search" />}
+      {showSingleCard && <CardDisplay key={selectedCard.id} card={selectedCard} source="toolkit-search" />}
 
       {/* Card Modal */}
       {modalCard && (

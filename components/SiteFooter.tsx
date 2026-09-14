@@ -14,10 +14,10 @@ export function SiteFooter() {
             </p>
           </div>
           <div>
-            <h4 className="font-display tracking-[0.2em] text-xs uppercase text-[hsl(38_15%_60%)] mb-3">
+            <h4 className="font-display tracking-[0.2em] text-xs uppercase text-muted-foreground mb-3">
               Project
             </h4>
-            <ul className="space-y-2 text-[hsl(38_15%_60%)]">
+            <ul className="space-y-2 text-muted-foreground">
               <li>
                 <Link href="/about" className="hover:text-[hsl(42_75%_65%)]">
                   About
@@ -44,10 +44,10 @@ export function SiteFooter() {
             </ul>
           </div>
           <div>
-            <h4 className="font-display tracking-[0.2em] text-xs uppercase text-[hsl(38_15%_60%)] mb-3">
+            <h4 className="font-display tracking-[0.2em] text-xs uppercase text-muted-foreground mb-3">
               Explore
             </h4>
-            <ul className="space-y-2 text-[hsl(38_15%_60%)]">
+            <ul className="space-y-2 text-muted-foreground">
               <li>
                 <Link href="/blog" className="hover:text-[hsl(42_75%_65%)]">
                   The Codex
@@ -55,7 +55,7 @@ export function SiteFooter() {
               </li>
               <li>
                 <Link href="/new-players" className="hover:text-[hsl(42_75%_65%)]">
-                  New Player Guide
+                  Learn Magic
                 </Link>
               </li>
               <li>
@@ -71,10 +71,10 @@ export function SiteFooter() {
             </ul>
           </div>
           <div>
-            <h4 className="font-display tracking-[0.2em] text-xs uppercase text-[hsl(38_15%_60%)] mb-3">
+            <h4 className="font-display tracking-[0.2em] text-xs uppercase text-muted-foreground mb-3">
               Tools
             </h4>
-            <ul className="space-y-2 text-[hsl(38_15%_60%)]">
+            <ul className="space-y-2 text-muted-foreground">
               <li>
                 <Link href="/tracker" className="hover:text-[hsl(42_75%_65%)]">
                   Life Tracker

@@ -149,7 +149,7 @@ describe('GlossaryPage', () => {
     expect(screen.getByTestId('filter-tier-retired')).toBeInTheDocument()
   })
 
-  it('retired keywords are hidden by default', async () => {
+  it('older keywords are included by default', async () => {
     const { KEYWORDS } = require('@/lib/keywords-data')
     const retiredKeyword = KEYWORDS.find((kw: any) => kw.tier === 'retired')
     expect(retiredKeyword).toBeDefined()
@@ -157,11 +157,11 @@ describe('GlossaryPage', () => {
     await waitFor(() => {
       const cards = screen.getAllByTestId('keyword-card')
       const names = cards.map((c) => c.querySelector('h3')?.textContent)
-      expect(names).not.toContain(retiredKeyword.keyword)
+      expect(names).toContain(retiredKeyword.keyword)
     })
   })
 
-  it('shows retired keywords when retired tier is enabled', async () => {
+  it('can hide older keywords with the tier filter', async () => {
     const user = userEvent.setup()
     const { KEYWORDS } = require('@/lib/keywords-data')
     const retiredKeyword = KEYWORDS.find((kw: any) => kw.tier === 'retired')
@@ -172,7 +172,7 @@ describe('GlossaryPage', () => {
     await waitFor(() => {
       const cards = screen.getAllByTestId('keyword-card')
       const names = cards.map((c) => c.querySelector('h3')?.textContent)
-      expect(names).toContain(retiredKeyword.keyword)
+      expect(names).not.toContain(retiredKeyword.keyword)
     })
   })
 

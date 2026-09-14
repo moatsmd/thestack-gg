@@ -52,7 +52,7 @@ const post: BlogPost = {
         always: the person who just did the thing.
       </Quote>
 
-      <H2>Triggered abilities: not on the stack until they're put there</H2>
+      <H2>Triggered abilities: not on the stack until they&apos;re put there</H2>
       <P>
         A common mistake: a triggered ability fires the moment its condition is
         met. It does not. It triggers — meaning it is queued — and then the
@@ -68,7 +68,7 @@ const post: BlogPost = {
         <LI>You control three permanents that each trigger at the beginning of your upkeep.</LI>
         <LI>All three trigger simultaneously when your upkeep begins.</LI>
         <LI>Before any player gets priority, you choose the order. The one you put on the stack last will resolve first.</LI>
-        <LI>Once they're on the stack, you receive priority and can respond before any of them resolve.</LI>
+        <LI>Once they&apos;re on the stack, you receive priority and can respond before any of them resolve.</LI>
       </OL>
       <P>
         Players who treat triggers as &ldquo;they go on in the order they
@@ -84,7 +84,7 @@ const post: BlogPost = {
         cta="Open the explainer"
       />
 
-      <H2>Replacement effects don't use the stack</H2>
+      <H2>Replacement effects don&apos;t use the stack</H2>
       <P>
         This is the rule that catches people. A replacement effect — anything
         with the word &ldquo;instead&rdquo; or &ldquo;as ... enters&rdquo; — does
@@ -126,15 +126,15 @@ const post: BlogPost = {
         Layer 7 has its own sub-order: characteristic-defining abilities,
         printed-value setters (&ldquo;is 3/3&rdquo;), modifications by static
         effects, and counters last. Power and toughness arguments at the table
-        almost always live inside layer 7's sub-layers.
+        almost always live inside layer 7&apos;s sub-layers.
       </P>
 
       <H2>Tracking it without losing the room</H2>
       <P>
-        At the casual table, the trick is not memorizing every rule. It's
+        At the casual table, the trick is not memorizing every rule. It&apos;s
         slowing down at three specific moments: when something triggers, when
-        someone says &ldquo;in response,&rdquo; and when a permanent's
-        characteristics change mid-combat. At those moments, name what's
+        someone says &ldquo;in response,&rdquo; and when a permanent&apos;s
+        characteristics change mid-combat. At those moments, name what&apos;s
         happening out loud, in order. &ldquo;That triggers. Before it goes on
         the stack, anything? Okay, on the stack. I have priority. Pass. Pass.
         Pass. Resolves.&rdquo; Boring is the goal.
@@ -142,9 +142,9 @@ const post: BlogPost = {
 
       <H3>A short script that fixes most arguments</H3>
       <UL>
-        <LI><Em>&ldquo;Holding priority&rdquo;</Em> — &ldquo;I cast this and before passing I'm going to cast that.&rdquo;</LI>
-        <LI><Em>&ldquo;In response&rdquo;</Em> — &ldquo;I'd like to respond before yours resolves.&rdquo;</LI>
-        <LI><Em>&ldquo;Floating mana&rdquo;</Em> — &ldquo;Before priority passes, I'm tapping for mana to use later this step.&rdquo;</LI>
+        <LI><Em>&ldquo;Holding priority&rdquo;</Em> — &ldquo;I cast this and before passing I&apos;m going to cast that.&rdquo;</LI>
+        <LI><Em>&ldquo;In response&rdquo;</Em> — &ldquo;I&apos;d like to respond before yours resolves.&rdquo;</LI>
+        <LI><Em>&ldquo;Floating mana&rdquo;</Em> — &ldquo;Before priority passes, I&apos;m tapping for mana to use later this step.&rdquo;</LI>
         <LI><Em>&ldquo;Letting it resolve&rdquo;</Em> — &ldquo;No response, it resolves.&rdquo;</LI>
       </UL>
 
@@ -152,9 +152,9 @@ const post: BlogPost = {
       <P>
         Most stack interactions resolve fine with a verbal protocol. When a
         new player at the table needs to see how priority and LIFO actually
-        play out, TheStack.gg's <A href="/stack">stack page</A> walks through
+        play out, TheStack.gg&apos;s <A href="/stack">stack page</A> walks through
         a Counterspell-on-Counterspell-on-Lightning-Bolt sequence step by
-        step — you can play, pause, and reset the animation. It's an
+        step — you can play, pause, and reset the animation. It&apos;s an
         explainer, not an interactive board, but it makes the rule click
         faster than any paragraph of rules text. For the keywords behind any
         spell or ability, the <A href="/glossary">glossary</A> is a tap away.
@@ -162,9 +162,9 @@ const post: BlogPost = {
       <P>
         For an actual messy in-game stack — three triggers, a Strionic
         Resonator copy, two counterspells in the air — the right tool is
-        still pen and paper. Name what's happening out loud, write the order
+        still pen and paper. Name what&apos;s happening out loud, write the order
         down if you have to, and let nobody pass priority until everyone
-        agrees on what's on the stack.
+        agrees on what&apos;s on the stack.
       </P>
     </>
   ),

@@ -1,6 +1,7 @@
 'use client'
 
 import { ReactNode } from 'react'
+import { MotionConfig } from 'framer-motion'
 import { DarkModeProvider } from '@/contexts/DarkModeContext'
 import { BottomNavBar } from './BottomNavBar'
 import { SiteHeader } from './SiteHeader'
@@ -9,6 +10,7 @@ import { SiteFooter } from './SiteFooter'
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <DarkModeProvider>
+      <MotionConfig reducedMotion="user">
       <div className="min-h-[100dvh] flex flex-col">
         <a href="#main-content" className="skip-link">Skip to content</a>
         <SiteHeader />
@@ -16,6 +18,7 @@ export function Providers({ children }: { children: ReactNode }) {
         <SiteFooter />
       </div>
       <BottomNavBar />
+      </MotionConfig>
     </DarkModeProvider>
   )
 }

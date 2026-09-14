@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Card details fit their containing panel, including the narrower rulings view. */
+.card-detail { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; }
+.card-detail-art { width: min(100%, 290px); margin: 22px auto 0; padding: 0 14px; }
+.light .panel { background: linear-gradient(180deg, var(--surface-1), #eee0c5); border-color: var(--border-strong); }
+.light .panel-elevated { background: var(--surface-2); border-color: var(--border-strong); }
+.light .text-gold-gradient { background-image: linear-gradient(180deg, #735013, #543307); }
+.light :is(h1,h2,h3,h4) { text-shadow: none; }
+.light .codex-glow { box-shadow: 0 3px 16px #5e48300d; }
+.light .drop-cap::first-letter { color: #735013; }
+@media (min-width: 768px) {
+  .card-detail { grid-template-columns: minmax(150px, 32%) minmax(0, 1fr); }
+  .card-detail-art { margin: 22px auto; padding: 0 8px 0 16px; }
+}
+
 @layer base {
   :root {
     /* Light mode — aged parchment, scholar's study */
@@ -24,7 +38,7 @@
     /* Codex shadcn-style tokens (HSL triplet only — for use as `hsl(var(--name))`). */
     --background: 38 35% 92%;
     --foreground: 30 60% 6%;
-    --primary: 42 75% 45%;
+    --primary: 36 70% 30%;
     --primary-foreground: 38 35% 96%;
     --secondary: 38 25% 80%;
     --secondary-foreground: 30 60% 12%;
@@ -47,7 +61,7 @@
     --card-surface-1: rgba(22, 19, 14, 0.98);
     --card-surface-2: rgba(30, 26, 18, 0.98);
     --ink: #e0cda0;
-    --muted: #8a7860;
+    --muted: #ad9c82;
     --accent-1: #c4891f;
     --accent-2: #1e7272;
     --accent-3: #8b2020;
@@ -92,7 +106,7 @@
 
     --background: 38 35% 92%;
     --foreground: 30 60% 6%;
-    --primary: 42 75% 45%;
+    --primary: 36 70% 30%;
     --primary-foreground: 38 35% 96%;
     --secondary: 38 25% 80%;
     --secondary-foreground: 30 60% 12%;
