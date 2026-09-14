@@ -13,6 +13,7 @@
 /.next/
 /.next-dev/
 /audit-*.log
+/learn-*.log
 /public/sw.js
 /public/workbox-*.js
 /out/

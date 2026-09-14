@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { Fleuron, GoldRule } from '@/components/Fleuron'
 
@@ -46,6 +47,7 @@ export default function StackPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 md:px-8 pt-6 md:pt-12">
+      <Link href="/new-players/stack" className="inline-flex min-h-11 items-center text-sm text-[hsl(42_55%_65%)] underline underline-offset-4 mb-3">← Practice this in the Learn course</Link>
       <header className="text-center mb-8">
         <div className="flex items-center justify-center">
           <GoldRule />

@@ -1,7 +1,7 @@
 // Bump this string whenever the visual shell changes so iOS/Android visitors
 // who installed the PWA pick up the new aesthetic on next launch instead of
 // being stuck on the cached old version. Format: yyyymmdd-N.
-const PWA_CACHE_ID = "thestackgg-20260913-1";
+const PWA_CACHE_ID = "thestackgg-20260913-2";
 
 const { default: withPWAInit, runtimeCaching } = require("@ducanh2912/next-pwa");
 

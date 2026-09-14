@@ -1,0 +1,68 @@
+[
+  {
+    "file": "bears.jpg",
+    "name": "Grizzly Bears",
+    "artist": "D. J. Cleland-Hura",
+    "source": "https://scryfall.com/card/10e/268/grizzly-bears?utm_source=api",
+    "image": "https://cards.scryfall.io/normal/front/4/0/409f9b88-f03e-40b6-9883-68c14c37c0de.jpg?1783943001",
+    "oracle": "",
+    "mana": "{1}{G}",
+    "power": "2",
+    "toughness": "2"
+  },
+  {
+    "file": "forest.jpg",
+    "name": "Forest",
+    "artist": "Bastien Grivet",
+    "source": "https://scryfall.com/card/trk/325/forest?utm_source=api",
+    "image": "https://cards.scryfall.io/normal/front/d/c/dce15387-4114-4b3e-91aa-5b42b45c44ac.jpg?1785981675",
+    "oracle": "({T}: Add {G}.)",
+    "mana": "",
+    "power": null,
+    "toughness": null
+  },
+  {
+    "file": "island.jpg",
+    "name": "Island",
+    "artist": "Bastien Grivet",
+    "source": "https://scryfall.com/card/trk/319/island?utm_source=api",
+    "image": "https://cards.scryfall.io/normal/front/f/3/f3cc07cd-cc79-4745-b0b7-eade60175cc3.jpg?1785981645",
+    "oracle": "({T}: Add {U}.)",
+    "mana": "",
+    "power": null,
+    "toughness": null
+  },
+  {
+    "file": "giant.jpg",
+    "name": "Hill Giant",
+    "artist": "Kev Walker",
+    "source": "https://scryfall.com/card/10e/212/hill-giant?utm_source=api",
+    "image": "https://cards.scryfall.io/normal/front/1/4/14c2be6a-9ca6-4d3a-8dd0-db4ea40799f8.jpg?1783943018",
+    "oracle": "",
+    "mana": "{3}{R}",
+    "power": "3",
+    "toughness": "3"
+  },
+  {
+    "file": "bolt.jpg",
+    "name": "Lightning Bolt",
+    "artist": "Milivoj Ćeran",
+    "source": "https://scryfall.com/card/msc/806/lightning-bolt?utm_source=api",
+    "image": "https://cards.scryfall.io/normal/front/7/6/7673784e-db4b-43a1-8d55-1bb9fc1e284f.jpg?1783903008",
+    "oracle": "Lightning Bolt deals 3 damage to any target.",
+    "mana": "{R}",
+    "power": null,
+    "toughness": null
+  },
+  {
+    "file": "growth.jpg",
+    "name": "Giant Growth",
+    "artist": "Andreia Ugrai",
+    "source": "https://scryfall.com/card/msh/167/giant-growth?utm_source=api",
+    "image": "https://cards.scryfall.io/normal/front/f/d/fd1f95bf-48ea-455a-8a6c-0249b11c8900.jpg?1783902918",
+    "oracle": "Target creature gets +3/+3 until end of turn.",
+    "mana": "{G}",
+    "power": null,
+    "toughness": null
+  }
+]

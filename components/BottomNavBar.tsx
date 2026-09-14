@@ -17,7 +17,7 @@ const moreItems = [
   { href: '/stack', label: 'Stack Reference', icon: 'layers' },
   { href: '/rules', label: 'Rules', icon: 'document' },
   { href: '/tokens', label: 'Tokens', icon: 'sparkles' },
-  { href: '/new-players', label: 'New Players', icon: 'compass' },
+  { href: '/new-players', label: 'Learn', icon: 'compass' },
 ]
 
 function NavIcon({ icon, className }: { icon: string; className?: string }) {
