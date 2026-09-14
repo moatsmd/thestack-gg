@@ -23,6 +23,19 @@ const resolveRedisUrl = (): string | undefined => {
   return undefined
 }
 
+// Preserve useful operational diagnosis without logging URLs, hosts or passwords.
+function connectionFailure(error: unknown): string {
+  const code = (error as { code?: unknown } | null)?.code
+  const message = error instanceof Error ? error.message : ''
+  if (code === 'ENOTFOUND' || code === 'EAI_AGAIN') return 'DNS'
+  if (code === 'ECONNREFUSED') return 'connection refused'
+  if (code === 'ETIMEDOUT' || /timed out|timeout/i.test(message)) return 'timeout'
+  if (/WRONGPASS|NOAUTH|authentication|invalid password/i.test(message)) return 'authentication'
+  if (/certificate|TLS|SSL/i.test(message)) return 'TLS'
+  if (/suspended|archived|disabled|quota|limit exceeded/i.test(message)) return 'provider unavailable'
+  return 'connection failed'
+}
+
 export const getRedis = async () => {
   const url = resolveRedisUrl()
   if (!url) {
@@ -51,10 +64,10 @@ export const getRedis = async () => {
     })
     const attempt = Promise.race([Promise.resolve().then(() => candidate.connect()), deadline])
       .then(() => candidate)
-      .catch(() => {
+      .catch((error: unknown) => {
         if (client === candidate) client = null
         void candidate.disconnect().catch(() => {})
-        throw new Error('Redis unavailable')
+        throw new Error(`Redis unavailable (${connectionFailure(error)})`)
       })
       .finally(() => {
         clearTimeout(timer)

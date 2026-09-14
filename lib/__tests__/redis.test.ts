@@ -72,3 +72,26 @@ it('rejects a failed configured connection instead of silently creating a separa
   await expect(getRedis()).rejects.toThrow('Redis unavailable')
   expect(failed.disconnect).toHaveBeenCalledTimes(1)
 })
+
+
+it.each([
+  ['ENOTFOUND', 'DNS'],
+  ['ECONNREFUSED', 'connection refused'],
+  ['ETIMEDOUT', 'timeout'],
+])('reports a safe connection category for %s without leaking credentials', async (code, category) => {
+  process.env.REDIS_URL = 'redis://127.0.0.1:6387/15'
+  const failed = candidate()
+  failed.connect.mockRejectedValue(Object.assign(new Error('private-credential-value'), { code }))
+  mockCreateClient.mockReturnValue(failed)
+  const { getRedis } = await import('../redis')
+  await expect(getRedis()).rejects.toThrow(`Redis unavailable (${category})`)
+})
+
+it('classifies authentication failure without including the provider message', async () => {
+  process.env.REDIS_URL = 'redis://127.0.0.1:6387/15'
+  const failed = candidate()
+  failed.connect.mockRejectedValue(new Error('WRONGPASS private-credential-value'))
+  mockCreateClient.mockReturnValue(failed)
+  const { getRedis } = await import('../redis')
+  await expect(getRedis()).rejects.toThrow('Redis unavailable (authentication)')
+})
