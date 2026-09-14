@@ -9,9 +9,24 @@ const candidate = () => ({
 beforeEach(() => {
   jest.resetModules(); mockCreateClient.mockReset()
   delete process.env.REDIS_URL; delete process.env.STACK_RECAP_REDIS_URL; delete process.env.stack_recap_REDIS_URL
+  delete process.env.stack_live_REDIS_URL; delete process.env.STACK_LIVE_REDIS_URL
   delete process.env.VERCEL
 })
-afterEach(() => { jest.useRealTimers(); delete process.env.REDIS_URL; delete process.env.VERCEL })
+afterEach(() => {
+  jest.useRealTimers()
+  for (const key of ['REDIS_URL', 'VERCEL', 'stack_live_REDIS_URL', 'STACK_LIVE_REDIS_URL', 'stack_recap_REDIS_URL', 'STACK_RECAP_REDIS_URL']) delete process.env[key]
+})
+
+it.each(['stack_live_REDIS_URL', 'STACK_LIVE_REDIS_URL'])('prefers restored database %s over archived connection variables', async (key) => {
+  process.env[key] = 'redis://127.0.0.1:6388/15'
+  process.env.stack_recap_REDIS_URL = 'redis://127.0.0.1:6389/15'
+  process.env.REDIS_URL = 'redis://127.0.0.1:6390/15'
+  const ready = candidate(); ready.connect.mockResolvedValue(ready)
+  mockCreateClient.mockReturnValue(ready)
+  const { getRedis } = await import('../redis')
+  expect(await getRedis()).toBe(ready)
+  expect(mockCreateClient).toHaveBeenCalledWith(expect.objectContaining({ url: process.env[key] }))
+})
 
 it('uses in-memory mode only when no Redis URL is configured', async () => {
   const { getRedis } = await import('../redis')

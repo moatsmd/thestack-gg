@@ -8,13 +8,16 @@ const CONNECT_TIMEOUT_MS = 4_000
  * Resolve the Redis connection URL.
  *
  * Vercel's Upstash Marketplace integration prefixes every env var with the
- * database name (e.g. `stack_recap_REDIS_URL`). We prefer those when present
+ * configured prefix (e.g. `stack_live_REDIS_URL`). We prefer those when present
  * so the integration "just works" without manually aliasing vars in the
  * Vercel dashboard. Falls back to plain `REDIS_URL` for local dev and any
  * environment that wires Redis manually.
  */
 const resolveRedisUrl = (): string | undefined => {
   const env = process.env
+  // Replacement restored after the original Upstash database was archived.
+  if (env.stack_live_REDIS_URL) return env.stack_live_REDIS_URL
+  if (env.STACK_LIVE_REDIS_URL) return env.STACK_LIVE_REDIS_URL
   // Most specific first: Upstash Marketplace (prefixed) for this project.
   if (env.stack_recap_REDIS_URL) return env.stack_recap_REDIS_URL
   if (env.STACK_RECAP_REDIS_URL) return env.STACK_RECAP_REDIS_URL
