@@ -1,30 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { Cinzel, IM_Fell_English, Cormorant_Garamond } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
+import "./fonts.css";
 import { Providers } from "@/components/Providers";
-
-const headingFont = Cinzel({
-  subsets: ["latin"],
-  weight: ["400", "600", "700"],
-  variable: "--font-heading",
-});
-
-const bodyFont = IM_Fell_English({
-  subsets: ["latin"],
-  weight: "400",
-  style: ["normal", "italic"],
-  variable: "--font-body",
-  adjustFontFallback: false,
-});
-
-const proseFont = Cormorant_Garamond({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  style: ["normal", "italic"],
-  variable: "--font-prose",
-});
 
 const siteUrl = "https://www.thestack.gg";
 const siteTitle = "TheStack.gg — The MTG Companion";
@@ -115,6 +94,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <head>
+        <link rel="preload" href="/fonts/cinzel-normal-latin.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+        <link rel="preload" href="/fonts/im-fell-english-normal-latin.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+        <link rel="preload" href="/fonts/cormorant-garamond-normal-latin.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         {/* Impact (TCGplayer / Card Kingdom affiliate network) site verification */}
         <meta
           name="impact-site-verification"
@@ -126,7 +108,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className={`antialiased ${headingFont.variable} ${bodyFont.variable} ${proseFont.variable}`}>
+      <body className="antialiased">
         <Providers>{children}</Providers>
         <Analytics />
         <SpeedInsights />

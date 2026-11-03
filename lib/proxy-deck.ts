@@ -20,13 +20,14 @@ export function parseDeck(text: string) {
   if (text.length > 100000 || lines.length > 2500) return { entries: [], issues: [{ line: 1, message: 'Use a text list under 100 KB and 2,500 lines.' }] }
   lines.forEach((raw, index) => {
     let line = raw.trim()
-    if (!line || line.startsWith('#') || line.startsWith('//')) return
-    const heading = line.replace(/^\[|\]$|:$/g, '').toLowerCase()
+    if (!line) return
+    const heading = line.replace(/^(?:\/\/|#)\s*/, '').replace(/^\[|\]$|:$/g, '').toLowerCase()
     if (HEADINGS[heading]) { section = HEADINGS[heading]; return }
+    if (line.startsWith('#') || line.startsWith('//')) return
     let rowSection = section
     if (/^SB:\s*/i.test(line)) { rowSection = 'sideboard'; line = line.replace(/^SB:\s*/i, '') }
     line = line.replace(/\s+#.*$/, '').replace(/\s+\*[FE]\*\s*$/i, '').trim()
-    if (/^(https?:\/\/|[\[{])/.test(line)) { issues.push({ line: index + 1, message: 'Paste a plain-text deck export, not a URL or JSON.' }); return }
+    if (/^(https?:\/\/|[\[{<])/.test(line)) { issues.push({ line: index + 1, message: 'Paste a plain-text deck export, not a URL, JSON, or XML.' }); return }
     const match = line.match(/^(\d+)(?:x)?\s+(.+)$/i)
     const quantity = match ? Number(match[1]) : 1
     if ((!match && /^[+\-\d]/.test(line)) || quantity < 1 || quantity > 2000 || total + quantity > 2000) {

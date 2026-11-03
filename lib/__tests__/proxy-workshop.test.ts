@@ -20,6 +20,11 @@ describe('proxy deck preparation', () => {
     expect(deck.entries.map(x => x.name)).toEqual(['Fire // Ice', 'Negate', 'Forest'])
     expect(deck.entries[1].section).toBe('sideboard')
   })
+  test('recognizes commented section headings and rejects XML deck files', () => {
+    const deck = parseDeck('// Commander\n1 Aesi, Tyrant of Gyre Strait\n// Mainboard\n1 Sol Ring\n// Sideboard\n1 Negate\n# Maybeboard\n1 Counterspell')
+    expect(selectEntries(deck.entries, false, false, true).map(e => e.name)).toEqual(['Aesi, Tyrant of Gyre Strait', 'Sol Ring'])
+    expect(parseDeck('<Deck>\n<Card Name="Sol Ring" />\n</Deck>').issues).toHaveLength(3)
+  })
   test('counts physical double faces rather than split/adventure names', () => {
     const entries = parseDeck('2 Delver of Secrets\n1 Fire // Ice').entries
     const cards = { [entries[0].key]: { name: 'Delver of Secrets // Insectile Aberration', layout: 'transform', card_faces: [{ name: 'Delver of Secrets', image_uris: { normal: 'front' } }, { name: 'Insectile Aberration', image_uris: { normal: 'back' } }] }, [entries[1].key]: { name: 'Fire // Ice', layout: 'split', image_uris: { normal: 'single' } } }
