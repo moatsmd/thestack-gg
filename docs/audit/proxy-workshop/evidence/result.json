@@ -1,0 +1,18 @@
+{
+  "base": "http://127.0.0.1:3227",
+  "checkedAt": "2026-11-03T19:44:41.730Z",
+  "passed": true,
+  "errors": [],
+  "checks": [
+    "live Scryfall names and split/DFC",
+    "face count / sideboard / basics / copies",
+    "CSV / PNG / JSON downloads",
+    "US / USD prices and manual quotes",
+    "stale quote reset",
+    "local draft recovery",
+    "invalid rows block export",
+    "network failure and recovery",
+    "320/390px overflow",
+    "noindex and no navigation link"
+  ]
+}
